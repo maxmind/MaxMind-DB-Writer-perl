@@ -13,7 +13,7 @@ use MooseX::StrictConstructor;
 
 with 'MaxMind::IPDB::Role::Debugs';
 
-use constant DEBUG => $ENV{GEOIP2_DEBUG};
+use constant DEBUG => $ENV{MAXMIND_IPDB_SERIALIZER_DEBUG};
 
 binmode STDERR, ':utf8'
     if DEBUG;

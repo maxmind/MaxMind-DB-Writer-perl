@@ -158,9 +158,9 @@ sub _build_metadata {
 
     my $start = rindex( $last_block, $MetadataStartMarker );
 
-    die 'Could not find a GeoIP 2.0 metadata marker in this file ('
+    die 'Could not find a MaxMind IP DB metadata marker in this file ('
         . $self->file()
-        . '). Is this a valid GeoIP 2.0 database?'
+        . '). Is this a valid MaxMind IP DB file?'
         unless $start >= 0;
 
     $start += bytes::length( $MetadataStartMarker );

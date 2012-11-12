@@ -99,8 +99,3 @@ sub _build_reader {
 __PACKAGE__->meta()->make_immutable();
 
 1;
-
-__END__
-
-my $geoip = MaxMind::IPDB::Reader->new_from_file(file => 'path/to/file');
-my $geoip = MaxMind::IPDB::Reader->new_from_type(type => 'city', caching => 'memory');
