@@ -5,7 +5,6 @@ use warnings;
 use namespace::autoclean;
 
 use Math::BigInt;
-use MaxMind::IPDB::Writer::Encoder;
 
 use Moose;
 use Moose::Util::TypeConstraints;
@@ -40,19 +39,16 @@ has languages => (
     default => sub { [] },
 );
 
-sub encode {
+sub metadata_to_encode {
     my $self = shift;
-    my $fh   = shift;
 
-    my $encoder = MaxMind::IPDB::Writer::Encoder->new( output => $fh );
     my %metadata;
-
-    foreach my $attr ( $self->meta->get_all_attributes ) {
+    foreach my $attr ( $self->meta()->get_all_attributes() ) {
         my $method = $attr->name;
         $metadata{$method} = $self->$method;
     }
 
-    $encoder->encode_map( \%metadata );
+    return \%metadata;
 }
 
 __PACKAGE__->meta()->make_immutable();
