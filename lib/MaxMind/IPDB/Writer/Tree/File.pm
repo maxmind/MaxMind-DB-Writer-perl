@@ -4,10 +4,11 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-use MaxMind::IPDB::Metadata;
 use IO::Handle;
 use Math::BigInt;
 use Math::Round qw( round );
+use MaxMind::IPDB::Metadata;
+use MaxMind::IPDB::Writer::Encoder;
 use MaxMind::IPDB::Writer::Serializer;
 
 use Moose;
@@ -257,7 +258,8 @@ sub _encoded_metadata {
     my $buffer;
     open my $fh, '>', \$buffer;
 
-    $metadata->encode($fh);
+    my $encoder = MaxMind::IPDB::Writer::Encoder->new( output => $fh );
+    $encoder->encode_map( $metadata->metadata_to_encode() );
 
     return $buffer;
 }
