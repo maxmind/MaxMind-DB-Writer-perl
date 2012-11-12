@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-use bigint;
 
 use Test::Fatal;
 use Test::More;
@@ -226,8 +225,9 @@ use MM::Net::IPAddress;
         'as_integer returns 2**32 - 1, IPv6'
     );
 
+    my $max_128 = do { use bigint; 2**128 - 1 };
     $ip = MM::Net::IPAddress->new_from_integer(
-        integer => 2**128 - 1,
+        integer => $max_128,
         version => 6,
     );
 
@@ -239,7 +239,7 @@ use MM::Net::IPAddress;
 
     is(
         $ip->as_integer(),
-        2**128 - 1,
+        $max_128,
         'as_integer returns 2**128 - 1, IPv6'
     );
 
