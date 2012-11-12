@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-use bigint;
 
 use Test::More;
 
@@ -168,9 +167,17 @@ use Net::IP qw( ip_bintoip ip_inttobin );
     my $start = '::1';
     my $end   = 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff';
 
+    my @subnets = do {
+        use bigint;
+        map {
+            MM::Net::IPAddress->new_from_integer( integer => 2**$_, version => 6 )
+                ->as_string() . '/'
+                . ( 128 - $_ )
+        } 0 .. 26;
+    };
+
     my @expect = (
-        map { MM::Net::Subnet->new( subnet => $_, version => 6 ) }
-            ( map { _num_as_ipv6( 2**$_ ) . '/' . ( 128 - $_ ) } 0 .. 26 ),
+        map { MM::Net::Subnet->new( subnet => $_, version => 6 ) } @subnets,
         qw(
             ::8.0.0.0/103
             ::11.0.0.0/104
@@ -418,12 +425,4 @@ sub _test_range_as_subnets {
             "netmask matches expected netmask - split $start - $end ($netmask)"
         );
     }
-}
-
-sub _num_as_ipv6 {
-    my $num = shift;
-
-    # All Hail Satan!
-    return Net::IP->new( ip_bintoip( ip_inttobin( $num, 6 ), 6 ), 6 )
-        ->short();
 }
