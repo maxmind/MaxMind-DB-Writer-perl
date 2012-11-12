@@ -1,0 +1,60 @@
+use strict;
+use warnings;
+
+use Benchmark qw( cmpthese );
+
+use MM::Net::IPAddress;
+
+my @ips = (
+    map {
+        my $int = 2**( $_ * 8 ) - 1;
+        MM::Net::IPAddress->new_from_integer( integer => $int, version => 4 )
+    } 0 .. 4
+);
+
+push @ips, (
+    map {
+        my $int = do { use bigint; 2**( $_ * 8 ) - 1 };
+        MM::Net::IPAddress->new_from_integer( integer => $int, version => 6 )
+    } 0 .. 16
+);
+
+my %masks = (
+    32  => 2**32 - 1,
+    128 => do { use bigint; 2**127 },
+);
+
+sub bit_string {
+    my $foo;
+    for my $ip (@ips) {
+        my $bit_string = $ip->as_bit_string();
+
+        for my $bit ( split //, $bit_string ) {
+            $foo .= 'x' if $bit;
+        }
+    }
+}
+
+sub mask {
+    my $foo;
+    for my $ip (@ips) {
+        my $integer = $ip->as_integer();
+
+        my $mask
+            = $ip->mask_length() == 32 ? 2**31 : do { use bigint; 2**127 };
+
+        while ($mask ) {
+            $foo .= 'x' if $integer & $mask;
+
+            $mask >>= 1;
+        }
+    }
+}
+
+cmpthese(
+    100,
+    {
+        bit_string => \&bit_string,
+        mask       => \&mask,
+    }
+);

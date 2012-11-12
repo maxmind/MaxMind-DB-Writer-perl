@@ -1,0 +1,10 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+for my $string (@ARGV) {
+    print "$string\n";
+    print join q{, }, map { sprintf( '0b%08b', ord($_) ) } split //, $string;
+    print "\n\n";
+}
