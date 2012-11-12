@@ -1,4 +1,4 @@
-# MaxMind IP DB Format
+# MaxMind IPDB Format
 
 ## Version
 
