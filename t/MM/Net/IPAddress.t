@@ -7,7 +7,7 @@ use Test::More;
 use MM::Net::IPAddress;
 
 {
-    my $ip = MM::Net::IPAddress->new( address => '1.2.3.4' );
+    my $ip = MM::Net::IPAddress->new_from_string( string => '1.2.3.4' );
     is(
         $ip->as_string(),
         '1.2.3.4',
@@ -50,7 +50,7 @@ use MM::Net::IPAddress;
         'numeric overloading (>) on address objects works'
     );
 
-    my $same_ip = MM::Net::IPAddress->new( address => '1.2.3.4' );
+    my $same_ip = MM::Net::IPAddress->new_from_string( string => '1.2.3.4' );
 
     cmp_ok(
         $ip, '==', $same_ip,
@@ -65,7 +65,8 @@ use MM::Net::IPAddress;
 }
 
 {
-    my $ip = MM::Net::IPAddress->new( address => '192.168.0.255' )->next_ip();
+    my $ip = MM::Net::IPAddress->new_from_string( string => '192.168.0.255' )
+        ->next_ip();
     is(
         $ip->as_string(),
         '192.168.1.0',
@@ -74,7 +75,7 @@ use MM::Net::IPAddress;
 }
 
 {
-    my $ip = MM::Net::IPAddress->new( address => 'ffff::a:1234' );
+    my $ip = MM::Net::IPAddress->new_from_string( string => 'ffff::a:1234' );
     is(
         $ip->as_string(),
         'ffff::a:1234',
@@ -97,7 +98,8 @@ use MM::Net::IPAddress;
 }
 
 {
-    my $ip = MM::Net::IPAddress->new( address => 'ffff::0000:000a:1234' );
+    my $ip = MM::Net::IPAddress->new_from_string(
+        string => 'ffff::0000:000a:1234' );
     is(
         $ip->as_string(),
         'ffff::a:1234',
@@ -109,7 +111,7 @@ use MM::Net::IPAddress;
     for my $address (
         qw( 255.255.255.255 ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff )) {
 
-        my $ip = MM::Net::IPAddress->new( address => $address );
+        my $ip = MM::Net::IPAddress->new_from_string( string => $address );
 
         like(
             exception { $ip->next_ip() },
@@ -122,7 +124,7 @@ use MM::Net::IPAddress;
 {
     for my $address (qw( 0.0.0.0 :: )) {
 
-        my $ip = MM::Net::IPAddress->new( address => $address );
+        my $ip = MM::Net::IPAddress->new_from_string( string => $address );
 
         like(
             exception { $ip->previous_ip() },
@@ -259,8 +261,8 @@ use MM::Net::IPAddress;
     );
 
     for my $raw ( sort keys %tests ) {
-        my $ip = MM::Net::IPAddress->new(
-            address => $raw,
+        my $ip = MM::Net::IPAddress->new_from_string(
+            string  => $raw,
             version => 6,
         );
 
@@ -273,8 +275,8 @@ use MM::Net::IPAddress;
 }
 
 {
-    my $ip = MM::Net::IPAddress->new(
-        address => '::1:ffff:ffff',
+    my $ip = MM::Net::IPAddress->new_from_string(
+        string  => '::1:ffff:ffff',
         version => 6,
     );
 

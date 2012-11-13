@@ -62,7 +62,8 @@ sub _find_address_in_tree {
     my $addr = shift;
 
     my $bit_string
-        = MM::Net::IPAddress->new( address => $addr )->as_bit_string();
+        = MM::Net::IPAddress->new_from_string( string => $addr )
+        ->as_bit_string();
 
     # The first node of the tree is always node 0, at the beginning of the
     # value

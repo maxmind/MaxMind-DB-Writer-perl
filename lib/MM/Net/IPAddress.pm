@@ -46,13 +46,18 @@ override BUILDARGS => sub {
     return { _ip => $ip };
 };
 
+sub new_from_string {
+    my $class = shift;
+    my %p     = @_;
+
+    return $class->new( address => $p{string}, %p );
+}
+
 sub new_from_integer {
     my $class = shift;
     my %p     = @_;
 
-    my $integer = delete $p{integer};
-
-    return $class->new( address => $integer, %p );
+    return $class->new( address => delete $p{integer}, %p );
 }
 
 sub as_string {

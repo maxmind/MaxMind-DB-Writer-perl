@@ -7,7 +7,6 @@ use List::AllUtils qw( each_array );
 use MM::Net::Subnet;
 use Net::IP qw( ip_bintoip ip_inttobin );
 
-
 {
     _test_remove_private_subnets(
         [ '0.0.0.1', '1.2.3.4' ] => [ [ '0.0.0.1', '1.2.3.4' ] ] );
@@ -54,8 +53,10 @@ use Net::IP qw( ip_bintoip ip_inttobin );
             map {
                 [
                     map {
-                        MM::Net::IPAddress->new( address => $_, version => 6 )
-                            ->as_string()
+                        MM::Net::IPAddress->new_from_string(
+                            string  => $_,
+                            version => 6
+                            )->as_string()
                     } @{$_}
                 ]
                 } (
@@ -170,8 +171,11 @@ use Net::IP qw( ip_bintoip ip_inttobin );
     my @subnets = do {
         use bigint;
         map {
-            MM::Net::IPAddress->new_from_integer( integer => 2**$_, version => 6 )
-                ->as_string() . '/'
+            MM::Net::IPAddress->new_from_integer(
+                integer => 2**$_,
+                version => 6
+                )->as_string()
+                . '/'
                 . ( 128 - $_ )
         } 0 .. 26;
     };
@@ -366,11 +370,13 @@ sub _test_remove_private_subnets {
 
     my $version = $range->[0] =~ /:/ ? 6 : 4;
     my @got = MM::Net::Subnet->_remove_private_subnets_from_range(
-        MM::Net::IPAddress->new(
-            address => $range->[0], version => $version
+        MM::Net::IPAddress->new_from_string(
+            string  => $range->[0],
+            version => $version,
         ),
-        MM::Net::IPAddress->new(
-            address => $range->[1], version => $version
+        MM::Net::IPAddress->new_from_string(
+            string  => $range->[1],
+            version => $version
         ),
         $version,
     );

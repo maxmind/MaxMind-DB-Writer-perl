@@ -111,8 +111,8 @@ sub as_string {
 sub _build_first {
     my $self = shift;
 
-    return MM::Net::IPAddress->new(
-        address => $self->_netmask()->network()->addr(),
+    return MM::Net::IPAddress->new_from_string(
+        string  => $self->_netmask()->network()->addr(),
         version => $self->version(),
     );
 }
@@ -120,8 +120,8 @@ sub _build_first {
 sub _build_last {
     my $self = shift;
 
-    return MM::Net::IPAddress->new(
-        address => $self->_netmask()->broadcast()->addr(),
+    return MM::Net::IPAddress->new_from_string(
+        string  => $self->_netmask()->broadcast()->addr(),
         version => $self->version(),
     );
 }
@@ -225,13 +225,13 @@ sub range_as_subnets {
 
     my $version = ( any { /:/ } $first, $last ) ? 6 : 4;
 
-    $first = MM::Net::IPAddress->new(
-        address => $first,
+    $first = MM::Net::IPAddress->new_from_string(
+        string  => $first,
         version => $version,
     ) unless ref $first;
 
-    $last = MM::Net::IPAddress->new(
-        address => $last,
+    $last = MM::Net::IPAddress->new_from_string(
+        string  => $last,
         version => $version,
     ) unless ref $last;
 
