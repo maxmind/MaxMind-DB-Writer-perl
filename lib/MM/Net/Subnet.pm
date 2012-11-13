@@ -285,3 +285,126 @@ sub _split_one_range {
 __PACKAGE__->meta()->make_immutable();
 
 1;
+
+# ABSTRACT: An object representing a single IP address (4 or 6) subnet
+
+__END__
+
+=head1 SYNOPSIS
+
+  my $subnet = MM::Net::Subnet->new( subnet => '1.0.0.0/24' );
+  print $subnet->as_string();   # 1.0.0.0/28
+  print $subnet->netmask();     # 24
+  print $subnet->mask_length(); # 32
+  print $subnet->version();     # 4
+
+  my $first = $subnet->first();
+  print $first->as_string();    # 1.0.0.0
+
+  my $last = $subnet->first();
+  print $last->as_string();     # 1.0.0.255
+
+  my $iterator = $subnet->iterator();
+  while ( my $ip = $iterator->() ) { ... }
+
+  my $subnet = MM::Net::Subnet->new( subnet => '1.0.0.4/32' );
+  print $subnet->max_netmask(); # 30
+
+  # All methods work with IPv4 and IPv6 subnets
+  my $subnet = MM::Net::Subnet->new( subnet => 'a800:f000::/20' );
+
+  my @subnets = MM::Net::Subnet->range_as_subnets( '1.1.1.1', '1.1.1.32' );
+  print $_->as_string, "\n" for @subnets;
+  # 1.1.1.1/32
+  # 1.1.1.2/31
+  # 1.1.1.4/30
+  # 1.1.1.8/29
+  # 1.1.1.16/28
+  # 1.1.1.32/32
+
+=head1 DESCRIPTION
+
+Objects of this class represent an IP address subnet. It can handle both IPv4
+and IPv6 subnets. It provides various methods for getting information about
+the subnet.
+
+For IPv6, it uses big integers (via Math::BigInt) to represent the numeric
+value of an address as needed.
+
+This module is currently a thin wrapper around NetAddr::IP but that could
+change in the future.
+
+=head1 METHODS
+
+This class provides the following methods:
+
+=head2 MM::Net::Subnet->new( ... )
+
+This method takes a C<subnet> parameter and an optional C<version>
+parameter. The C<subnet> parameter should be a string representation of an IP
+address subnet.
+
+The C<version> parameter should be either C<4> or C<6>, but you don't really need
+this unless you're trying to force a dotted quad to be interpreted as an IPv6
+subnet or to a force an IPv6 address colon-separated hex number to be
+interpreted as an IPv4 subnet.
+
+=head2 $subnet->as_string()
+
+Returns a string representation of the subnet like "1.0.0.0/24" or
+"a800:f000::/105".
+
+=head2 $subnet->version()
+
+Returns a 4 or 6 to indicate whether this is an IPv4 or IPv6 subnet.
+
+=head2 $subnet->netmask()
+
+Returns the numeric subnet as passed to the constructor.
+
+=head2 $subnet->mask_length()
+
+Returns the mask length for the subnet, which is either 32 (IPv4) or 128
+(IPv6).
+
+=head2 $subnet->max_netmask()
+
+This returns the maximum possible numeric subnet that this subnet could fit
+in. In other words, the 1.1.1.0/32 subnet could be part of the 1.1.1.0/24
+subnet, so this returns 24.
+
+=head2 $subnet->first()
+
+Returns the first IP in the subnet as an L<MM::Net::IPAddress> object.
+
+=head2 $subnet->last()
+
+Returns the last IP in the subnet as an L<MM::Net::IPAddress> object.
+
+=head2 $subnet->iterator()
+
+This returns an anonymous sub that returns one IP address in the range each
+time it's called.
+
+For single address subnets (/32 or /128), this returns a single address.
+
+When it has exhausted all the addresses in the subnet, it returns C<undef>
+
+=head2 MM::Net::Subnet->range_as_subnets( $first, $last )
+
+Given two IP addresses as strings, this method breaks the range up into the
+largest subnets that include all the IP addresses in the range (including the
+two passed to this method).
+
+It also excludes any reserved subnets in the range (such as the 10.0.0.0/8 or
+169.254.0.0/16 ranges).
+
+This method works with both IPv4 and IPv6 addresses. If either address
+contains a colon (:) then it assumes that you want IPv6 subnets.
+
+=head1 SUPPORT
+
+Please report any bugs or feature requests to C<bug-net-sweet@rt.cpan.org>, or
+through the web interface at L<http://rt.cpan.org>. I will be notified, and
+then you'll automatically be notified of progress on your bug as I make
+changes.
