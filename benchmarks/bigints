@@ -1,0 +1,41 @@
+use strict;
+use warnings;
+
+use Benchmark qw( cmpthese );
+use Bit::Vector::Overload;
+use Math::BigInt only => 'GMP';
+
+sub bigint {
+    for my $num ( 0 .. 128 ) {
+        my $big = do { use bigint; 2**$num - 2 };
+        $big++;
+        $big--;
+        if ( $big + 1 > $big ) {
+            $big++;
+        }
+    }
+}
+
+sub bv {
+    for my $num ( 0 .. 128 ) {
+        my $bv = Bit::Vector->new_Bin(
+            128,
+            ( '0' x ( 128 - $num ) ) . ( '1' x ( $num - 1 ) ) . '0'
+        );
+
+        $bv++;
+        $bv--;
+
+        if ( $bv + 1 > $bv ) {
+            $bv++;
+        }
+    }
+}
+
+cmpthese(
+    1000,
+    {
+        bigint => \&bigint,
+        bv     => \&bv,
+    }
+);
