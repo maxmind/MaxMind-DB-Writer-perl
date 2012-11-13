@@ -8,34 +8,34 @@ use MM::Net::Subnet;
 use Net::IP qw( ip_bintoip ip_inttobin );
 
 {
-    _test_remove_private_subnets(
+    _test_remove_reserved_subnets(
         [ '0.0.0.1', '1.2.3.4' ] => [ [ '0.0.0.1', '1.2.3.4' ] ] );
 
-    _test_remove_private_subnets( [ '9.10.11.12', '9.255.255.255' ] =>
+    _test_remove_reserved_subnets( [ '9.10.11.12', '9.255.255.255' ] =>
             [ [ '9.10.11.12', '9.255.255.255' ] ] );
 
-    _test_remove_private_subnets(
+    _test_remove_reserved_subnets(
         [ '9.0.0.0', '12.0.0.0' ] => [
             [ '9.0.0.0',  '9.255.255.255' ],
             [ '11.0.0.0', '12.0.0.0' ],
         ]
     );
 
-    _test_remove_private_subnets(
+    _test_remove_reserved_subnets(
         [ '9.0.0.0', '10.255.255.255' ] => [
             [ '9.0.0.0', '9.255.255.255' ],
         ]
     );
 
-    _test_remove_private_subnets(
+    _test_remove_reserved_subnets(
         [ '10.2.3.4', '12.255.255.255' ] => [
             [ '11.0.0.0', '12.255.255.255' ],
         ]
     );
 
-    _test_remove_private_subnets( [ '10.0.0.0', '10.10.10.10' ] => [] );
+    _test_remove_reserved_subnets( [ '10.0.0.0', '10.10.10.10' ] => [] );
 
-    _test_remove_private_subnets(
+    _test_remove_reserved_subnets(
         [ '0.0.0.0', '255.255.255.255' ] => [
             [ '0.0.0.0',      '9.255.255.255' ],
             [ '11.0.0.0',     '126.255.255.255' ],
@@ -49,7 +49,7 @@ use Net::IP qw( ip_bintoip ip_inttobin );
         ]
     );
 
-    _test_remove_private_subnets(
+    _test_remove_reserved_subnets(
         [ '::', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff' ] => [
             map {
                 [
@@ -397,12 +397,12 @@ use Net::IP qw( ip_bintoip ip_inttobin );
 
 done_testing();
 
-sub _test_remove_private_subnets {
+sub _test_remove_reserved_subnets {
     my $range  = shift;
     my $expect = shift;
 
     my $version = $range->[0] =~ /:/ ? 6 : 4;
-    my @got = MM::Net::Subnet->_remove_private_subnets_from_range(
+    my @got = MM::Net::Subnet->_remove_reserved_subnets_from_range(
         MM::Net::IPAddress->new_from_string(
             string  => $range->[0],
             version => $version,
@@ -417,7 +417,7 @@ sub _test_remove_private_subnets {
     is_deeply(
         \@got,
         $expect,
-        "remove_private_subnets returned expected result for $range->[0] - $range->[1]"
+        "_remove_reserved_subnets_from_range returned expected result for $range->[0] - $range->[1]"
     );
 }
 

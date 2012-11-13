@@ -126,7 +126,7 @@ sub _build_last {
     );
 }
 
-sub _remove_private_subnets_from_range {
+sub _remove_reserved_subnets_from_range {
     my $class   = shift;
     my $first   = shift;
     my $last    = shift;
@@ -134,7 +134,7 @@ sub _remove_private_subnets_from_range {
 
     my @ranges;
 
-    $class->_remove_private_subnets_from_range_r(
+    $class->_remove_reserved_subnets_from_range_r(
         $first,
         $last,
         $version,
@@ -176,7 +176,7 @@ sub _remove_private_subnets_from_range {
         ],
     );
 
-    sub _remove_private_subnets_from_range_r {
+    sub _remove_reserved_subnets_from_range_r {
         my $class   = shift;
         my $first   = shift;
         my $last    = shift;
@@ -184,30 +184,30 @@ sub _remove_private_subnets_from_range {
         my $ranges  = shift;
 
         for my $pn ( @{ $reserved_networks{$version} } ) {
-            my $private_first = $pn->first();
-            my $private_last  = $pn->last();
+            my $reserved_first = $pn->first();
+            my $reserved_last  = $pn->last();
 
-            next if ( $last < $private_first || $first > $private_last );
+            next if ( $last < $reserved_first || $first > $reserved_last );
 
-            if ( $first >= $private_first and $last <= $private_last ) {
+            if ( $first >= $reserved_first and $last <= $reserved_last ) {
 
-                # just remove the range, it is completely in a private network
+                # just remove the range, it is completely in a reserved network
                 return;
             }
 
-            $class->_remove_private_subnets_from_range_r(
+            $class->_remove_reserved_subnets_from_range_r(
                 $first,
-                $private_first->previous_ip(),
+                $reserved_first->previous_ip(),
                 $version,
                 $ranges,
-            ) if ( $first < $private_first );
+            ) if ( $first < $reserved_first );
 
-            $class->_remove_private_subnets_from_range_r(
-                $private_last->next_ip(),
+            $class->_remove_reserved_subnets_from_range_r(
+                $reserved_last->next_ip(),
                 $last,
                 $version,
                 $ranges,
-            ) if ( $last > $private_last );
+            ) if ( $last > $reserved_last );
             return;
         }
 
@@ -232,7 +232,7 @@ sub range_as_subnets {
         version => $version,
     ) unless ref $last;
 
-    my @ranges = $class->_remove_private_subnets_from_range(
+    my @ranges = $class->_remove_reserved_subnets_from_range(
         $first,
         $last,
         $version
