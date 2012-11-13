@@ -6,6 +6,7 @@ use warnings;
 # We don't want the pure Perl implementation - it's slow
 use Math::BigInt::GMP;
 
+use bigint;
 use Carp qw( confess );
 use Scalar::Util qw( blessed );
 
@@ -19,16 +20,17 @@ use overload (
     '<=>' => '_compare_overload',
 );
 
-use Net::IP qw( ip_inttobin ip_bintoip );
+use NetAddr::IP;
+use NetAddr::IP::Util qw(inet_any2n);
 
 use Moose;
 
 has _ip => (
     is      => 'ro',
-    isa     => 'Net::IP',
+    isa     => 'NetAddr::IP',
     handles => {
-        as_binary => 'binip',
-        version   => 'version',
+        as_integer => 'numeric',
+        version    => 'version',
     },
 );
 
@@ -37,10 +39,11 @@ override BUILDARGS => sub {
 
     my $p = super();
 
-    my $ip = $p->{_ip} // Net::IP->new(
-        $p->{address},
-        $p->{version} // (),
-    ) or die "Invalid address: $p->{address}";
+    my $ip
+        = $p->{_ip} // $p->{version} == 6
+        ? NetAddr::IP->new6( $p->{address} )
+        : NetAddr::IP->new( $p->{address} )
+        or die "Invalid address: $p->{address}";
 
     return { _ip => $ip };
 };
@@ -49,13 +52,11 @@ sub new_from_integer {
     my $class = shift;
     my %p     = @_;
 
+    my $ip = NetAddr::IP->new( $p{integer} );
     my @version = $p{version} // ();
 
     return $class->new(
-        address => ip_bintoip(
-            ip_inttobin( $p{integer}, @version ),
-            @version,
-        ),
+        address => $ip->addr,
         ( @version ? ( version => $version[0] ) : () ),
     );
 }
@@ -70,8 +71,14 @@ sub as_string {
     my $self = shift;
 
     return $self->_ip()->version() == 6
-        ? $self->_ip()->short()
-        : $self->_ip()->ip();
+        ? lc $self->_ip()->short()
+        : $self->_ip()->addr();
+}
+
+sub as_binary {
+    my $self = shift;
+
+    return inet_any2n($self->as_string);
 }
 
 sub as_ipv4_string {
@@ -79,44 +86,31 @@ sub as_ipv4_string {
 
     return $self->as_string() if $self->_ip()->version() == 4;
 
-    confess 'Cannot represent IP address larger than 2**32-1 as an IPv4 string'
+    confess
+        'Cannot represent IP address larger than 2**32-1 as an IPv4 string'
         if $self->as_integer() >= 2**32;
 
     return __PACKAGE__->new_from_integer(
-        integer => $self->as_integer(),
+        integer => scalar($self->as_integer()),
         version => 4,
     )->as_string();
-}
-
-sub as_integer {
-    my $self = shift;
-
-    my $integer = $self->_ip()->intip();
-    return $integer if defined $integer;
-
-    # Net::IP has some brain damage with regards to 0.0.0.0
-    return $self->mask_length() == 128 ? Math::BigInt->new(0) : 0;
 }
 
 sub as_bit_string {
     my $self = shift;
 
-    my $integer = $self->as_integer();
-    if ( $self->mask_length() == 128 ) {
-        my $bin = $integer->as_bin();
+    if ( $self->version == 6 ) {
+        my $bin = Math::BigInt->new( $self->as_integer )->as_bin;
         $bin =~ s/^0b//;
-
         return sprintf( '%0128s', $bin );
     }
     else {
-        return sprintf( '%032b', $self->as_integer() );
+        return sprintf( '%032b', $self->as_integer );
     }
 }
 
 sub next_ip {
     my $self = shift;
-
-    my $ip = $self->_ip();
 
     my $bits = $self->mask_length();
     confess "$self is the last address in its range"
@@ -130,8 +124,6 @@ sub next_ip {
 
 sub previous_ip {
     my $self = shift;
-
-    my $ip = $self->_ip();
 
     confess "$self is the first address in its range"
         if $self->as_integer() == 0;
