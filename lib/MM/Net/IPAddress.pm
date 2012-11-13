@@ -7,6 +7,8 @@ use warnings;
 use Math::BigInt::GMP;
 
 use Carp qw( confess );
+use NetAddr::IP::Util qw( inet_any2n );
+use NetAddr::IP;
 use Scalar::Util qw( blessed );
 
 # Using this currently breaks overloading - see
@@ -18,9 +20,6 @@ use overload (
     q{""} => 'as_string',
     '<=>' => '_compare_overload',
 );
-
-use NetAddr::IP;
-use NetAddr::IP::Util qw(inet_any2n);
 
 use Moose;
 
