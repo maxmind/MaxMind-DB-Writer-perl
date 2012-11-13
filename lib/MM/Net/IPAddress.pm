@@ -29,8 +29,8 @@ has _ip => (
     is      => 'ro',
     isa     => 'NetAddr::IP',
     handles => {
-        as_integer => 'numeric',
-        version    => 'version',
+        version     => 'version',
+        mask_length => 'bits',
     },
 );
 
@@ -52,19 +52,9 @@ sub new_from_integer {
     my $class = shift;
     my %p     = @_;
 
-    my $ip = NetAddr::IP->new( $p{integer} );
-    my @version = $p{version} // ();
+    my $integer = delete $p{integer};
 
-    return $class->new(
-        address => $ip->addr,
-        ( @version ? ( version => $version[0] ) : () ),
-    );
-}
-
-sub mask_length {
-    my $self = shift;
-
-    return $self->version() == 6 ? 128 : 32;
+    return $class->new( address => $integer, %p );
 }
 
 sub as_string {
@@ -75,10 +65,12 @@ sub as_string {
         : $self->_ip()->addr();
 }
 
+sub as_integer { scalar $_[0]->_ip->numeric }
+
 sub as_binary {
     my $self = shift;
 
-    return inet_any2n($self->as_string);
+    return inet_any2n( $self->as_string );
 }
 
 sub as_ipv4_string {
@@ -91,7 +83,7 @@ sub as_ipv4_string {
         if $self->as_integer() >= 2**32;
 
     return __PACKAGE__->new_from_integer(
-        integer => scalar($self->as_integer()),
+        integer => $self->as_integer(),
         version => 4,
     )->as_string();
 }
