@@ -59,7 +59,7 @@ sub new_from_integer {
 sub as_string {
     my $self = shift;
 
-    return $self->_ip()->version() == 6
+    return $self->version() == 6
         ? lc $self->_ip()->short()
         : $self->_ip()->addr();
 }
@@ -75,7 +75,7 @@ sub as_binary {
 sub as_ipv4_string {
     my $self = shift;
 
-    return $self->as_string() if $self->_ip()->version() == 4;
+    return $self->as_string() if $self->version() == 4;
 
     confess
         'Cannot represent IP address larger than 2**32-1 as an IPv4 string'
