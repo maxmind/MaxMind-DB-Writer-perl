@@ -64,7 +64,13 @@ sub as_string {
         : $self->_ip()->addr();
 }
 
-sub as_integer { scalar $_[0]->_ip->bigint }
+sub as_integer {
+    my $self = shift;
+
+    return $self->version() == 4
+        ? scalar $self->_ip()->numeric()
+        : scalar $self->_ip()->bigint();
+}
 
 sub as_binary {
     my $self = shift;
