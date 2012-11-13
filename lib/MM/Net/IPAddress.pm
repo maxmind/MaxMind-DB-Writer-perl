@@ -67,7 +67,7 @@ sub as_integer {
     my $self = shift;
 
     return $self->version() == 4
-        ? scalar $self->_ip()->numeric()
+        ? ( scalar $self->_ip()->numeric() ) + 0
         : scalar $self->_ip()->bigint();
 }
 
