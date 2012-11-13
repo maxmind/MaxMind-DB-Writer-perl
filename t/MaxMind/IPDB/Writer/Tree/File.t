@@ -9,77 +9,86 @@ use MaxMind::IPDB::Writer::Tree::File;
 
 use MM::Net::Subnet;
 
-{
-    my $buffer = _write_tree(
-        [ MM::Net::Subnet->range_as_subnets( '1.1.1.1', '1.1.1.32' ) ],
-        { ip_version => 4 },
-    );
+for my $record_size ( 24, 28, 32 ) {
+    {
+        my $desc = "IPv4 - $record_size-bit record";
 
-    my $expect = join q{}, map { chr($_) } (
+        my $buffer = _write_tree(
+            $record_size,
+            [ MM::Net::Subnet->range_as_subnets( '1.1.1.1', '1.1.1.32' ) ],
+            { ip_version => 4 },
+        );
 
-        # map with 1 key
-        0b11100001,
-        (
-            # ip
-            0b01000010,
-            0b01101001, 0b01110000,
-        ),
-        (    # 1.1.1.1
-            0b01000111,
-            0b00110001, 0b00101110, 0b00110001,
-            0b00101110, 0b00110001, 0b00101110, 0b00110001
-        ),
-    );
+        my $expect = join q{}, map { chr($_) } (
 
-    like(
-        $buffer,
-        qr/\Q$expect/,
-        'written-out database includes expected data for one subnet - IPv4'
-    );
+            # map with 1 key
+            0b11100001,
+            (
+                # ip
+                0b01000010,
+                0b01101001, 0b01110000,
+            ),
+            (    # 1.1.1.1
+                0b01000111,
+                0b00110001, 0b00101110, 0b00110001,
+                0b00101110, 0b00110001, 0b00101110, 0b00110001
+            ),
+        );
 
-    _test_metadata( $buffer, 'IPv4 tree' );
-}
+        like(
+            $buffer,
+            qr/\Q$expect/,
+            "written-out database includes expected data for one subnet - $desc"
+        );
 
-{
-    my $buffer = _write_tree(
-        [
-            MM::Net::Subnet->range_as_subnets(
-                '::1:ffff:ffff', '::2:0000:0059'
-            )
-        ],
-        { ip_version => 6 },
-    );
+        _test_metadata( $buffer, $desc );
+    }
 
-    my $expect = join q{}, map { chr($_) } (
+    {
+        my $desc = "IPv6 - $record_size-bit record";
 
-        # map with 1 key
-        0b11100001,
-        (
-            # ip
-            0b01000010,
-            0b01101001, 0b01110000,
-        ),
-        (
-            # ::1:ffff:ffff
-            0b01001101,
-            0b00111010, 0b00111010, 0b00110001, 0b00111010,
-            0b01100110, 0b01100110, 0b01100110, 0b01100110,
-            0b00111010, 0b01100110, 0b01100110, 0b01100110, 0b01100110
-        ),
-    );
+        my $buffer = _write_tree(
+            $record_size,
+            [
+                MM::Net::Subnet->range_as_subnets(
+                    '::1:ffff:ffff', '::2:0000:0059'
+                )
+            ],
+            { ip_version => 6 },
+        );
 
-    like(
-        $buffer,
-        qr/\Q$expect/,
-        'written-out database includes expected data for one subnet - IPv6'
-    );
+        my $expect = join q{}, map { chr($_) } (
 
-    _test_metadata( $buffer, 'IPv6 tree' );
+            # map with 1 key
+            0b11100001,
+            (
+                # ip
+                0b01000010,
+                0b01101001, 0b01110000,
+            ),
+            (
+                # ::1:ffff:ffff
+                0b01001101,
+                0b00111010, 0b00111010, 0b00110001, 0b00111010,
+                0b01100110, 0b01100110, 0b01100110, 0b01100110,
+                0b00111010, 0b01100110, 0b01100110, 0b01100110, 0b01100110
+            ),
+        );
+
+        like(
+            $buffer,
+            qr/\Q$expect/,
+            "written-out database includes expected data for one subnet - $desc"
+        );
+
+        _test_metadata( $buffer, $desc );
+    }
 }
 
 done_testing();
 
 sub _write_tree {
+    my $record_size = shift;
     my $subnets  = shift;
     my $metadata = shift;
 
@@ -94,7 +103,7 @@ sub _write_tree {
 
     my $writer = MaxMind::IPDB::Writer::Tree::File->new(
         tree          => $tree,
-        record_size   => 24,
+        record_size   => $record_size,
         database_type => 'Test',
         languages     => [ 'en', 'zh' ],
         description   => {
