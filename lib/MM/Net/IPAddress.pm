@@ -97,7 +97,8 @@ sub as_bit_string {
     my $self = shift;
 
     if ( $self->version == 6 ) {
-        my $bin = Math::BigInt->new( $self->as_integer )->as_bin;
+        my $bin =$self->as_integer()->as_bin();
+
         $bin =~ s/^0b//;
         return sprintf( '%0128s', $bin );
     }
