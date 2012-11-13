@@ -183,10 +183,10 @@ __END__
 
 =head1 DESCRIPTION
 
-This module is an object which represents a single IP address. It can handle
-both IPv4 and IPv6 addresses. It provides various methods for getting
-information about the addresses, and also overloads the objects so that
-addresses can be compared as integers.
+Objects of this class represent a single IP address. It can handle both IPv4
+and IPv6 addresses. It provides various methods for getting information about
+the addresses, and also overloads the objects so that addresses can be
+compared as integers.
 
 For IPv6, it uses big integers (via Math::BigInt) to represent the numeric
 value of an address.
