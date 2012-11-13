@@ -39,7 +39,7 @@ override BUILDARGS => sub {
     my $p = super();
 
     my $ip
-        = $p->{_ip} // $p->{version} == 6
+        = $p->{_ip} // ( $p->{version} && $p->{version} == 6 )
         ? NetAddr::IP->new6( $p->{address} )
         : NetAddr::IP->new( $p->{address} )
         or die "Invalid address: $p->{address}";
