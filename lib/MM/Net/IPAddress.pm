@@ -121,7 +121,7 @@ sub previous_ip {
 
     return __PACKAGE__->new_from_integer(
         integer => $self->as_integer() - 1,
-        version => $self->version()
+        version => $self->version(),
     );
 }
 
