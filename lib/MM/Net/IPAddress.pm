@@ -6,7 +6,6 @@ use warnings;
 # We don't want the pure Perl implementation - it's slow
 use Math::BigInt::GMP;
 
-use bigint;
 use Carp qw( confess );
 use Scalar::Util qw( blessed );
 
@@ -65,7 +64,7 @@ sub as_string {
         : $self->_ip()->addr();
 }
 
-sub as_integer { scalar $_[0]->_ip->numeric }
+sub as_integer { scalar $_[0]->_ip->bigint }
 
 sub as_binary {
     my $self = shift;
