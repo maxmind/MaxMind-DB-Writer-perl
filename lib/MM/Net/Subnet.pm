@@ -58,7 +58,7 @@ override BUILDARGS => sub {
         128 => do { use bigint; 2**128 - 1 },
     );
 
-    sub max_netmask {
+    sub max_netmask_as_integer {
         my $self = shift;
 
         my $base = $self->first()->as_integer();
@@ -268,7 +268,7 @@ sub _split_one_range {
                     subnet  => $first . '/' . $_,
                     version => $version,
                     )
-            } $smallest_subnet->max_netmask() .. $bits
+            } $smallest_subnet->max_netmask_as_integer() .. $bits
         );
 
         push @subnets, $max_network;
@@ -305,7 +305,7 @@ __END__
   while ( my $ip = $iterator->() ) { ... }
 
   my $subnet = MM::Net::Subnet->new( subnet => '1.0.0.4/32' );
-  print $subnet->max_netmask(); # 30
+  print $subnet->max_netmask_as_integer(); # 30
 
   # All methods work with IPv4 and IPv6 subnets
   my $subnet = MM::Net::Subnet->new( subnet => 'a800:f000::/20' );
@@ -364,7 +364,7 @@ Returns the numeric subnet as passed to the constructor.
 Returns the mask length for the subnet, which is either 32 (IPv4) or 128
 (IPv6).
 
-=head2 $subnet->max_netmask()
+=head2 $subnet->max_netmask_as_integer()
 
 This returns the maximum possible numeric subnet that this subnet could fit
 in. In other words, the 1.1.1.0/32 subnet could be part of the 1.1.1.0/24

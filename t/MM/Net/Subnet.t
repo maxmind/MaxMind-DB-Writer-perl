@@ -144,9 +144,9 @@ use MM::Net::Subnet;
         my $net = MM::Net::Subnet->new( subnet => $subnet );
 
         is(
-            $net->max_netmask(),
+            $net->max_netmask_as_integer(),
             $tests{$subnet},
-            "max_netmask for $subnet is $tests{$subnet}"
+            "max_netmask_as_integer for $subnet is $tests{$subnet}"
         );
     }
 }
