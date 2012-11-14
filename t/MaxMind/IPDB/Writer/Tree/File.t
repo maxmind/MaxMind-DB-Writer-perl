@@ -136,7 +136,7 @@ sub _test_metadata {
 
         like(
             $buffer,
-            qr/\xab\xcd\xefMaxMind\.com.*\Q$key/,
+            qr/\xab\xcd\xefMaxMind\.com.*\Q$key/s,
             "written-out database includes metadata key $key - $desc"
         );
     }
