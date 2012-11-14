@@ -340,38 +340,46 @@ sub _split_node {
 }
 
 sub iterate {
-    my $self = shift;
-    my $cb   = shift;
+    my $self   = shift;
+    my $object = shift;
 
     my $ip_integer = 0;
+
+    my $can_process_node = $object->can('process_node');
 
     no warnings 'recursion';
     my $iterator;
     $iterator = sub {
         my $node_num = shift;
 
+        my @records = (
+            $self->get_record( $node_num, LEFT ),
+            $self->get_record( $node_num, RIGHT )
+        );
+
+        if ($can_process_node) {
+            $object->process_node( $node_num, join q{}, @records );
+        }
+
         for my $dir ( LEFT, RIGHT ) {
-            my $value = $self->get_record( $node_num, $dir );
+            my $value = $records[$dir];
 
             if ( my $pointer = $self->record_pointer_value($value) ) {
-                $cb->(
-                    $node_num, $dir,
-                    pointer => $pointer,
+                $object->process_pointer_record(
+                    $node_num, $dir, $pointer,
                 );
 
                 $iterator->($pointer);
             }
             elsif ( $self->record_is_empty($value) ) {
-                $cb->(
-                    $node_num, $dir,
-                    is_empty => 1,
-                );
+                $object->process_empty_record( $node_num, $dir );
             }
             else {
-                $cb->(
-                    $node_num, $dir,
-                    key   => $value,
-                    value => $self->{_data_index}{$value},
+                $object->process_value_record(
+                    $node_num,
+                    $dir,
+                    $value,
+                    $self->{_data_index}{$value},
                 );
             }
         }

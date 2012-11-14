@@ -116,7 +116,7 @@ sub write_tree {
     my $output = shift;
 
     my $cb = sub { $self->_write_record(@_) };
-    $self->_tree()->iterate($cb);
+    $self->_tree()->iterate($self);
 
     $output->print(
         ${ $self->_tree_buffer() },
@@ -126,27 +126,7 @@ sub write_tree {
     );
 }
 
-sub _write_record {
-    my $self     = shift;
-    my $node_num = shift;
-    my $is_right = shift;
-    my %p        = @_;
-
-    if ( $p{pointer} ) {
-        $self->_write_pointer_record( $node_num, $is_right, $p{pointer} );
-    }
-    elsif ( $p{key} ) {
-        $self->_write_value_record(
-            $node_num, $is_right,
-            $p{key},   $p{value}
-        );
-    }
-    else {
-        $self->_write_empty_record( $node_num, $is_right );
-    }
-}
-
-sub _write_pointer_record {
+sub process_pointer_record {
     my $self     = shift;
     my $node_num = shift;
     my $is_right = shift;
@@ -157,7 +137,7 @@ sub _write_pointer_record {
     return;
 }
 
-sub _write_value_record {
+sub process_value_record {
     my $self     = shift;
     my $node_num = shift;
     my $is_right = shift;
@@ -180,7 +160,7 @@ sub _write_value_record {
     return;
 }
 
-sub _write_empty_record {
+sub process_empty_record {
     my $self     = shift;
     my $node_num = shift;
     my $is_right = shift;
