@@ -294,12 +294,19 @@ sub _split_node {
     my $node_netmask   = shift;
     my $version        = shift;
 
-    my $bits = $version == 6 ? do { use bigint; 128 } : 32;
+    my $bits = $version == 6 ? 128 : 32;
 
-    my $t               = ~0 << ( $bits - $subnet_netmask + $node_netmask );
-    my $old_start_ipnum = $start_ipnum & $t;
-    my $old_end_ipnum   = ~$t + $old_start_ipnum;
-    my $end_ipnum = $start_ipnum | ~( ~0 << ( $bits - $subnet_netmask ) );
+    my $old_start_ipnum;
+    my $old_end_ipnum;
+    my $end_ipnum;
+
+    {
+        use bigint;
+        my $t = ~0 << ( $bits - $subnet_netmask + $node_netmask );
+        $old_start_ipnum = $start_ipnum & $t;
+        $old_end_ipnum   = ~$t + $old_start_ipnum;
+        $end_ipnum = $start_ipnum | ~( ~0 << ( $bits - $subnet_netmask ) );
+    }
 
     my @subnets;
     if ( $old_start_ipnum < $start_ipnum ) {
