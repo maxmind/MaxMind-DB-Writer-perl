@@ -217,13 +217,20 @@ If a record contained the value 6,000, the formula would give us an offset of
 When storing IPv4 addresses in an IPv6 tree, they are stored as-is, so they
 occupy the first 32-bits of the address space (from 0 to 2**32 - 1).
 
-The tree **must** include a pointer from the `::ffff:0:0/80` subnet to the
-root node of the IPv4 address space in the tree. This accounts for the
+Creators of databases should decide on a strategy for handling the various
+mappings between IPv4 and IPv6.
+
+The strategy that MaxMind uses for its GeoIP databases is to include a pointer
+from the `::ffff:0:0/80` subnet to the root node of the IPv4 address space in
+the tree. This accounts for the
 [IPv4-mapped IPv6 address](http://en.wikipedia.org/wiki/IPv6#IPv4-mapped_IPv6_addresses).
 
-It also **must** include a pointer from the `2002::/16` subnet to the root
-node of the IPv4 address space in the tree. This accounts for the
+MaxMind also includes a pointer from the `2002::/16` subnet to the root node
+of the IPv4 address space in the tree. This accounts for the
 [6to4 mapping](http://en.wikipedia.org/wiki/6to4) subnet.
+
+Database creators are encouraged to document whether they are doing something
+similar for their databases.
 
 The Teredo subnet cannot be accounted for in the tree. Instead, code that
 searches the tree can offer to decode the IPv4 portion of a Teredo address and
