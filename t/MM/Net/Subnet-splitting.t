@@ -457,9 +457,9 @@ sub _test_range_as_subnets {
             "subnet last matches expected last - split $start - $end ($last)"
         );
 
-        my $netmask = $expect->netmask();
+        my $netmask = $expect->netmask_as_integer();
         is(
-            $got->netmask(),
+            $got->netmask_as_integer(),
             $netmask,
             "netmask matches expected netmask - split $start - $end ($netmask)"
         );

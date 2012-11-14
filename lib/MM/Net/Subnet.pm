@@ -17,9 +17,9 @@ has _netmask => (
     is      => 'ro',
     isa     => 'NetAddr::IP',
     handles => {
-        netmask     => 'masklen',
-        mask_length => 'bits',
-        version     => 'version',
+        netmask_as_integer => 'masklen',
+        mask_length        => 'bits',
+        version            => 'version',
     },
 );
 
@@ -63,7 +63,7 @@ override BUILDARGS => sub {
 
         my $base = $self->first()->as_integer();
 
-        my $netmask = $self->netmask();
+        my $netmask = $self->netmask_as_integer();
 
         my $bits = $self->_netmask()->bits();
         while ($netmask) {
@@ -290,10 +290,10 @@ __END__
 =head1 SYNOPSIS
 
   my $subnet = MM::Net::Subnet->new( subnet => '1.0.0.0/24' );
-  print $subnet->as_string();   # 1.0.0.0/28
-  print $subnet->netmask();     # 24
-  print $subnet->mask_length(); # 32
-  print $subnet->version();     # 4
+  print $subnet->as_string();          # 1.0.0.0/28
+  print $subnet->netmask_as_integer(); # 24
+  print $subnet->mask_length();        # 32
+  print $subnet->version();            # 4
 
   my $first = $subnet->first();
   print $first->as_string();    # 1.0.0.0
@@ -355,7 +355,7 @@ Returns a string representation of the subnet like "1.0.0.0/24" or
 
 Returns a 4 or 6 to indicate whether this is an IPv4 or IPv6 subnet.
 
-=head2 $subnet->netmask()
+=head2 $subnet->netmask_as_integer()
 
 Returns the numeric subnet as passed to the constructor.
 

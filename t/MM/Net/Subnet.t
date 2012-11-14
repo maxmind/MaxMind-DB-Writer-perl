@@ -15,7 +15,7 @@ use MM::Net::Subnet;
     );
 
     is(
-        $net->netmask(),
+        $net->netmask_as_integer(),
         28,
         'netmask is 28'
     );
@@ -63,7 +63,7 @@ use MM::Net::Subnet;
     );
 
     is(
-        $net->netmask(),
+        $net->netmask_as_integer(),
         120,
         'netmask is 120',
     );

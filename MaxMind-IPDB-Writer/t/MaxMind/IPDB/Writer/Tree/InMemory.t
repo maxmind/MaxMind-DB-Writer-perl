@@ -325,7 +325,7 @@ sub _subnet_as_v6 {
     my $subnet_string
         = '::'
         . $subnet->first()->as_string() . '/'
-        . ( $subnet->netmask() + 96 );
+        . ( $subnet->netmask_as_integer() + 96 );
 
     return MM::Net::Subnet->new(
         subnet  => $subnet_string,
