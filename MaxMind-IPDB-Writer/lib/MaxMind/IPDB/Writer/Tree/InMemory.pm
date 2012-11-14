@@ -235,7 +235,7 @@ sub _find_cached_node {
     my $one_idx = index(
         sprintf(
             "%${mask_length}b",
-            do { use bigint; $cached_ipnum ^ $ipnum }
+            $cached_ipnum ^ $ipnum
         ),
         1
     );
