@@ -13,6 +13,15 @@ use Regexp::Common qw( RE_num_real );
 use Moose;
 use MooseX::StrictConstructor;
 
+has _map_key_type_callback => (
+    is       => 'ro',
+    isa      => 'CodeRef',
+    init_arg => 'map_key_type_callback',
+    default  => sub {
+        sub { }
+    },
+);
+
 has _output => (
     is       => 'ro',
     isa      => 'FileHandle',
@@ -143,22 +152,13 @@ sub encode_array {
 
 {
     my %KnownKeys = (
-        area_code                   => 'utf8_string',
         binary_format_major_version => 'uint16',
         binary_format_minor_version => 'uint16',
         build_epoch                 => 'uint64',
         database_type               => 'utf8_string',
-        description                 => 'map',
-        geonames_id                 => 'uint32',
         ip_version                  => 'uint16',
         languages                   => [ 'array', 'utf8_string' ],
-        latitude                    => 'double',
-        location_id                 => 'uint32',
-        longitude                   => 'double',
-        metro_code                  => 'uint16',
-        name                        => 'map',
         node_count                  => 'uint32',
-        postal_code                 => 'utf8_string',
         record_size                 => 'uint32',
     );
 
@@ -166,24 +166,13 @@ sub encode_array {
         my $self = shift;
         my $key  = shift;
 
-        if ( $self->_looks_like_locale_id($key) ) {
-            return 'utf8_string';
-        }
-        else {
-            die
-                qq{The hash key "$key" is not a locale id or a known key so we don't know what type it is.}
-                unless $KnownKeys{$key};
+        my $type = $self->_map_key_type_callback->($key) || $KnownKeys{$key};
 
-            return $KnownKeys{$key};
-        }
+        die qq{Could not determine the type for map key "$key"}
+            unless $type;
+
+        return $type;
     }
-}
-
-sub _looks_like_locale_id {
-    my $self = shift;
-    my $key  = shift;
-
-    return $key =~ /^[a-z]{2,3}(?:-[A-Z]{2})?$/;
 }
 
 sub encode_int32 {
