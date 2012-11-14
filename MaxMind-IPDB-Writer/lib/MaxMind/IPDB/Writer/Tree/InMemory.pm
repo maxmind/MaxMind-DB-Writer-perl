@@ -181,8 +181,8 @@ sub insert_subnet {
 
     while ( --$node_netmask ) {
         $cache->{node_num_cache}[ $idx++ ] = $node;
-        my $direction = do { use bigint; ( $bit_to_check & $ipnum ) }
-            ? RIGHT : LEFT;
+
+        my $direction = $self->_direction( $ipnum, $bit_to_check );
         my $record = $self->get_record( $node, $direction );
 
         if ( my $next_node = $self->record_pointer_value($record) ) {
@@ -203,8 +203,8 @@ sub insert_subnet {
     }
 
     $cache->{node_num_cache}[$idx] = $node;
-    my $direction = do { use bigint; ( $bit_to_check & $ipnum ) }
-        ? RIGHT : LEFT;
+
+    my $direction = $self->_direction( $ipnum, $bit_to_check );
 
     $self->set_record( $node, $direction, $key );
 
@@ -252,6 +252,14 @@ sub _find_cached_node {
         $netmask - $cache_idx,
         $default_mask >> $cache_idx,
     );
+}
+
+sub _direction {
+    my $self         = shift;
+    my $ipnum        = shift;
+    my $bit_to_check = shift;
+
+    return $bit_to_check & $ipnum ? RIGHT : LEFT;
 }
 
 sub _make_new_node {
