@@ -31,7 +31,7 @@ has _node_buffers => (
     default  => sub { [] },
 );
 
-has _allocated_node_count  => (
+has _allocated_node_count => (
     is       => 'ro',
     isa      => 'Int',
     init_arg => undef,
@@ -49,7 +49,7 @@ has _used_node_count => (
     is       => 'ro',
     isa      => 'Int',
     init_arg => undef,
-    default => 0,
+    default  => 0,
 );
 
 has _insert_cache => (
@@ -130,12 +130,10 @@ sub _record {
         && length ${ $self->{_node_buffers}[$ptr_idx] } >= $pos + $length;
 
     if ( !$record ) {
-        return
-            substr( ${ $self->{_node_buffers}[$ptr_idx] }, $pos, $length );
+        return substr( ${ $self->{_node_buffers}[$ptr_idx] }, $pos, $length );
     }
 
-    substr( ${ $self->{_node_buffers}[$ptr_idx] }, $pos, $length )
-        = $record;
+    substr( ${ $self->{_node_buffers}[$ptr_idx] }, $pos, $length ) = $record;
 
     return;
 }
@@ -220,7 +218,7 @@ sub _find_cached_node {
     my $ipnum   = $subnet->first()->as_integer();
     my $netmask = $subnet->netmask_as_integer();
 
-    my $mask_length = $subnet->mask_length();
+    my $mask_length  = $subnet->mask_length();
     my $default_mask = $self->_all_ones_mask($mask_length);
 
     my $cache = $self->_insert_cache();
@@ -298,7 +296,7 @@ sub _split_node {
 
     my $bits = $version == 6 ? do { use bigint; 128 } : 32;
 
-    my $t = ~0 << ( $bits - $subnet_netmask + $node_netmask );
+    my $t               = ~0 << ( $bits - $subnet_netmask + $node_netmask );
     my $old_start_ipnum = $start_ipnum & $t;
     my $old_end_ipnum   = ~$t + $old_start_ipnum;
     my $end_ipnum = $start_ipnum | ~( ~0 << ( $bits - $subnet_netmask ) );
