@@ -175,7 +175,7 @@ sub insert_subnet {
 
     my $cache = $self->_insert_cache();
     $cache->{last_ipnum}   = $ipnum;
-    $cache->{last_netmask} = $subnet->netmask();
+    $cache->{last_netmask} = $subnet->netmask_as_integer();
 
     local $self->{_needs_move} = {};
 
@@ -218,7 +218,7 @@ sub _find_cached_node {
     my $subnet = shift;
 
     my $ipnum   = $subnet->first()->as_integer();
-    my $netmask = $subnet->netmask();
+    my $netmask = $subnet->netmask_as_integer();
 
     my $mask_length = $subnet->mask_length();
     my $default_mask = $self->_all_ones_mask($mask_length);
@@ -270,7 +270,7 @@ sub _make_new_node {
     unless ( $self->record_is_empty($record) ) {
         $self->{_needs_move}{subnets} = $self->_split_node(
             $ipnum,
-            $subnet->netmask(),
+            $subnet->netmask_as_integer(),
             $node_netmask,
             $subnet->version()
         );
