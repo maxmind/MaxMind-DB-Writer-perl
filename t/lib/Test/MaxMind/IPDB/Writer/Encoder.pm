@@ -42,7 +42,10 @@ sub test_encoding_of_type {
         my $output;
         open my $fh, '>', \$output;
 
-        my $encoder = MaxMind::IPDB::Writer::Encoder->new( output => $fh );
+        my $encoder = MaxMind::IPDB::Writer::Encoder->new(
+            output                => $fh,
+            map_key_type_callback => \&_map_key_type,
+        );
 
         $encoder->$encode_method(
             $input,
@@ -55,6 +58,27 @@ sub test_encoding_of_type {
             $desc
         );
     }
+}
+
+my %geoip_keys = (
+    area_code   => 'utf8_string',
+    description => 'map',
+    geonames_id => 'uint32',
+    latitude    => 'double',
+    location_id => 'uint32',
+    longitude   => 'double',
+    metro_code  => 'uint16',
+    name        => 'map',
+    postal_code => 'utf8_string',
+);
+
+sub _map_key_type {
+    my $key  = shift;
+
+    # locale id
+    return 'utf8_string' if $key =~ /^[a-z]{2,3}(?:-[A-Z]{2})?$/;
+
+    return $geoip_keys{$key};
 }
 
 1;
