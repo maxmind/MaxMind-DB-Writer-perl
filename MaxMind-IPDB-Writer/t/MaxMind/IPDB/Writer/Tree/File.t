@@ -111,6 +111,7 @@ sub _write_tree {
             zh => 'Test Database Chinese',
         },
         %{$metadata},
+        map_key_type_callback => sub { 'utf8_string' },
     );
 
     my $buffer;

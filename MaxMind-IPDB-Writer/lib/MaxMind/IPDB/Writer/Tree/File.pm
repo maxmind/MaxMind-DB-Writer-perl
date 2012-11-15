@@ -15,6 +15,13 @@ use Moose;
 use Moose::Util::TypeConstraints;
 use MooseX::StrictConstructor;
 
+has _map_key_type_callback => (
+    is        => 'ro',
+    isa       => 'CodeRef',
+    init_arg  => 'map_key_type_callback',
+    predicate => '_has_map_key_type_callback',
+);
+
 has _tree => (
     is       => 'ro',
     isa      => 'MaxMind::IPDB::Writer::Tree::InMemory',
@@ -239,6 +246,7 @@ sub _encoded_metadata {
     open my $fh, '>', \$buffer;
 
     my $encoder = MaxMind::IPDB::Writer::Encoder->new( output => $fh );
+
     $encoder->encode_map( $metadata->metadata_to_encode() );
 
     return $buffer;
@@ -262,7 +270,13 @@ sub _build_tree_buffer {
 sub _build_serializer {
     my $self = shift;
 
-    return MaxMind::IPDB::Writer::Serializer->new();
+    return MaxMind::IPDB::Writer::Serializer->new(
+        (
+            $self->_has_map_key_type_callback()
+            ? ( map_key_type_callback => $self->_map_key_type_callback() )
+            : ()
+        ),
+    );
 }
 
 __PACKAGE__->meta()->make_immutable();

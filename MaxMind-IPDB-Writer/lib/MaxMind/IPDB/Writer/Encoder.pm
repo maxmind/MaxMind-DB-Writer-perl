@@ -156,6 +156,7 @@ sub encode_array {
         binary_format_minor_version => 'uint16',
         build_epoch                 => 'uint64',
         database_type               => 'utf8_string',
+        description                 => 'utf8_string',
         ip_version                  => 'uint16',
         languages                   => [ 'array', 'utf8_string' ],
         node_count                  => 'uint32',
