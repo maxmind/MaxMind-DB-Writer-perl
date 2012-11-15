@@ -3,8 +3,6 @@ package MaxMind::IPDB::Writer::Tree::InMemory;
 use strict;
 use warnings;
 
-our $VERSION = '0.34';
-
 use Carp qw( confess );
 use Digest::MD5 qw( md5 );
 use JSON::XS;
