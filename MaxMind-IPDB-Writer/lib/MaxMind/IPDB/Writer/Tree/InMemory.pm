@@ -250,6 +250,16 @@ sub _find_cached_node {
     );
 }
 
+sub _all_ones_mask {
+    my $self = shift;
+    my $bits = shift;
+
+    return 2**31 if $bits == 32;
+
+    use bigint;
+    return 2**127;
+}
+
 sub _direction {
     my $self         = shift;
     my $ipnum        = shift;
@@ -338,16 +348,28 @@ sub _split_node {
 }
 
 sub iterate {
-    my $self   = shift;
-    my $object = shift;
+    my $self              = shift;
+    my $object            = shift;
+    my $starting_node_num = shift || $self->root_node_num();
 
     my $ip_integer = 0;
 
+    my $iterator = $self->_make_iterator($object);
+
+    $iterator->($starting_node_num);
+
+    return;
+}
+
+sub _make_iterator {
+    my $self   = shift;
+    my $object = shift;
+
     my $can_process_node = $object->can('process_node');
 
-    no warnings 'recursion';
     my $iterator;
     $iterator = sub {
+        no warnings 'recursion';
         my $node_num = shift;
 
         my @records = (
@@ -355,9 +377,8 @@ sub iterate {
             $self->get_record( $node_num, RIGHT )
         );
 
-        if ($can_process_node) {
-            $object->process_node( $node_num, join q{}, @records );
-        }
+        $object->process_node( $node_num, @records )
+            if $can_process_node;
 
         for my $dir ( LEFT, RIGHT ) {
             my $value = $records[$dir];
@@ -383,9 +404,7 @@ sub iterate {
         }
     };
 
-    $iterator->( $self->root_node_num() );
-
-    return;
+    return $iterator;
 }
 
 # XXX - for testing only - eventually this may go away once the internals are
@@ -394,37 +413,45 @@ sub lookup_ip_address {
     my $self    = shift;
     my $address = shift;
 
-    my $num = $address->as_integer();
+    my $value;
+    my $find_value = sub {
+        my $node_num = shift;
+        my $record   = shift;
 
-    my $mask = $self->_all_ones_mask( $address->mask_length() );
-
-    my $node = $self->root_node_num();
-
-    while ($mask) {
-        my $side = $mask & $num ? RIGHT : LEFT;
-        my $record = $self->get_record( $node, $side );
-
-        return undef if $self->record_is_empty($record);
-
-        unless ( $node = $self->record_pointer_value($record) ) {
-            confess 'Found a terminal record that is not in our data store'
-                unless exists $self->{_data_index}{$record};
-
-            return $self->{_data_index}{$record};
+        if ( $self->record_is_empty($record) ) {
+            $value = undef;
+            return 0;
         }
 
-        $mask >>= 1;
-    }
+        if ( $node_num = $self->record_pointer_value($record) ) {
+            return $node_num;
+        }
+
+        confess 'Found a terminal record that is not in our data store'
+            unless exists $self->{_data_index}{$record};
+
+        $value = $self->{_data_index}{$record};
+
+        return 0;
+    };
+
+    $self->_search_tree( $address, $find_value );
+
+    return $value;
 }
 
-sub _all_ones_mask {
-    my $self = shift;
-    my $bits = shift;
+sub _search_tree {
+    my $self      = shift;
+    my $address   = shift;
+    my $cb        = shift;
 
-    return 2**31 if $bits == 32;
+    my $node_num = $self->root_node_num();
 
-    use bigint;
-    return 2**127;
+    for my $bit ( split //, $address->as_bit_string() ) {
+        my $record = $self->get_record( $node_num, $bit );
+
+        last unless $node_num = $cb->( $node_num, $record );
+    }
 }
 
 __PACKAGE__->meta()->make_immutable();
