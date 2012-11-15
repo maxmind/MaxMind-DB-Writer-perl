@@ -29,6 +29,13 @@ has buffer => (
     },
 );
 
+has _map_key_type_callback => (
+    is        => 'ro',
+    isa       => 'CodeRef',
+    init_arg  => 'map_key_type_callback',
+    predicate => '_has_map_key_type_callback',
+);
+
 has _cache => (
     traits   => ['Hash'],
     is       => 'ro',
@@ -172,7 +179,14 @@ sub _build_encoder {
     my $buffer = $self->buffer();
     open my $fh, '>', $buffer;
 
-    return MaxMind::IPDB::Writer::Encoder->new( output => $fh );
+    return MaxMind::IPDB::Writer::Encoder->new(
+        output => $fh,
+        (
+            $self->_has_map_key_type_callback()
+            ? ( map_key_type_callback => $self->_map_key_type_callback() )
+            : ()
+        ),
+    );
 }
 
 __PACKAGE__->meta()->make_immutable();
