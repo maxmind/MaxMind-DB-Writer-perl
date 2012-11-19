@@ -7,6 +7,7 @@ use namespace::autoclean;
 use IO::Handle;
 use Math::BigInt;
 use Math::Round qw( round );
+use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use MaxMind::IPDB::Metadata;
 use MaxMind::IPDB::Writer::Encoder;
 use MaxMind::IPDB::Writer::Serializer;
@@ -133,6 +134,10 @@ sub write_tree {
     );
 }
 
+sub directions_for_node {
+    return ( LEFT_RECORD, RIGHT_RECORD );
+}
+
 sub process_pointer_record {
     my $self     = shift;
     my $node_num = shift;
@@ -141,7 +146,7 @@ sub process_pointer_record {
 
     $self->_encode_record( $node_num, $is_right, $pointer );
 
-    return;
+    return 1;
 }
 
 sub process_value_record {
@@ -164,7 +169,7 @@ sub process_value_record {
         $self->{_seen_data}{$key} = $pointer;
     }
 
-    return;
+    return 1;
 }
 
 sub process_empty_record {
@@ -173,6 +178,8 @@ sub process_empty_record {
     my $is_right = shift;
 
     $self->_encode_record( $node_num, $is_right, 0 );
+
+    return 1;
 }
 
 sub _encode_record {

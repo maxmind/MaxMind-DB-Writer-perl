@@ -7,6 +7,7 @@ use Carp qw( confess );
 use Digest::MD5 qw( md5 );
 use JSON::XS;
 use List::Util qw( min );
+use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use Scalar::Util qw( blessed );
 
 use Moose;
@@ -56,11 +57,6 @@ has _insert_cache => (
     init_arg => undef,
     default  => sub { {} },
 );
-
-use constant {
-    LEFT  => 0,
-    RIGHT => 1,
-};
 
 use constant {
     _RECORD_SIZE          => 16,
@@ -265,7 +261,7 @@ sub _direction {
     my $ipnum        = shift;
     my $bit_to_check = shift;
 
-    return $bit_to_check & $ipnum ? RIGHT : LEFT;
+    return $bit_to_check & $ipnum ? RIGHT_RECORD : LEFT_RECORD;
 }
 
 sub _make_new_node {
@@ -372,34 +368,35 @@ sub _make_iterator {
         no warnings 'recursion';
         my $node_num = shift;
 
-        my @records = (
-            $self->get_record( $node_num, LEFT ),
-            $self->get_record( $node_num, RIGHT )
-        );
+        my @directions = $object->directions_for_node($node_num);
 
-        $object->process_node( $node_num, @records )
+        my %records
+            = map { $_ => $self->get_record( $node_num, $_ ) } @directions;
+
+        $object->process_node( $node_num, %records )
             if $can_process_node;
 
-        for my $dir ( LEFT, RIGHT ) {
-            my $value = $records[$dir];
+        for my $dir (@directions) {
+            my $value = $records{$dir};
 
             if ( my $pointer = $self->record_pointer_value($value) ) {
-                $object->process_pointer_record(
+                last unless $object->process_pointer_record(
                     $node_num, $dir, $pointer,
                 );
 
                 $iterator->($pointer);
             }
             elsif ( $self->record_is_empty($value) ) {
-                $object->process_empty_record( $node_num, $dir );
+                last unless $object->process_empty_record( $node_num, $dir );
             }
             else {
-                $object->process_value_record(
+                last
+                    unless $object->process_value_record(
                     $node_num,
                     $dir,
                     $value,
                     $self->{_data_index}{$value},
-                );
+                    );
             }
         }
     };
@@ -407,51 +404,19 @@ sub _make_iterator {
     return $iterator;
 }
 
-# XXX - for testing only - eventually this may go away once the internals are
-# cleaned up and there are better tests of the internals.
+# XXX - this method is only used for testing, but it's useful to have
 sub lookup_ip_address {
     my $self    = shift;
     my $address = shift;
 
-    my $value;
-    my $find_value = sub {
-        my $node_num = shift;
-        my $record   = shift;
+    require MaxMind::IPDB::Writer::Tree::Processor::LookupIPAddress;
 
-        if ( $self->record_is_empty($record) ) {
-            $value = undef;
-            return 0;
-        }
+    my $lookup = MaxMind::IPDB::Writer::Tree::Processor::LookupIPAddress->new(
+        ip_address => $address );
 
-        if ( $node_num = $self->record_pointer_value($record) ) {
-            return $node_num;
-        }
+    $self->iterate($lookup);
 
-        confess 'Found a terminal record that is not in our data store'
-            unless exists $self->{_data_index}{$record};
-
-        $value = $self->{_data_index}{$record};
-
-        return 0;
-    };
-
-    $self->_search_tree( $address, $find_value );
-
-    return $value;
-}
-
-sub _search_tree {
-    my $self      = shift;
-    my $address   = shift;
-    my $cb        = shift;
-
-    my $node_num = $self->root_node_num();
-
-    for my $bit ( split //, $address->as_bit_string() ) {
-        my $record = $self->get_record( $node_num, $bit );
-
-        last unless $node_num = $cb->( $node_num, $record );
-    }
+    return $lookup->value();
 }
 
 __PACKAGE__->meta()->make_immutable();
