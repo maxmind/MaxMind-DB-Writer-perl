@@ -122,8 +122,14 @@ my $id = 0;
 {
     package TreeIterator;
 
+    use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
+
     sub new {
         bless {}, shift;
+    }
+
+    sub directions_for_node {
+        return ( LEFT_RECORD, RIGHT_RECORD );
     }
 
     sub process_node {
@@ -133,8 +139,15 @@ my $id = 0;
         $self->{nodes}{$node_num}++;
     }
 
-    sub process_pointer_record { shift->_saw_record(@_) }
-    sub process_empty_record   { shift->_saw_record(@_) }
+    sub process_pointer_record {
+        shift->_saw_record(@_);
+        return 1;
+    }
+
+    sub process_empty_record {
+        shift->_saw_record(@_);
+        return 1;
+    }
 
     sub process_value_record {
         my $self     = shift;
@@ -146,6 +159,8 @@ my $id = 0;
         $self->_saw_record( $node_num, $dir );
 
         push @{ $self->{values} }, $value;
+
+        return 1;
     }
 
     sub _saw_record {
