@@ -209,7 +209,6 @@ sub _find_cached_node {
     my $self   = shift;
     my $subnet = shift;
 
-    my $ipnum   = $subnet->first()->as_integer();
     my $netmask = $subnet->netmask_as_integer();
 
     my $mask_length  = $subnet->mask_length();
@@ -220,16 +219,11 @@ sub _find_cached_node {
     my $cached_ipnum = $cache->{last_ipnum};
 
     return ( $self->root_node_num(), 0, $netmask, $default_mask )
-        unless $cached_ipnum;
+        if $ENV{MAXMIND_IPDB_WRITER_NO_CACHE} || ! $cached_ipnum;
 
-    # Finds the position (as a count of bits) of the first 1 that is in both
-    # the cached number and the number we're inserting.
-    my $one_idx = index(
-        sprintf(
-            "%${mask_length}b",
-            $cached_ipnum ^ $ipnum
-        ),
-        1
+    my $one_idx = $self->_first_shared_bit(
+        $subnet->first()->as_integer(),
+        $cached_ipnum,
     );
 
     my $cache_idx = min(
@@ -244,6 +238,29 @@ sub _find_cached_node {
         $netmask - $cache_idx,
         $default_mask >> $cache_idx,
     );
+}
+
+# Finds the position (as a count of bits) of the first 1 that is in both the
+# cached number and the number we're inserting.
+sub _first_shared_bit {
+    my $self   = shift;
+    my $ipnum1 = shift;
+    my $ipnum2 = shift;
+
+    my $xor_ipnum = $ipnum1 ^ $ipnum2;
+    my $string;
+
+    if ( blessed($xor_ipnum) ) {
+        my $bin = $xor_ipnum->as_bin();
+
+        $bin =~ s/^0b//;
+        $string = sprintf( '%128s', $bin );
+    }
+    else {
+        $string = sprintf( '%32b', $xor_ipnum );
+    }
+
+    return index( $string, '1' );
 }
 
 sub _all_ones_mask {
