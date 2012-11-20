@@ -21,12 +21,36 @@ my $id = 0;
 }
 
 {
+    my @ipv4_subnets = (
+        MM::Net::Subnet->range_as_subnets( '1.1.1.1',  '1.1.1.32' ),
+        MM::Net::Subnet->range_as_subnets( '16.1.1.1', '16.1.3.2' ),
+    );
+
+    _test_subnet_permutations( \@ipv4_subnets, 'IPv4 - two distinct ranges' );
+}
+
+{
     my @ipv6_subnets = MM::Net::Subnet->range_as_subnets(
         '::1:ffff:ffff',
         '::2:0000:0059'
     );
 
     _test_subnet_permutations( \@ipv6_subnets, 'IPv6' );
+}
+
+{
+    my @ipv6_subnets = (
+        MM::Net::Subnet->range_as_subnets(
+            '::1:ffff:ffff',
+            '::2:0000:0001'
+        ),
+        MM::Net::Subnet->range_as_subnets(
+            '2002::abcd',
+            '2002::abd4',
+        )
+    );
+
+    _test_subnet_permutations( \@ipv6_subnets, 'IPv6 - two distinct ranges' );
 }
 
 {
@@ -137,6 +161,8 @@ my $id = 0;
         my $node_num = shift;
 
         $self->{nodes}{$node_num}++;
+
+        return 1;
     }
 
     sub process_pointer_record {
