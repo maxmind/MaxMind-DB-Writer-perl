@@ -34,6 +34,10 @@ sub directions_for_node {
     return shift @{ $self->_ip_address_bits() };
 }
 
+sub process_node {
+    return 1;
+}
+
 sub process_pointer_record {
     return 1;
 }
