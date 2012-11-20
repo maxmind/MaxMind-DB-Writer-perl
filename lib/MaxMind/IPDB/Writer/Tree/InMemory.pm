@@ -157,6 +157,8 @@ sub insert_subnet {
     my $subnet = shift;
     my $data   = shift;
 
+    $self->{_saw_ipv6} ||= $subnet->version() == 6;
+
     my $key = md5( $Encoder->encode($data) );
     $self->{_data_index}{$key} ||= $data;
 
@@ -378,41 +380,68 @@ sub _make_iterator {
     my $self   = shift;
     my $object = shift;
 
-    my $can_process_node = $object->can('process_node');
+    my $max_netmask = $self->{_saw_ipv6} ? do { use bigint; 128 } : 32;
 
     my $iterator;
     $iterator = sub {
         no warnings 'recursion';
         my $node_num = shift;
+        my $ip_num   = shift || 0;
+        my $netmask  = shift || 1;
 
         my @directions = $object->directions_for_node($node_num);
 
         my %records
             = map { $_ => $self->get_record( $node_num, $_ ) } @directions;
 
-        $object->process_node( $node_num, %records )
-            if $can_process_node;
+        return
+            unless $object->process_node(
+            $node_num,
+            \%records,
+            $ip_num,
+            $netmask,
+            );
 
         for my $dir (@directions) {
             my $value = $records{$dir};
 
-            if ( my $pointer = $self->record_pointer_value($value) ) {
-                last unless $object->process_pointer_record(
-                    $node_num, $dir, $pointer,
-                );
+            my $next_ip_num
+                = $dir
+                ? $ip_num + ( 2**( $max_netmask - $netmask ) )
+                : $ip_num;
 
-                $iterator->($pointer);
+            if ( my $pointer = $self->record_pointer_value($value) ) {
+                return
+                    unless $object->process_pointer_record(
+                    $node_num,
+                    $dir,
+                    $pointer,
+                    $ip_num,
+                    $netmask,
+                    $next_ip_num,
+                    $netmask + 1
+                    );
+
+                $iterator->( $pointer, $next_ip_num, $netmask + 1 );
             }
             elsif ( $self->record_is_empty($value) ) {
-                last unless $object->process_empty_record( $node_num, $dir );
+                return
+                    unless $object->process_empty_record(
+                    $node_num,
+                    $dir,
+                    $ip_num,
+                    $netmask,
+                    );
             }
             else {
-                last
+                return
                     unless $object->process_value_record(
                     $node_num,
                     $dir,
                     $value,
                     $self->{_data_index}{$value},
+                    $ip_num,
+                    $netmask,
                     );
             }
         }
@@ -428,12 +457,51 @@ sub lookup_ip_address {
 
     require MaxMind::IPDB::Writer::Tree::Processor::LookupIPAddress;
 
-    my $lookup = MaxMind::IPDB::Writer::Tree::Processor::LookupIPAddress->new(
+    my $processor = MaxMind::IPDB::Writer::Tree::Processor::LookupIPAddress->new(
         ip_address => $address );
 
-    $self->iterate($lookup);
+    $self->iterate($processor);
 
-    return $lookup->value();
+    return $processor->value();
+}
+
+sub node_num_for_subnet {
+    my $self   = shift;
+    my $subnet = shift;
+
+    my ( $node_num, $dir ) = $self->pointer_record_for_subnet($subnet);
+
+    return $self->record_pointer_value(
+        $self->get_record( $node_num, $dir ) );
+}
+
+sub pointer_record_for_subnet {
+    my $self   = shift;
+    my $subnet = shift;
+
+    require MaxMind::IPDB::Writer::Tree::Processor::RecordForSubnet;
+
+    my $processor
+        = MaxMind::IPDB::Writer::Tree::Processor::RecordForSubnet->new(
+        subnet => $subnet );
+
+    $self->iterate($processor);
+
+    return @{ $processor->record() };
+}
+
+sub node_count_under_node {
+    my $self     = shift;
+    my $node_num = shift;
+
+    require MaxMind::IPDB::Writer::Tree::Processor::NodeCounter;
+
+    my $processor
+        = MaxMind::IPDB::Writer::Tree::Processor::NodeCounter->new();
+
+    $self->iterate( $processor, $node_num );
+
+    return $processor->node_count();
 }
 
 __PACKAGE__->meta()->make_immutable();
