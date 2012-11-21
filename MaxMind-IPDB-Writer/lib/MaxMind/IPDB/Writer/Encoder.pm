@@ -124,7 +124,7 @@ sub encode_map {
     for my $k ( sort keys %{$map} ) {
         $self->encode_utf8_string($k);
 
-        my $value_type = $self->_type_for_key($k);
+        my $value_type = $self->_type_for_key( $k, $map->{$k} );
         my $array_value_type;
 
         if ( ref $value_type ) {
@@ -156,7 +156,7 @@ sub encode_array {
         binary_format_minor_version => 'uint16',
         build_epoch                 => 'uint64',
         database_type               => 'utf8_string',
-        description                 => 'utf8_string',
+        description                 => 'map',
         ip_version                  => 'uint16',
         languages                   => [ 'array', 'utf8_string' ],
         node_count                  => 'uint32',
@@ -164,10 +164,12 @@ sub encode_array {
     );
 
     sub _type_for_key {
-        my $self = shift;
-        my $key  = shift;
+        my $self  = shift;
+        my $key   = shift;
+        my $value = shift;
 
-        my $type = $self->_map_key_type_callback->($key) || $KnownKeys{$key};
+        my $type = $self->_map_key_type_callback->( $key, $value )
+            || $KnownKeys{$key};
 
         die qq{Could not determine the type for map key "$key"}
             unless $type;
