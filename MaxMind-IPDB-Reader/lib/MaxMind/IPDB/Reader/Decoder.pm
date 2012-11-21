@@ -18,6 +18,10 @@ with 'MaxMind::IPDB::Role::Debugs', 'MaxMind::IPDB::Reader::Role::Sysreader';
 
 use constant DEBUG => $ENV{MAXMIND_IPDB_DECODER_DEBUG};
 
+# This is a constant so that outside of testing any references to it can be
+# optimised away by the compiler.
+use constant POINTER_TEST_HACK => $ENV{MAXMIND_IPDB_POINTER_TEST_HACK};
+
 binmode STDERR, ':utf8'
     if DEBUG;
 
@@ -59,8 +63,17 @@ sub decode {
 
     # Pointers are a special case, we don't read the next $size bytes, we use
     # the size to determine the length of the pointer and then follow it.
-    return $self->_decode_pointer( $ctrl_byte, $offset )
-        if $type eq 'pointer';
+    if ( $type eq 'pointer' ) {
+        my ( $pointer, $new_offset )
+            = $self->_decode_pointer( $ctrl_byte, $offset );
+
+        return $pointer if POINTER_TEST_HACK;
+
+        my $value = $self->decode($pointer);
+        return wantarray
+            ? ( $value, $new_offset )
+            : $value;
+    }
 
     if ( $type eq 'extended' ) {
         my $next_byte;
@@ -105,7 +118,7 @@ sub _decode_pointer {
     my $ctrl_byte = shift;
     my $offset    = shift;
 
-    my $pointer_size = ( $ctrl_byte >> 3 ) + 1;
+    my $pointer_size = ( ( $ctrl_byte >> 3 ) & 0b00000011 ) + 1;
 
     $self->_debug_string( 'Pointer size', $pointer_size )
         if DEBUG;
@@ -119,16 +132,19 @@ sub _decode_pointer {
     my $packed
         = $pointer_size == 4
         ? $buffer
-        : ( $ctrl_byte & 0b00000111 ) . $buffer;
+        : ( pack( C => $ctrl_byte & 0b00000111 ) ) . $buffer;
 
     $packed = $self->_zero_pad_left( $packed, 4 );
+
+    $self->_debug_binary( 'Packed pointer', $packed )
+        if DEBUG;
 
     my $pointer = unpack( 'N' => $packed );
 
     $self->_debug_string( 'Pointer to', $pointer )
         if DEBUG;
 
-    return ( $self->decode($pointer), $offset + $pointer_size );
+    return $pointer;
 }
 
 sub _decode_utf8_string {
