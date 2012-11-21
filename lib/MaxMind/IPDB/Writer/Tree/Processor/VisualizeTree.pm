@@ -33,6 +33,13 @@ has _seen_nodes => (
     },
 );
 
+has _labels => (
+    is       => 'ro',
+    isa      => 'HashRef[Str]',
+    init_arg => undef,
+    default  => sub { {} },
+);
+
 sub directions_for_node {
     my $self = shift;
 
@@ -47,6 +54,8 @@ sub process_node {
     my $netmask  = shift;
 
     return 0 if $self->_seen_node($node_num);
+
+    $self->_saw_node( $node_num, 1 );
 
     return 1;
 }
@@ -106,7 +115,9 @@ sub _label_for_node {
     my $ip_num   = shift;
     my $netmask  = shift;
 
-    return "IPDB $node_num - "
+    my $labels = $self->_labels();
+
+    return $labels->{$node_num} //= "IPDB $node_num - "
         . $self->_subnet( $ip_num, $netmask )->as_string();
 }
 
