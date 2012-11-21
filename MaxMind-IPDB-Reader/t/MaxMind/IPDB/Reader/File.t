@@ -145,6 +145,7 @@ sub _write_tree {
         record_size => $record_size,
         _standard_metadata(),
         %{$metadata},
+        map_key_type_callback => sub { 'utf8_string' },
     );
 
     my $filename = $tempdir . "/Test-IPv$metadata->{ip_version}.mmipdb";
