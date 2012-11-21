@@ -107,8 +107,14 @@ sub _decode_pointer {
 
     my $pointer_size = ( $ctrl_byte >> 3 ) + 1;
 
+    $self->_debug_string( 'Pointer size', $pointer_size )
+        if DEBUG;
+
     my $buffer;
     $self->_read( \$buffer, $offset, $pointer_size );
+
+    $self->_debug_binary( 'Buffer', $buffer )
+        if DEBUG;
 
     my $packed
         = $pointer_size == 4
@@ -118,6 +124,9 @@ sub _decode_pointer {
     $packed = $self->_zero_pad_left( $packed, 4 );
 
     my $pointer = unpack( 'N' => $packed );
+
+    $self->_debug_string( 'Pointer to', $pointer )
+        if DEBUG;
 
     return ( $self->decode($pointer), $offset + $pointer_size );
 }
