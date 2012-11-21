@@ -119,7 +119,7 @@ sub _decode_pointer {
 
     my $pointer = unpack( 'N' => $packed );
 
-    return ( $self->_decode($pointer), $offset + $pointer_size );
+    return ( $self->decode($pointer), $offset + $pointer_size );
 }
 
 sub _decode_utf8_string {
