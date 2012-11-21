@@ -138,6 +138,20 @@ sub directions_for_node {
     return ( LEFT_RECORD, RIGHT_RECORD );
 }
 
+sub process_node {
+    my $self     = shift;
+    my $node_num = shift;
+
+    # When we're iterating over the whole tree, it's possible that a record
+    # will point to a node we've already processed, in which case we don't
+    # need to process it again.
+    return 0 if $self->{_seen_node}{$node_num};
+
+    $self->{_seen_node}{$node_num} = 1;
+
+    return 1;
+}
+
 sub process_pointer_record {
     my $self     = shift;
     my $node_num = shift;
