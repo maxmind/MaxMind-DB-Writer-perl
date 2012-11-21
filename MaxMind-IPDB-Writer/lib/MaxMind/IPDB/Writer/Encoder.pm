@@ -60,11 +60,11 @@ sub encode_pointer {
         $ctrl_byte |= ord( shift @value_bytes );
     }
     elsif ( $value < 2**19 ) {
-        @value_bytes = split //, substr( pack( N => $value - 2**11 ), 1 );
+        @value_bytes = split //, substr( pack( N => $value ), 1, 3);
         $ctrl_byte |= ( 1 << 3 ) | ord( shift @value_bytes );
     }
     elsif ( $value < 2**27 ) {
-        @value_bytes = split //, pack( N => $value - 2**19 );
+        @value_bytes = split //, pack( N => $value );
         $ctrl_byte |= ( 2 << 3 ) | ord( shift @value_bytes );
     }
     else {
