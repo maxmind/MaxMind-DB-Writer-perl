@@ -72,13 +72,25 @@ my %geoip_keys = (
     postal_code => 'utf8_string',
 );
 
+my %metadata_keys = (
+    binary_format_major_version => 'uint16',
+    binary_format_minor_version => 'uint16',
+    build_epoch                 => 'uint64',
+    database_type               => 'utf8_string',
+    description                 => 'map',
+    ip_version                  => 'uint16',
+    languages                   => [ 'array', 'utf8_string' ],
+    node_count                  => 'uint32',
+    record_size                 => 'uint32',
+);
+
 sub _map_key_type {
     my $key  = shift;
 
     # locale id
     return 'utf8_string' if $key =~ /^[a-z]{2,3}(?:-[A-Z]{2})?$/;
 
-    return $geoip_keys{$key};
+    return $geoip_keys{$key} || $metadata_keys{$key};
 }
 
 1;

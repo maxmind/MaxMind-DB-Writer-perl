@@ -234,29 +234,61 @@ sub _encode_record {
     substr( ${$buffer}, $offset, $write_size ) = $encoded;
 }
 
-sub _encoded_metadata {
-    my $self = shift;
+{
+    my $real_node_num = 0;
 
-    my $metadata = MaxMind::IPDB::Metadata->new(
-        binary_format_major_version => 2,
-        binary_format_minor_version => 0,
-        build_epoch                 => Math::BigInt->new( time() ),
-        database_type               => $self->_database_type(),
-        description                 => $self->_description(),
-        ip_version                  => $self->_ip_version(),
-        languages                   => $self->_languages(),
-        node_count                  => $self->_tree->node_count(),
-        record_size                 => $self->_record_size(),
+    sub _map_node_num {
+        my $self     = shift;
+        my $node_num = shift;
+
+        return $self->{_node_num_map}[$node_num] //= $real_node_num++;
+    }
+}
+
+{
+    my %key_types = (
+        binary_format_major_version => 'uint16',
+        binary_format_minor_version => 'uint16',
+        build_epoch                 => 'uint64',
+        database_type               => 'utf8_string',
+        description                 => 'map',
+        ip_version                  => 'uint16',
+        languages                   => [ 'array', 'utf8_string' ],
+        node_count                  => 'uint32',
+        record_size                 => 'uint32',
     );
 
-    my $buffer;
-    open my $fh, '>', \$buffer;
+    my $type_callback = sub {
+        return $key_types{ $_[0] } || 'utf8_string';
+    };
 
-    my $encoder = MaxMind::IPDB::Writer::Encoder->new( output => $fh );
+    sub _encoded_metadata {
+        my $self = shift;
 
-    $encoder->encode_map( $metadata->metadata_to_encode() );
+        my $metadata = MaxMind::IPDB::Metadata->new(
+            binary_format_major_version => 2,
+            binary_format_minor_version => 0,
+            build_epoch                 => Math::BigInt->new( time() ),
+            database_type               => $self->_database_type(),
+            description                 => $self->_description(),
+            ip_version                  => $self->_ip_version(),
+            languages                   => $self->_languages(),
+            node_count                  => $self->_node_count(),
+            record_size                 => $self->_record_size(),
+        );
 
-    return $buffer;
+        my $buffer;
+        open my $fh, '>', \$buffer;
+
+        my $encoder = MaxMind::IPDB::Writer::Encoder->new(
+            output                => $fh,
+            map_key_type_callback => $type_callback,
+        );
+
+        $encoder->encode_map( $metadata->metadata_to_encode() );
+
+        return $buffer;
+    }
 }
 
 sub _build_node_size {

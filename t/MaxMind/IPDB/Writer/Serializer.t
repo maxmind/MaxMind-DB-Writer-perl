@@ -181,7 +181,8 @@ my $strings = test_cases_for(
 {
     my $maps = test_cases_for('map');
 
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
+    my $serializer = MaxMind::IPDB::Writer::Serializer->new(
+        map_key_type_callback => sub { ref $_[1] ? 'map' : 'utf8_string' } );
 
     for my $i ( 0, 2, 4, 6 ) {
         $serializer->store_data( map => $maps->[$i] );
