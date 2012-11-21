@@ -150,32 +150,17 @@ sub encode_array {
     $self->$encode_method($_) for @{$array};
 }
 
-{
-    my %KnownKeys = (
-        binary_format_major_version => 'uint16',
-        binary_format_minor_version => 'uint16',
-        build_epoch                 => 'uint64',
-        database_type               => 'utf8_string',
-        description                 => 'map',
-        ip_version                  => 'uint16',
-        languages                   => [ 'array', 'utf8_string' ],
-        node_count                  => 'uint32',
-        record_size                 => 'uint32',
-    );
+sub _type_for_key {
+    my $self  = shift;
+    my $key   = shift;
+    my $value = shift;
 
-    sub _type_for_key {
-        my $self  = shift;
-        my $key   = shift;
-        my $value = shift;
+    my $type = $self->_map_key_type_callback->( $key, $value );
 
-        my $type = $self->_map_key_type_callback->( $key, $value )
-            || $KnownKeys{$key};
+    die qq{Could not determine the type for map key "$key"}
+        unless $type;
 
-        die qq{Could not determine the type for map key "$key"}
-            unless $type;
-
-        return $type;
-    }
+    return $type;
 }
 
 sub encode_int32 {
