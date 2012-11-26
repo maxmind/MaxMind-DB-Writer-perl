@@ -11,7 +11,9 @@ use List::AllUtils qw( min );
 
 use Moose::Role;
 
-with 'MaxMind::IPDB::Reader::Role::Sysreader';
+use constant DEBUG => $ENV{MAXMIND_IPDB_READER_DEBUG};
+
+with 'MaxMind::IPDB::Role::Debugs', 'MaxMind::IPDB::Reader::Role::Sysreader';
 
 has _node_byte_size => (
     is       => 'ro',
@@ -61,10 +63,18 @@ sub _find_address_in_tree {
     my $self = shift;
     my $addr = shift;
 
-    my $bit_string = MM::Net::IPAddress->new_from_string(
+    my $address = MM::Net::IPAddress->new_from_string(
         string  => $addr,
         version => $self->ip_version(),
-    )->as_bit_string();
+    );
+
+    my $bit_string = $address->as_bit_string();
+
+    if (DEBUG) {
+        $self->_debug_newline();
+        $self->_debug_string( 'IP Address', $address );
+        $self->_debug_string( 'Bit string', $bit_string );
+    }
 
     # The first node of the tree is always node 0, at the beginning of the
     # value
@@ -75,9 +85,26 @@ sub _find_address_in_tree {
 
         my $record = $bit ? $right : $left;
 
-        return unless $record;
+        if (DEBUG) {
+            $self->_debug_string( 'Bit', $bit );
+            $self->_debug_string( 'Record', $bit ? 'right' : 'left' );
+            $self->_debug_string( 'Record value', $record );
+        }
 
-        return $record if $record >= $self->node_count();
+        unless ($record) {
+            $self->_debug_message( 'Record is empty' )
+                if DEBUG;
+            return;
+        }
+
+        if ( $record >= $self->node_count() ) {
+            $self->_debug_message('Record is a data pointer')
+                if DEBUG;
+            return $record;
+        }
+
+        $self->_debug_message('Record is a node number')
+            if DEBUG;
 
         $node_num = $record;
     }
@@ -123,6 +150,9 @@ sub _resolve_data_pointer {
 
     $pointer = ( $pointer - $self->node_count() )
         + $self->node_count() * $self->_node_byte_size();
+
+    $self->_debug_string( 'Resolved data pointer', $pointer )
+        if DEBUG;
 
     # We only want the data from the decoder, not the offset where it was
     # found.
