@@ -49,6 +49,9 @@ sub decode {
     confess 'You must provide an offset to decode from when calling ->decode'
         unless defined $offset;
 
+    $self->_debug_newline()
+        if DEBUG;
+
     my $ctrl_byte;
     $self->_read( \$ctrl_byte, $offset, 1 );
     $offset++;
@@ -60,6 +63,9 @@ sub decode {
 
     # The type is encoded in the first 3 bits of the byte.
     my $type = $Types{ $ctrl_byte >> 5 };
+
+    $self->_debug_string( 'Type', $type )
+        if DEBUG;
 
     # Pointers are a special case, we don't read the next $size bytes, we use
     # the size to determine the length of the pointer and then follow it.
