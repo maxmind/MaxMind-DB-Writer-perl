@@ -11,10 +11,18 @@ use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use MaxMind::IPDB::Metadata;
 use MaxMind::IPDB::Writer::Encoder;
 use MaxMind::IPDB::Writer::Serializer;
+use MM::Net::Subnet;
 
 use Moose;
 use Moose::Util::TypeConstraints;
 use MooseX::StrictConstructor;
+
+has _alias_ipv6_to_ipv4 => (
+    is       => 'ro',
+    isa      => 'Bool',
+    init_arg => 'alias_ipv6_to_ipv4',
+    default  => 0,
+);
 
 has _map_key_type_callback => (
     is        => 'ro',
@@ -39,6 +47,20 @@ has _root_data_type => (
     default  => 'map',
 );
 
+has _node_num_map => (
+    is       => 'ro',
+    isa      => 'ArrayRef',
+    init_arg => undef,
+    default  => sub { [] },
+);
+
+has _real_node_num => (
+    is       => 'ro',
+    isa      => 'Int',
+    init_arg => undef,
+    default  => 0,
+);
+
 {
     #<<<
     my $size_type = subtype
@@ -56,6 +78,18 @@ has _root_data_type => (
         required => 1,
     );
 }
+
+has _node_count => (
+    is       => 'ro',
+    traits   => ['Number'],
+    isa      => 'Int',
+    init_arg => undef,
+    lazy     => 1,
+    default  => sub { $_[0]->_tree()->node_count() },
+    handles  => {
+        _increase_node_count => 'add',
+    },
+);
 
 has _node_size => (
     is       => 'ro',
@@ -123,15 +157,52 @@ sub write_tree {
     my $self   = shift;
     my $output = shift;
 
-    my $cb = sub { $self->_write_record(@_) };
+    if ( $self->_alias_ipv6_to_ipv4() ) {
+        $self->_make_ipv6_aliases();
+    }
+
     $self->_tree()->iterate($self);
 
     $output->print(
-        ${ $self->_tree_buffer() },
+        substr(
+            ${ $self->_tree_buffer() }, 0,
+            $self->_node_size() * $self->_node_count()
+        ),
         ${ $self->_serializer()->buffer() },
         $MetadataMarker,
         $self->_encoded_metadata(),
     );
+}
+
+{
+    my $ipv4_subnet = MM::Net::Subnet->new( subnet => '::0/96' );
+
+    my @ipv6_alias_subnets = map { MM::Net::Subnet->new( subnet => $_ ) }
+        qw( ::ffff:0:0/96 2002::/16 );
+
+    sub _make_ipv6_aliases {
+        my $self = shift;
+
+        my $tree = $self->_tree();
+
+        my $ipv4_root_node_num = $tree->node_num_for_subnet($ipv4_subnet);
+
+        for my $subnet (@ipv6_alias_subnets) {
+            my $added = $tree->insert_subnet_as_alias(
+                $subnet,
+                $ipv4_root_node_num,
+            );
+            $self->_increase_node_count($added);
+        }
+
+        use MaxMind::IPDB::Writer::Tree::Processor::VisualizeTree;
+        my $processor
+            = MaxMind::IPDB::Writer::Tree::Processor::VisualizeTree->new(
+            ip_version => 6 );
+
+        $tree->iterate($processor);
+        $processor->graph()->run( output_file => '/tmp/aliased-tree.svg' );
+    }
 }
 
 sub directions_for_node {
@@ -158,7 +229,11 @@ sub process_pointer_record {
     my $is_right = shift;
     my $pointer  = shift;
 
-    $self->_encode_record( $node_num, $is_right, $pointer );
+    $self->_encode_record(
+        $self->_map_node_num($node_num),
+        $is_right,
+        $self->_map_node_num($pointer),
+    );
 
     return 1;
 }
@@ -171,14 +246,22 @@ sub process_value_record {
     my $value    = shift;
 
     if ( my $pointer = $self->{_seen_data}{$key} ) {
-        $self->_encode_record( $node_num, $is_right, $pointer );
+        $self->_encode_record(
+            $self->_map_node_num($node_num),
+            $is_right,
+            $pointer,
+        );
     }
     else {
         my $data_pointer = $self->_serializer()
             ->store_data( $self->_root_data_type => $value );
-        $pointer = $data_pointer + $self->_tree()->node_count();
+        $pointer = $data_pointer + $self->_node_count();
 
-        $self->_encode_record( $node_num, $is_right, $pointer );
+        $self->_encode_record(
+            $self->_map_node_num($node_num),
+            $is_right,
+            $pointer,
+        );
 
         $self->{_seen_data}{$key} = $pointer;
     }
@@ -191,7 +274,11 @@ sub process_empty_record {
     my $node_num = shift;
     my $is_right = shift;
 
-    $self->_encode_record( $node_num, $is_right, 0 );
+    $self->_encode_record(
+        $self->_map_node_num($node_num),
+        $is_right,
+        0,
+    );
 
     return 1;
 }
@@ -248,15 +335,11 @@ sub _encode_record {
     substr( ${$buffer}, $offset, $write_size ) = $encoded;
 }
 
-{
-    my $real_node_num = 0;
+sub _map_node_num {
+    my $self     = shift;
+    my $node_num = shift;
 
-    sub _map_node_num {
-        my $self     = shift;
-        my $node_num = shift;
-
-        return $self->{_node_num_map}[$node_num] //= $real_node_num++;
-    }
+    return $self->{_node_num_map}[$node_num] //= $self->{_real_node_num}++;
 }
 
 {
@@ -314,8 +397,7 @@ sub _build_node_size {
 sub _build_tree_buffer {
     my $self = shift;
 
-    my $buffer
-        = "\0" x ( $self->_node_size() * $self->_tree()->node_count() );
+    my $buffer = "\0" x ( $self->_node_size() * $self->_node_count() );
 
     return \$buffer;
 }
