@@ -7,7 +7,7 @@ use Moose;
 
 has subnet => (
     is       => 'ro',
-    isa      => 'MM::Net::Subnet',
+    isa      => 'Net::Works::Network',
     required => 1,
 );
 

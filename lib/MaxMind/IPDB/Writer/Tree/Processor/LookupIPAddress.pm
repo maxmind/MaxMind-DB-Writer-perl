@@ -7,7 +7,7 @@ use Moose;
 
 has ip_address => (
     is       => 'ro',
-    isa      => 'MM::Net::IPAddress',
+    isa      => 'Net::Works::Address',
     required => 1,
 );
 

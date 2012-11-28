@@ -11,7 +11,7 @@ use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use MaxMind::IPDB::Metadata;
 use MaxMind::IPDB::Writer::Encoder;
 use MaxMind::IPDB::Writer::Serializer;
-use MM::Net::Subnet;
+use Net::Works::Network;
 
 use Moose;
 use Moose::Util::TypeConstraints;
@@ -175,9 +175,9 @@ sub write_tree {
 }
 
 {
-    my $ipv4_subnet = MM::Net::Subnet->new( subnet => '::0/96' );
+    my $ipv4_subnet = Net::Works::Network->new( subnet => '::0/96' );
 
-    my @ipv6_alias_subnets = map { MM::Net::Subnet->new( subnet => $_ ) }
+    my @ipv6_alias_subnets = map { Net::Works::Network->new( subnet => $_ ) }
         qw( ::ffff:0:0/96 2002::/16 );
 
     sub _make_ipv6_aliases {

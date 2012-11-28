@@ -131,12 +131,12 @@ sub _subnet {
     my $ip_num  = shift;
     my $netmask = shift;
 
-    my $address = MM::Net::IPAddress->new_from_integer(
+    my $address = Net::Works::Address->new_from_integer(
         integer => $ip_num,
         version => $self->ip_version(),
     );
 
-    return MM::Net::Subnet->new( subnet => $address . '/' . $netmask );
+    return Net::Works::Network->new( subnet => $address . '/' . $netmask );
 }
 
 __PACKAGE__->meta()->make_immutable();

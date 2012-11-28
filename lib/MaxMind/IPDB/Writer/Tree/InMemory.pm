@@ -380,12 +380,12 @@ sub _split_node {
 
     my @subnets;
     if ( $old_start_ipnum < $start_ipnum ) {
-        @subnets = MM::Net::Subnet->range_as_subnets(
-            MM::Net::IPAddress->new_from_integer(
+        @subnets = Net::Works::Network->range_as_subnets(
+            Net::Works::Address->new_from_integer(
                 integer => $old_start_ipnum,
                 version => $version,
             ),
-            MM::Net::IPAddress->new_from_integer(
+            Net::Works::Address->new_from_integer(
                 integer => $start_ipnum - 1,
                 version => $version,
             )
@@ -394,12 +394,12 @@ sub _split_node {
 
     if ( $old_end_ipnum > $end_ipnum ) {
         push @subnets,
-            MM::Net::Subnet->range_as_subnets(
-            MM::Net::IPAddress->new_from_integer(
+            Net::Works::Network->range_as_subnets(
+            Net::Works::Address->new_from_integer(
                 integer => $end_ipnum + 1,
                 version => $version,
             ),
-            MM::Net::IPAddress->new_from_integer(
+            Net::Works::Address->new_from_integer(
                 integer => $old_end_ipnum,
                 version => $version,
             ),
