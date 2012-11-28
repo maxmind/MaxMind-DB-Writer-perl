@@ -15,12 +15,6 @@ my $tempdir = tempdir( CLEANUP => 1 );
 {
     my ( $tree, $filename ) = _write_tree();
 
-my $processor = MaxMind::IPDB::Writer::Tree::Processor::VisualizeTree->new(
-    ip_version => 6 );
-$tree->iterate($processor);
-
-$processor->graph()->run( output_file => '/tmp/aliased.svg' );
-
     my $reader = MaxMind::IPDB::Reader::File->new( file => $filename );
 
     my %tests = (
