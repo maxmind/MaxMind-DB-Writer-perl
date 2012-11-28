@@ -48,19 +48,33 @@ sub process_pointer_record {
 }
 
 sub process_empty_record {
-    die 'Hit an empty record before we reached the beginning of the subnet';
+    my $self = shift;
+
+    die 'Hit an empty record before we reached the beginning of the '
+        . $self->subnet()->as_string()
+        . ' subnet';
 }
 
 sub process_value_record {
-    die 'Hit a value record before we reached the beginning of the subnet';
+    my $self = shift;
+
+    die 'Hit a value record before we reached the beginning of the '
+        . $self->subnet()->as_string()
+        . ' subnet';
 }
 
 sub _build_ip_address_bits {
     my $self = shift;
 
-    my @bits = split //, $self->subnet()->first()->as_bit_string();
+    my @bits = ( split //, $self->subnet()->first()->as_bit_string() )
+        [ 0 .. $self->subnet()->netmask_as_integer() - 1 ];
 
-    return [ @bits[ 0 .. $self->subnet()->netmask_as_integer() - 1 ] ];
+    # We don't need to look at the last bit. We're looking for the record that
+    # points _to_ this subnet, not the record that represents the subnet
+    # itself.
+    pop @bits;
+
+    return \@bits;
 }
 
 __PACKAGE__->meta()->make_immutable();
