@@ -117,8 +117,13 @@ sub _label_for_node {
 
     my $labels = $self->_labels();
 
-    return $labels->{$node_num} //= "IPDB $node_num - "
-        . $self->_subnet( $ip_num, $netmask )->as_string();
+    my $subnet = $self->_subnet( $ip_num, $netmask );
+
+    return $labels->{$node_num} //=
+          "IPDB $node_num - "
+        . $subnet->as_string() . ' ('
+        . $subnet->first()->as_string . ' - '
+        . $subnet->last()->as_string() . ')';
 }
 
 sub _subnet {
