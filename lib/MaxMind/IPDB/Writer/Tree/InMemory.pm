@@ -162,6 +162,51 @@ sub insert_subnet {
     my $key = md5( $Encoder->encode($data) );
     $self->{_data_index}{$key} ||= $data;
 
+    $self->_insert_subnet( $subnet, $key );
+}
+
+sub insert_subnet_as_alias {
+    my $self    = shift;
+    my $subnet  = shift;
+    my $pointer = shift;
+
+    my $node_count = $self->node_count();
+
+    my $final_node = $self->_insert_subnet( $subnet, "\0" x 16 );
+
+    my $last_bit_in_subnet = substr(
+        $subnet->first()->as_bit_string(),
+        $subnet->netmask_as_integer() - 1, 1
+    );
+
+    # If the last bit of the subnet is a one then the alias only applies to
+    # the right record in the tree. This can be verified visually by looking
+    # at a visualization of an aliased tree.
+    if ($last_bit_in_subnet) {
+        $self->set_record(
+            $final_node, RIGHT_RECORD,
+            $self->get_record( $pointer, LEFT_RECORD )
+        );
+    }
+    else {
+        $self->set_record(
+            $final_node, LEFT_RECORD,
+            $self->get_record( $pointer, LEFT_RECORD )
+        );
+        $self->set_record(
+            $final_node, RIGHT_RECORD,
+            $self->get_record( $pointer, RIGHT_RECORD )
+        );
+    }
+
+    return $self->node_count() - $node_count;
+}
+
+sub _insert_subnet {
+    my $self         = shift;
+    my $subnet       = shift;
+    my $final_record = shift;
+
     my $ipnum = $subnet->first()->as_integer();
 
     my ( $node, $idx, $node_netmask, $bit_to_check )
@@ -200,11 +245,13 @@ sub insert_subnet {
 
     my $direction = $self->_direction( $ipnum, $bit_to_check );
 
-    $self->set_record( $node, $direction, $key );
+    $self->set_record( $node, $direction, $final_record );
 
     for my $subnet ( @{ $self->{_needs_move}{subnets} } ) {
         $self->insert_subnet( $subnet, $self->{_needs_move}{data} );
     }
+
+    return $node;
 }
 
 sub _find_cached_node {
@@ -488,20 +535,6 @@ sub pointer_record_for_subnet {
     $self->iterate($processor);
 
     return @{ $processor->record() };
-}
-
-sub node_count_under_node {
-    my $self     = shift;
-    my $node_num = shift;
-
-    require MaxMind::IPDB::Writer::Tree::Processor::NodeCounter;
-
-    my $processor
-        = MaxMind::IPDB::Writer::Tree::Processor::NodeCounter->new();
-
-    $self->iterate( $processor, $node_num );
-
-    return $processor->node_count();
 }
 
 __PACKAGE__->meta()->make_immutable();
