@@ -80,13 +80,15 @@ sub _find_address_in_tree {
     # value
     my $node_num = 0;
 
+    my $idx = 1;
     foreach my $bit ( split //, $bit_string ) {
         my ( $left, $right ) = $self->_read_node($node_num);
 
         my $record = $bit ? $right : $left;
 
         if (DEBUG) {
-            $self->_debug_string( 'Bit', $bit );
+            $self->_debug_string( 'Bit #', $idx++ );
+            $self->_debug_string( 'Bit value', $bit );
             $self->_debug_string( 'Record', $bit ? 'right' : 'left' );
             $self->_debug_string( 'Record value', $record );
         }
