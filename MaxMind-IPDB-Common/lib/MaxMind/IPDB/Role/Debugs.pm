@@ -7,6 +7,10 @@ use autodie;
 
 use Moose::Role;
 
+sub _debug_newline {
+    warn "\n";
+}
+
 sub _debug_binary {
     my $self   = shift;
     my $label  = shift;
