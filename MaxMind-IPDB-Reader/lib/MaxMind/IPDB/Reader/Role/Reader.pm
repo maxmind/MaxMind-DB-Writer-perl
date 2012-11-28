@@ -63,7 +63,7 @@ sub _find_address_in_tree {
     my $self = shift;
     my $addr = shift;
 
-    my $address = MM::Net::IPAddress->new_from_string(
+    my $address = Net::Works::Address->new_from_string(
         string  => $addr,
         version => $self->ip_version(),
     );

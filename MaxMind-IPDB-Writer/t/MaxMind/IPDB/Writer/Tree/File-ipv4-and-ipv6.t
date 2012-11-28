@@ -8,7 +8,7 @@ use MaxMind::IPDB::Writer::Tree::File;
 
 use File::Temp qw( tempdir );
 use MaxMind::IPDB::Reader::File;
-use MM::Net::Subnet;
+use Net::Works::Network;
 
 my $tempdir = tempdir( CLEANUP => 1 );
 
@@ -50,7 +50,7 @@ done_testing();
 sub _write_tree {
     my $tree = MaxMind::IPDB::Writer::Tree::InMemory->new();
 
-    my @subnets = map { MM::Net::Subnet->new( subnet => $_, version => 6 ) }
+    my @subnets = map { Net::Works::Network->new( subnet => $_, version => 6 ) }
         qw(
         ::1.1.1.1/128
         ::1.1.1.2/127

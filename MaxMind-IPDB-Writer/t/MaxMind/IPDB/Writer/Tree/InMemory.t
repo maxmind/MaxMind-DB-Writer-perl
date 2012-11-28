@@ -6,8 +6,8 @@ use Test::More;
 use MaxMind::IPDB::Writer::Tree::InMemory;
 
 use List::AllUtils qw( all );
-use MM::Net::IPAddress;
-use MM::Net::Subnet;
+use Net::Works::Address;
+use Net::Works::Network;
 use Scalar::Util qw( blessed );
 
 # We want to have a unique id as part of the data for various tests
@@ -15,22 +15,22 @@ my $id = 0;
 
 {
     my @ipv4_subnets
-        = MM::Net::Subnet->range_as_subnets( '1.1.1.1', '1.1.1.32' );
+        = Net::Works::Network->range_as_subnets( '1.1.1.1', '1.1.1.32' );
 
     _test_subnet_permutations( \@ipv4_subnets, 'IPv4' );
 }
 
 {
     my @ipv4_subnets = (
-        MM::Net::Subnet->range_as_subnets( '1.1.1.1',  '1.1.1.32' ),
-        MM::Net::Subnet->range_as_subnets( '16.1.1.1', '16.1.3.2' ),
+        Net::Works::Network->range_as_subnets( '1.1.1.1',  '1.1.1.32' ),
+        Net::Works::Network->range_as_subnets( '16.1.1.1', '16.1.3.2' ),
     );
 
     _test_subnet_permutations( \@ipv4_subnets, 'IPv4 - two distinct ranges' );
 }
 
 {
-    my @ipv6_subnets = MM::Net::Subnet->range_as_subnets(
+    my @ipv6_subnets = Net::Works::Network->range_as_subnets(
         '::1:ffff:ffff',
         '::2:0000:0059'
     );
@@ -40,11 +40,11 @@ my $id = 0;
 
 {
     my @ipv6_subnets = (
-        MM::Net::Subnet->range_as_subnets(
+        Net::Works::Network->range_as_subnets(
             '::1:ffff:ffff',
             '::2:0000:0001'
         ),
-        MM::Net::Subnet->range_as_subnets(
+        Net::Works::Network->range_as_subnets(
             '2002::abcd',
             '2002::abd4',
         )
@@ -293,7 +293,7 @@ sub _test_tree {
     _test_expected_data( $tree, $expect_pairs, $desc );
 
     for my $raw (qw( 1.1.1.33 8.9.10.11 ffff::1 )) {
-        my $address = MM::Net::IPAddress->new(
+        my $address = Net::Works::Address->new(
             address => $raw,
             version => ( $raw =~ /::/ ? 6 : 4 ),
         );
@@ -345,7 +345,7 @@ sub _ranges_to_data {
 
     my %ip_to_data;
     my @insert;
-    for my $subnet ( map { MM::Net::Subnet->range_as_subnets( @{$_} ), }
+    for my $subnet ( map { Net::Works::Network->range_as_subnets( @{$_} ), }
         @{$insert_ranges} ) {
 
         my $data = {
@@ -365,7 +365,7 @@ sub _ranges_to_data {
 
     my @expect = (
         map { [ $_, $ip_to_data{ $_->first()->as_string() } ] } (
-            map { MM::Net::Subnet->range_as_subnets( @{$_} ), }
+            map { Net::Works::Network->range_as_subnets( @{$_} ), }
                 @{$expect_ranges}
         )
     );
@@ -401,7 +401,7 @@ sub _subnet_as_v6 {
         . $subnet->first()->as_string() . '/'
         . ( $subnet->netmask_as_integer() + 96 );
 
-    return MM::Net::Subnet->new(
+    return Net::Works::Network->new(
         subnet  => $subnet_string,
         version => 6,
     );

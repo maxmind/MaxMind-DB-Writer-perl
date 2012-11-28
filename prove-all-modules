@@ -1,9 +1,5 @@
 #!/bin/bash
 
-if [ -d t ]; then
-   prove -lr -j 4 t/
-fi
-
 for dir in MaxMind-IPDB-Common MaxMind-IPDB-Reader MaxMind-IPDB-Writer; do
     if [ -d "$dir/t" ]; then
         pushd $dir

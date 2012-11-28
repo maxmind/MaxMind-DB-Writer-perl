@@ -3,19 +3,19 @@ use warnings;
 
 use Benchmark qw( cmpthese );
 
-use MM::Net::IPAddress;
+use Net::Works::Address;
 
 my @ips = (
     map {
         my $int = 2**( $_ * 8 ) - 1;
-        MM::Net::IPAddress->new_from_integer( integer => $int, version => 4 )
+        Net::Works::Address->new_from_integer( integer => $int, version => 4 )
     } 0 .. 4
 );
 
 push @ips, (
     map {
         my $int = do { use bigint; 2**( $_ * 8 ) - 1 };
-        MM::Net::IPAddress->new_from_integer( integer => $int, version => 6 )
+        Net::Works::Address->new_from_integer( integer => $int, version => 6 )
     } 0 .. 16
 );
 
