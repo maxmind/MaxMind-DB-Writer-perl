@@ -194,14 +194,6 @@ sub write_tree {
             );
             $self->_increase_node_count($added);
         }
-
-        use MaxMind::IPDB::Writer::Tree::Processor::VisualizeTree;
-        my $processor
-            = MaxMind::IPDB::Writer::Tree::Processor::VisualizeTree->new(
-            ip_version => 6 );
-
-        $tree->iterate($processor);
-        $processor->graph()->run( output_file => '/tmp/aliased-tree.svg' );
     }
 }
 
