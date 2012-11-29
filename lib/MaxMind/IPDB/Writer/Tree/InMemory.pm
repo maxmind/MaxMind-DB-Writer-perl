@@ -7,6 +7,7 @@ use Carp qw( confess );
 use Digest::MD5 qw( md5 );
 use JSON::XS;
 use List::Util qw( min );
+use Math::BigInt only => 'GMP';
 use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use Scalar::Util qw( blessed );
 
