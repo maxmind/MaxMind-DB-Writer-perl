@@ -1,0 +1,31 @@
+use strict;
+use warnings;
+
+use Benchmark qw( cmpthese );
+use Digest::MD5 qw( md5 );
+
+my $pointer = "POINTER\0\0\0\0\0";
+
+sub with_substr {
+    return substr( $_[0], 4 ) eq $pointer;
+}
+
+sub with_index {
+    return index( $_[0], $pointer ) != -1;
+}
+
+my $matches = 'foo1POINTER_RECD';
+my $empty   = "\0" x 16;
+my $md5     = md5('whatever');
+
+cmpthese(
+    1_000_000,
+    {
+        'substr' => sub {
+            with_substr($_) for $matches, $empty, $md5;
+        },
+        'index' => sub {
+            with_index($_) for $matches, $empty, $md5;
+        },
+    }
+);
