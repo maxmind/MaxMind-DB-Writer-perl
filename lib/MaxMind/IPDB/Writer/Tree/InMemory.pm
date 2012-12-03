@@ -60,7 +60,7 @@ has _insert_cache => (
 );
 
 use constant {
-    _RECORD_SIZE          => 16,
+    _RECORD_SIZE          => 17,
     _NODES_PER_ALLOCATION => 2**16,
 };
 
@@ -134,7 +134,7 @@ sub _record {
 }
 
 {
-    my $empty = "\0" x 16;
+    my $empty = "\0" x 17;
 
     sub record_is_empty {
         $_[1] eq $empty;
@@ -142,12 +142,16 @@ sub _record {
 }
 
 sub record_pointer_value {
-    return unless substr( $_[1], 4 ) eq 'POINTER_RECD';
-    return unpack( N => $_[1] );
+    return unless index( $_[1], 'P' ) == 0;
+    return unpack( N => substr( $_[1], 1, 4 ) );
 }
 
-sub mk_pointer_record {
-    return pack( NA12 => $_[1], 'POINTER_RECD' );
+{
+    my $filler = "\0" x 12;
+
+    sub mk_pointer_record {
+        return 'P' . pack( N => $_[1] ) . $filler;
+    }
 }
 
 sub node_count {
@@ -164,7 +168,7 @@ sub insert_subnet {
 
     $self->{_saw_ipv6} ||= $subnet->version() == 6;
 
-    my $key = md5( $Encoder->encode($data) );
+    my $key = 'D' . md5( $Encoder->encode($data) );
     $self->{_data_index}{$key} ||= $data;
 
     $self->_insert_subnet( $subnet, $key );
