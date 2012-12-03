@@ -15,7 +15,11 @@ for my $record_size ( 24, 28, 32 ) {
 
         my $buffer = _write_tree(
             $record_size,
-            [ Net::Works::Network->range_as_subnets( '1.1.1.1', '1.1.1.32' ) ],
+            [
+                Net::Works::Network->range_as_subnets(
+                    '1.1.1.1', '1.1.1.32'
+                )
+            ],
             { ip_version => 4 },
         );
 
@@ -89,8 +93,8 @@ done_testing();
 
 sub _write_tree {
     my $record_size = shift;
-    my $subnets  = shift;
-    my $metadata = shift;
+    my $subnets     = shift;
+    my $metadata    = shift;
 
     my $tree = MaxMind::IPDB::Writer::Tree::InMemory->new();
 

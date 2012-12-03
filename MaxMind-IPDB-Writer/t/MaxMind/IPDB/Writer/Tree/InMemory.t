@@ -144,7 +144,6 @@ my $id = 0;
 }
 
 {
-
     package TreeIterator;
 
     use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
@@ -294,7 +293,7 @@ sub _test_tree {
 
     for my $raw (qw( 1.1.1.33 8.9.10.11 ffff::1 )) {
         my $address = Net::Works::Address->new_from_string(
-            string => $raw,
+            string  => $raw,
             version => ( $raw =~ /::/ ? 6 : 4 ),
         );
 

@@ -50,7 +50,8 @@ done_testing();
 sub _write_tree {
     my $tree = MaxMind::IPDB::Writer::Tree::InMemory->new();
 
-    my @subnets = map { Net::Works::Network->new( subnet => $_, version => 6 ) }
+    my @subnets
+        = map { Net::Works::Network->new( subnet => $_, version => 6 ) }
         qw(
         ::1.1.1.1/128
         ::1.1.1.2/127
