@@ -133,8 +133,12 @@ sub _record {
     return;
 }
 
-sub record_is_empty {
-    $_[1] eq "\0" x 16;
+{
+    my $empty = "\0" x 16;
+
+    sub record_is_empty {
+        $_[1] eq $empty;
+    }
 }
 
 sub record_pointer_value {
