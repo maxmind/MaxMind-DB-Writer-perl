@@ -181,7 +181,7 @@ sub insert_subnet_as_alias {
 
     my $last_bit_in_subnet = substr(
         $subnet->first()->as_bit_string(),
-        $subnet->netmask_as_integer() - 1, 1
+        $subnet->mask_length() - 1, 1
     );
 
     # If the last bit of the subnet is a one then the alias only applies to
@@ -219,7 +219,7 @@ sub _insert_subnet {
 
     my $cache = $self->_insert_cache();
     $cache->{last_ipnum}   = $ipnum;
-    $cache->{last_netmask} = $subnet->netmask_as_integer();
+    $cache->{last_netmask} = $subnet->mask_length();
 
     local $self->{_needs_move} = {};
 
@@ -263,17 +263,17 @@ sub _find_cached_node {
     my $self   = shift;
     my $subnet = shift;
 
-    my $netmask = $subnet->netmask_as_integer();
+    my $netmask = $subnet->mask_length();
 
-    my $mask_length  = $subnet->mask_length();
-    my $default_mask = $self->_all_ones_mask($mask_length);
+    my $bits         = $subnet->bits();
+    my $default_mask = $self->_all_ones_mask($bits);
 
     my $cache = $self->_insert_cache();
 
     my $cached_ipnum = $cache->{last_ipnum};
 
     return ( $self->root_node_num(), 0, $netmask, $default_mask )
-        if $ENV{MAXMIND_IPDB_WRITER_NO_CACHE} || ! $cached_ipnum;
+        if $ENV{MAXMIND_IPDB_WRITER_NO_CACHE} || !$cached_ipnum;
 
     my $one_idx = $self->_first_shared_bit(
         $subnet->first()->as_integer(),
@@ -281,7 +281,7 @@ sub _find_cached_node {
     );
 
     my $cache_idx = min(
-        ( ( $one_idx >= 0 ) ? $one_idx : $mask_length - 1 ),
+        ( ( $one_idx >= 0 ) ? $one_idx : $bits - 1 ),
         $netmask - 1,
         $cache->{last_netmask} - 1
     );
@@ -351,7 +351,7 @@ sub _make_new_node {
     unless ( $self->record_is_empty($record) ) {
         $self->{_needs_move}{subnets} = $self->_split_node(
             $ipnum,
-            $subnet->netmask_as_integer(),
+            $subnet->mask_length(),
             $node_netmask,
             $subnet->version()
         );
@@ -509,7 +509,8 @@ sub lookup_ip_address {
 
     require MaxMind::IPDB::Writer::Tree::Processor::LookupIPAddress;
 
-    my $processor = MaxMind::IPDB::Writer::Tree::Processor::LookupIPAddress->new(
+    my $processor
+        = MaxMind::IPDB::Writer::Tree::Processor::LookupIPAddress->new(
         ip_address => $address );
 
     $self->iterate($processor);

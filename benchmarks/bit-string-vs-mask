@@ -41,9 +41,9 @@ sub mask {
         my $integer = $ip->as_integer();
 
         my $mask
-            = $ip->mask_length() == 32 ? 2**31 : do { use bigint; 2**127 };
+            = $ip->bits() == 32 ? 2**31 : do { use bigint; 2**127 };
 
-        while ($mask ) {
+        while ($mask) {
             $foo .= 'x' if $integer & $mask;
 
             $mask >>= 1;

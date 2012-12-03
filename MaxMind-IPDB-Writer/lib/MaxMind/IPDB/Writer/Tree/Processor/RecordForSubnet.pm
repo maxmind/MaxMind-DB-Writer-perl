@@ -67,7 +67,7 @@ sub _build_ip_address_bits {
     my $self = shift;
 
     my @bits = ( split //, $self->subnet()->first()->as_bit_string() )
-        [ 0 .. $self->subnet()->netmask_as_integer() - 1 ];
+        [ 0 .. $self->subnet()->mask_length() - 1 ];
 
     # We don't need to look at the last bit. We're looking for the record that
     # points _to_ this subnet, not the record that represents the subnet
