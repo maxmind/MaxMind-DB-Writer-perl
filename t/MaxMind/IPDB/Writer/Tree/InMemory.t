@@ -74,11 +74,11 @@ my $id = 0;
 {
     my ( $insert, $expect ) = _ranges_to_data(
         [
-            [ '1.1.1.0', '1.1.1.15' ],
+            [ '1.1.1.0',  '1.1.1.15' ],
             [ '1.1.1.14', '1.1.1.32' ],
         ],
         [
-            [ '1.1.1.0', '1.1.1.13' ],
+            [ '1.1.1.0',  '1.1.1.13' ],
             [ '1.1.1.14', '1.1.1.32' ],
         ],
     );
@@ -96,7 +96,7 @@ my $id = 0;
             [ '1.1.1.0', '1.1.1.15' ],
         ],
         [
-            [ '1.1.1.0', '1.1.1.15' ],
+            [ '1.1.1.0',  '1.1.1.15' ],
             [ '1.1.1.16', '1.1.1.32' ],
         ],
     );
@@ -114,8 +114,8 @@ my $id = 0;
             [ '1.1.1.1', '1.1.1.14' ],
         ],
         [
-            [ '1.1.1.0', '1.1.1.0' ],
-            [ '1.1.1.1', '1.1.1.14' ],
+            [ '1.1.1.0',  '1.1.1.0' ],
+            [ '1.1.1.1',  '1.1.1.14' ],
             [ '1.1.1.15', '1.1.1.15' ],
         ],
     );
@@ -144,6 +144,7 @@ my $id = 0;
 }
 
 {
+
     package TreeIterator;
 
     use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
@@ -197,7 +198,7 @@ my $id = 0;
         $self->{records}{"$node_num-$dir"}++;
 
         return;
-    };
+    }
 }
 
 {
@@ -264,8 +265,7 @@ sub _test_subnet_permutations {
         my @odd  = grep { $_ % 2 } 0 .. $#expect;
         my @even = grep { !( $_ % 2 ) } 0 .. $#expect;
 
-        my @shuffled
-            = ( @expect[@odd], @expect[ reverse @even ] );
+        my @shuffled = ( @expect[@odd], @expect[ reverse @even ] );
 
         _test_tree(
             \@shuffled, \@expect,
@@ -375,8 +375,8 @@ sub _ranges_to_data {
 
 sub _test_tree_as_ipv4_and_ipv6 {
     my $insert = shift;
-    my $expect  = shift;
-    my $desc    = shift;
+    my $expect = shift;
+    my $desc   = shift;
 
     _test_tree( $insert, $expect, $desc );
     _test_tree_as_ipv6( $insert, $expect, $desc );
@@ -399,7 +399,7 @@ sub _subnet_as_v6 {
     my $subnet_string
         = '::'
         . $subnet->first()->as_string() . '/'
-        . ( $subnet->netmask_as_integer() + 96 );
+        . ( $subnet->mask_length() + 96 );
 
     return Net::Works::Network->new(
         subnet  => $subnet_string,
