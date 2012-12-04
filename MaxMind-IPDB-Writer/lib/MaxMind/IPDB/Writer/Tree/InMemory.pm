@@ -352,9 +352,8 @@ sub _make_new_node {
     unless ( $self->record_is_empty($record) ) {
         $self->{_needs_move}{subnets} = $self->_split_node(
             $ipnum,
-            $subnet->mask_length(),
             $node_netmask,
-            $subnet->version()
+            $subnet,
         );
 
         $self->{_needs_move}{data} = $self->{_data_index}{$record};
@@ -364,13 +363,14 @@ sub _make_new_node {
 }
 
 sub _split_node {
-    my $self           = shift;
-    my $start_ipnum    = shift;
-    my $subnet_netmask = shift;
-    my $node_netmask   = shift;
-    my $version        = shift;
+    my $self         = shift;
+    my $start_ipnum  = shift;
+    my $node_netmask = shift;
+    my $subnet       = shift;
 
-    my $bits = $version == 6 ? 128 : 32;
+    my $version        = $subnet->version();
+    my $subnet_netmask = $subnet->mask_length();
+    my $bits           = $subnet->bits();
 
     my $old_start_ipnum;
     my $old_end_ipnum;
