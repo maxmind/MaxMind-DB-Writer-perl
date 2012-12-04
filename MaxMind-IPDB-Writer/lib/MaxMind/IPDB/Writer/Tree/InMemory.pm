@@ -115,7 +115,7 @@ sub _record {
     my $direction = shift;
     my $record    = shift;
 
-    my $ptr_idx = $node >> _RECORD_SIZE;
+    my $ptr_idx = $node >> 16;
 
     my $byte_pos = ( $node & _NODE_POINTER_MASK ) * _NODE_SIZE;
     my $pos      = $byte_pos + $direction * _RECORD_SIZE;
