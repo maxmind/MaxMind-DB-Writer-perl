@@ -280,23 +280,25 @@ sub _encode_record {
     my $is_right = shift;
     my $value    = shift;
 
+    my $record_size = $self->_record_size();
+
     # XXX - this may not work for larger record sizes with bigint
-    die 'Cannot store a value greater than 2**' . $self->_record_size()
-        if $value > 2**$self->_record_size();
+    die 'Cannot store a value greater than 2**' . $record_size
+        if $value > 2**$record_size;
 
     my $base_offset = $node_num * $self->_node_size();
     my $buffer      = $self->_tree_buffer();
 
-    my $record_byte_size = int( $self->_record_size() / 8 );
-    my $write_size       = round( $self->_record_size() / 8 );
+    my $record_byte_size = int( $record_size / 8 );
+    my $write_size       = round( $record_size / 8 );
 
     my $offset = $base_offset + $is_right * $record_byte_size;
 
     my $encoded;
-    if ( $self->_record_size() == 24 ) {
+    if ( $record_size == 24 ) {
         $encoded = substr( pack( N => $value ), 1, 3 );
     }
-    elsif ( $self->_record_size() == 28 ) {
+    elsif ( $record_size == 28 ) {
         my $other_record = substr(
             ${$buffer}, $offset + $is_right * $record_byte_size,
             $write_size
@@ -319,7 +321,7 @@ sub _encode_record {
             );
         }
     }
-    elsif ( $self->_record_size() == 32 ) {
+    elsif ( $record_size == 32 ) {
         $encoded = pack( N => $value );
     }
 
