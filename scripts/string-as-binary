@@ -3,8 +3,16 @@
 use strict;
 use warnings;
 
+use Encode qw( encode );
+
+binmode STDOUT, ':utf8';
+
 for my $string (@ARGV) {
+    if ( $string =~ s/^\\x\{(.+)\}/$1/ ) {
+        $string = chr( hex $string );
+    }
     print "$string\n";
-    print join q{, }, map { sprintf( '0b%08b', ord($_) ) } split //, $string;
+    print join q{, }, map { sprintf( '0b%08b', ord($_) ) } split //,
+        encode( 'UTF-8', $string );
     print "\n\n";
 }
