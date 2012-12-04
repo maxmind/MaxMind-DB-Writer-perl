@@ -9,7 +9,6 @@ use Math::BigInt;
 use Math::Round qw( round );
 use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use MaxMind::IPDB::Metadata;
-use MaxMind::IPDB::Writer::Encoder;
 use MaxMind::IPDB::Writer::Serializer;
 use Net::Works::Network;
 
@@ -366,17 +365,13 @@ sub _map_node_num {
             record_size                 => $self->_record_size(),
         );
 
-        my $buffer;
-        open my $fh, '>', \$buffer;
-
-        my $encoder = MaxMind::IPDB::Writer::Encoder->new(
-            output                => $fh,
+        my $serializer = MaxMind::IPDB::Writer::Serializer->new(
             map_key_type_callback => $type_callback,
         );
 
-        $encoder->encode_map( $metadata->metadata_to_encode() );
+        $serializer->store_data( 'map', $metadata->metadata_to_encode() );
 
-        return $buffer;
+        return ${ $serializer->buffer() };
     }
 }
 
