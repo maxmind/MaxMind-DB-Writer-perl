@@ -544,6 +544,23 @@ sub pointer_record_for_subnet {
     return @{ $processor->record() };
 }
 
+sub write_svg_image {
+    my $self = shift;
+    my $file = shift;
+
+    require MaxMind::IPDB::Writer::Tree::Processor::VisualizeTree;
+
+    my $processor
+        = MaxMind::IPDB::Writer::Tree::Processor::VisualizeTree->new(
+        ip_version => $self->{_saw_ipv6} ? 6 : 4 );
+
+    $self->iterate($processor);
+
+    $processor->graph()->run( output_file => $file );
+
+    return;
+}
+
 __PACKAGE__->meta()->make_immutable();
 
 1;
