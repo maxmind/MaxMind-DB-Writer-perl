@@ -135,7 +135,7 @@ sub _record {
 }
 
 {
-    my $empty = "\0" x 17;
+    my $empty = "\0" x _RECORD_SIZE;
 
     sub record_is_empty {
         $_[1] eq $empty;
@@ -182,7 +182,7 @@ sub insert_subnet_as_alias {
 
     my $node_count = $self->node_count();
 
-    my $final_node = $self->_insert_subnet( $subnet, "\0" x 16 );
+    my $final_node = $self->_insert_subnet( $subnet, "\0" x _RECORD_SIZE );
 
     my $last_bit_in_subnet = substr(
         $subnet->first()->as_bit_string(),
