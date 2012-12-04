@@ -1,11 +1,11 @@
-package Test::MaxMind::IPDB::Writer::Encoder;
+package Test::MaxMind::IPDB::Writer::Serializer;
 
 use strict;
 use warnings;
 
 use List::AllUtils qw( all natatime );
 use Math::BigInt;
-use MaxMind::IPDB::Writer::Encoder;
+use MaxMind::IPDB::Writer::Serializer;
 use Scalar::Util qw( blessed );
 use Test::Bits;
 use Test::More;
@@ -19,8 +19,6 @@ our @EXPORT_OK = qw(
 sub test_encoding_of_type {
     my $type  = shift;
     my $tests = shift;
-
-    my $encode_method = 'encode_' . $type;
 
     my $iter = natatime 2, @{$tests};
     while ( my ( $input, $expect ) = $iter->() ) {
@@ -39,21 +37,19 @@ sub test_encoding_of_type {
                 : $input;
         }
 
-        my $output;
-        open my $fh, '>', \$output;
-
-        my $encoder = MaxMind::IPDB::Writer::Encoder->new(
-            output                => $fh,
+        my $serializer = MaxMind::IPDB::Writer::Serializer->new(
+            _deduplicate_data     => 0,
             map_key_type_callback => \&_map_key_type,
         );
 
-        $encoder->$encode_method(
+        $serializer->store_data(
+            $type,
             $input,
             ( $type eq 'array' ? 'utf8_string' : () ),
         );
 
         bits_is(
-            $output,
+            ${ $serializer->buffer() },
             $expect,
             $desc
         );

@@ -5,9 +5,9 @@ use lib 't/lib';
 
 use Test::Fatal;
 use Test::MaxMind::IPDB::Common::Data qw( test_cases_for );
-use Test::MaxMind::IPDB::Writer::Encoder qw( test_encoding_of_type );
+use Test::MaxMind::IPDB::Writer::Serializer qw( test_encoding_of_type );
 use Test::More;
 
-test_encoding_of_type( int32 => test_cases_for('int32') );
+test_encoding_of_type( bytes => test_cases_for('bytes') );
 
 done_testing();

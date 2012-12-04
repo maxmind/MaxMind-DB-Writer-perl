@@ -5,18 +5,18 @@ use lib 't/lib';
 
 use Test::Fatal;
 use Test::MaxMind::IPDB::Common::Data qw( test_cases_for );
-use Test::MaxMind::IPDB::Writer::Encoder qw( test_encoding_of_type );
+use Test::MaxMind::IPDB::Writer::Serializer qw( test_encoding_of_type );
 use Test::More;
 
-use MaxMind::IPDB::Writer::Encoder;
+use MaxMind::IPDB::Writer::Serializer;
 
 test_encoding_of_type( map => test_cases_for('map') );
 
 {
-    my $encoder = MaxMind::IPDB::Writer::Encoder->new( output => \*STDOUT );
+    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
 
     like(
-        exception { $encoder->_type_for_key('bad key') },
+        exception { $serializer->_type_for_key('bad key') },
         qr/\QCould not determine the type for map key "bad key"/,
         'cannot guess the type for an unknown hash key'
     );

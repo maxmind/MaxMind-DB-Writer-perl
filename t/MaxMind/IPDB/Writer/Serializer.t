@@ -207,14 +207,4 @@ my $strings = test_cases_for(
     );
 }
 
-{
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
-
-    like(
-        exception { $serializer->store_data( pointer => 42 ) },
-        qr/\QCannot store a pointer/,
-        'cannot store a pointer via the store_data method'
-    );
-}
-
 done_testing();

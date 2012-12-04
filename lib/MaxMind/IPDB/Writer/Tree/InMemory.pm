@@ -160,7 +160,7 @@ sub node_count {
 }
 
 # This turns out to be faster than using Storable.
-my $Encoder = JSON::XS->new()->utf8()->allow_nonref();
+my $Serializer = JSON::XS->new()->utf8()->allow_nonref();
 
 sub insert_subnet {
     my $self   = shift;
@@ -169,7 +169,7 @@ sub insert_subnet {
 
     $self->{_saw_ipv6} ||= $subnet->version() == 6;
 
-    my $key = 'D' . md5( $Encoder->encode($data) );
+    my $key = 'D' . md5( $Serializer->encode($data) );
     $self->{_data_index}{$key} ||= $data;
 
     $self->_insert_subnet( $subnet, $key );
