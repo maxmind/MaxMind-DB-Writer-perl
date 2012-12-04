@@ -9,7 +9,7 @@ use JSON::XS;
 use List::Util qw( min );
 use Math::BigInt only => 'GMP';
 use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
-use Net::Works 0.02;
+use Net::Works 0.03;
 use Scalar::Util qw( blessed );
 
 use Moose;
