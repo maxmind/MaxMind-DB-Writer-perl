@@ -203,10 +203,6 @@ sub insert_subnet_as_alias {
             $final_node, LEFT_RECORD,
             $self->get_record( $pointer, LEFT_RECORD )
         );
-        $self->set_record(
-            $final_node, RIGHT_RECORD,
-            $self->get_record( $pointer, RIGHT_RECORD )
-        );
     }
 
     return $self->node_count() - $node_count;
