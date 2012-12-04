@@ -18,7 +18,7 @@ use Socket qw( inet_ntoa );
 
     is(
         exception {
-            for my $i ( 0 .. 2**32 ) {
+            for my $i ( 0 .. 2**16 ) {
                 my $subnet = Net::Works::Network->new(
                     subnet => inet_ntoa( pack( N => $i ) ) . '/32' );
 
