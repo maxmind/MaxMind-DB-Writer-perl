@@ -272,7 +272,7 @@ sub _encode_map {
 
     # We sort to make testing possible.
     for my $k ( sort keys %{$map} ) {
-        $self->_encode_utf8_string($k);
+        $self->store_data( utf8_string => $k );
 
         my $value_type = $self->_type_for_key( $k, $map->{$k} );
         my $array_value_type;
