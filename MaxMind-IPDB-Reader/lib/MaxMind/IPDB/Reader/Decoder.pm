@@ -150,7 +150,7 @@ sub _decode_pointer {
     $self->_debug_string( 'Pointer to', $pointer )
         if DEBUG;
 
-    return $pointer;
+    return ( $pointer, $offset + $pointer_size )
 }
 
 sub _decode_utf8_string {
