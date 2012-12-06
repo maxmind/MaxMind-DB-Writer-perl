@@ -20,7 +20,7 @@ use Socket qw( inet_ntoa );
         exception {
             for my $i ( 0 .. 2**16 ) {
                 my $subnet
-                    = Net::Works::Network->new_from_integer( subnet => $i,
+                    = Net::Works::Network->new_from_integer( address => $i,
                     mask_length => 32 );
 
                 $tree->insert_subnet( $subnet, 0 );
