@@ -19,14 +19,15 @@ use Socket qw( inet_ntoa );
     is(
         exception {
             for my $i ( 0 .. 2**16 ) {
-                my $subnet = Net::Works::Network->new(
-                    subnet => inet_ntoa( pack( N => $i ) ) . '/32' );
+                my $subnet
+                    = Net::Works::Network->new_from_integer( subnet => $i,
+                    mask_length => 32 );
 
                 $tree->insert_subnet( $subnet, 0 );
             }
         },
         undef,
-        'no calls to _split_node when inserting 2**32 subnets'
+        ' no calls to _split_node when inserting 2**32 subnets '
     );
 }
 

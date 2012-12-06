@@ -174,9 +174,11 @@ sub write_tree {
 }
 
 {
-    my $ipv4_subnet = Net::Works::Network->new( subnet => '::0/96' );
+    my $ipv4_subnet
+        = Net::Works::Network->new_from_string( string => '::0/96' );
 
-    my @ipv6_alias_subnets = map { Net::Works::Network->new( subnet => $_ ) }
+    my @ipv6_alias_subnets
+        = map { Net::Works::Network->new_from_string( string => $_ ) }
         qw( ::ffff:0:0/96 2002::/16 );
 
     sub _make_ipv6_aliases {

@@ -50,8 +50,8 @@ sub process_node {
     my $self     = shift;
     my $node_num = shift;
     shift;
-    my $ip_num   = shift;
-    my $netmask  = shift;
+    my $ip_num  = shift;
+    my $netmask = shift;
 
     return 0 if $self->_seen_node($node_num);
 
@@ -101,8 +101,8 @@ sub process_value_record {
     my $netmask = shift;
 
     $self->graph()->add_edge(
-        from  => $self->_label_for_node( $node_num, $ip_num, $netmask ),
-        to    => quotemeta( Dumper($value) ),
+        from => $self->_label_for_node( $node_num, $ip_num, $netmask ),
+        to   => quotemeta( Dumper($value) ),
         label => ( $dir ? 'RIGHT' : 'LEFT' ),
     );
 
@@ -136,7 +136,8 @@ sub _subnet {
         version => $self->ip_version(),
     );
 
-    return Net::Works::Network->new( subnet => $address . '/' . $netmask );
+    return Net::Works::Network->new_from_integer( address => $ip_num,
+        mask_length => $netmask );
 }
 
 __PACKAGE__->meta()->make_immutable();
