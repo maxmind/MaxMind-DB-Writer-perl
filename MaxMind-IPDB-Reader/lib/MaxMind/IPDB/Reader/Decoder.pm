@@ -49,8 +49,10 @@ sub decode {
     confess 'You must provide an offset to decode from when calling ->decode'
         unless defined $offset;
 
-    $self->_debug_newline()
-        if DEBUG;
+    if (DEBUG) {
+        $self->_debug_newline();
+        $self->_debug_string( 'Offset', $offset );
+    }
 
     my $ctrl_byte;
     $self->_read( \$ctrl_byte, $offset, 1 );
