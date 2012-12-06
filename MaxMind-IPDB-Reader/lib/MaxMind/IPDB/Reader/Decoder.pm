@@ -42,6 +42,13 @@ my %Types = (
     13 => 'end_marker',
 );
 
+has _pointer_base => (
+    is       => 'ro',
+    isa      => 'Int',
+    init_arg => 'pointer_base',
+    default  => 0,
+);
+
 sub decode {
     my $self   = shift;
     my $offset = shift;
@@ -152,7 +159,7 @@ sub _decode_pointer {
     $self->_debug_binary( 'Packed pointer', $packed )
         if DEBUG;
 
-    my $pointer = unpack( 'N' => $packed );
+    my $pointer = unpack( 'N' => $packed ) + $self->_pointer_base();
 
     $self->_debug_string( 'Pointer to', $pointer )
         if DEBUG;

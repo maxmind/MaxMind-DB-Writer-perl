@@ -212,7 +212,8 @@ sub _build_decoder {
     my $self = shift;
 
     return MaxMind::IPDB::Reader::Decoder->new(
-        data_source => $self->data_source(),
+        data_source  => $self->data_source(),
+        pointer_base => $self->_search_tree_size(),
     );
 }
 
