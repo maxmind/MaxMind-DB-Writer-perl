@@ -88,7 +88,12 @@ sub decode {
         $self->_debug_binary( 'Next byte', $next_byte )
             if DEBUG;
 
-        $type = $Types{ unpack( C => $next_byte ) };
+        my $type_num = unpack( C => $next_byte );
+        confess
+            "Something went horribly wrong in the decoder. An extended type resolved to a type number < 8 ($type_num)"
+            unless $type_num >= 8;
+
+        $type = $Types{$type_num};
         $offset++;
     }
 
