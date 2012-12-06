@@ -8,6 +8,8 @@ use Digest::MD5 qw( md5 );
 use JSON::XS;
 use List::Util qw( min );
 use Math::BigInt only => 'GMP';
+use Math::Int128 qw(uint128);
+use Math::Int128 qw(uint128_to_hex);
 use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use Net::Works 0.04;
 use Scalar::Util qw( blessed );
@@ -308,10 +310,9 @@ sub _first_shared_bit {
     my $string;
 
     if ( blessed($xor_ipnum) ) {
-        my $bin = $xor_ipnum->as_bin();
-
-        $bin =~ s/^0b//;
-        $string = sprintf( '%128s', $bin );
+        my $hex = uint128_to_hex($xor_ipnum);
+        my @ha = $hex =~ /.{8}/g;
+        $string =  join '',  map { sprintf('%032b', hex($_)) } @ha;
     }
     else {
         $string = sprintf( '%32b', $xor_ipnum );
@@ -379,8 +380,7 @@ sub _split_node {
     my $end_ipnum;
 
     {
-        use bigint;
-        my $t = ~0 << ( $bits - $subnet_netmask + $node_netmask );
+        my $t = ~uint128(0) << ( $bits - $subnet_netmask + $node_netmask );
         $old_start_ipnum = $start_ipnum & $t;
         $old_end_ipnum   = ~$t + $old_start_ipnum;
         $end_ipnum = $start_ipnum | ~( ~0 << ( $bits - $subnet_netmask ) );
