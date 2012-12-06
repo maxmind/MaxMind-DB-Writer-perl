@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 git clean -dxf
 export LOCALLIB=$HOME/local-lib/MaxMind-IPDB-perl
 export PERL5LIB=$LOCALLIB/lib/perl5:$LOCALLIB/lib/perl5/x86_64-linux
