@@ -99,3 +99,5 @@ sub _build_reader {
 __PACKAGE__->meta()->make_immutable();
 
 1;
+
+# ABSTRACT: Read MaxMind IPDB files

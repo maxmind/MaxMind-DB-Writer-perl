@@ -13,3 +13,6 @@ use Exporter qw( import );
 our @EXPORT_OK = qw( LEFT_RECORD RIGHT_RECORD );
 
 1;
+
+# ABSTRACT: Code shared by the IPDB reader and writer modules
+
