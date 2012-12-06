@@ -490,19 +490,10 @@ sub _utf8_string {
         map { ord($_) } split //, $string_2000
     ];
 
-    return \@string if $p{skip_huge_strings};
-
     my $string_70000 = 'x' x 70000;
     push @string, $string_70000 => [
         0b01011111, 0b00000000, 0b00010000, 0b01010011,
         map { ord($_) } split //, $string_70000
-    ];
-
-    my $max_size   = ( 2**24 - 1 ) + 65821;
-    my $string_max = 'x' x $max_size;
-    push @string, $string_max => [
-        0b01011111, 0b11111111, 0b11111111, 0b11111111,
-        map { ord($_) } split //, $string_max
     ];
 
     return \@string;
