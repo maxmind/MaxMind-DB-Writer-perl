@@ -326,8 +326,7 @@ sub _all_ones_mask {
 
     return 2**31 if $bits == 32;
 
-    use bigint;
-    return 2**127;
+    return do { use bigint; 2**127 };
 }
 
 sub _direction {
@@ -434,7 +433,7 @@ sub _make_iterator {
     my $self   = shift;
     my $object = shift;
 
-    my $max_netmask = $self->{_saw_ipv6} ? do { use bigint; 128 } : 32;
+    my $max_netmask = $self->{_saw_ipv6} ? uint128(128) : 32;
 
     my $iterator;
     $iterator = sub {
