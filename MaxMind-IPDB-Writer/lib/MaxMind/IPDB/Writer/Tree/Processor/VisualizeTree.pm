@@ -131,12 +131,7 @@ sub _subnet {
     my $ip_num  = shift;
     my $netmask = shift;
 
-    my $address = Net::Works::Address->new_from_integer(
-        integer => $ip_num,
-        version => $self->ip_version(),
-    );
-
-    return Net::Works::Network->new_from_integer( address => $ip_num,
+    return Net::Works::Network->new_from_integer( integer => $ip_num,
         mask_length => $netmask );
 }
 
