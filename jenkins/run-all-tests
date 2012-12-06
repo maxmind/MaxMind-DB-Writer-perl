@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -x
+
+git clean -dxf
+export LOCALLIB=$HOME/local-lib/MaxMind-IPDB-perl
+export PERL5LIB=$LOCALLIB/lib/perl5:$LOCALLIB/lib/perl5/x86_64-linux
+
+BINDIR=`mm-perl -MConfig -e 'print $Config{bin}'`
+DIRS="MaxMind-IPDB-Common MaxMind-IPDB-Reader MaxMind-IPDB-Writer"
+
+$BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB TAP::Harness::JUnit Math::BigInt::GMP
+
+for dir in $DIRS; do
+    pushd $dir
+    if [ -f dist.ini ]; then
+        $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB `$BINDIR/dzil authordeps`
+        $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB `$BINDIR/dzil listdeps`
+    fi
+    popd
+
+    export PERL5LIB=$PERL5LIB:`pwd`/$dir/lib
+done
+
+for dir in $DIRS; do
+    pushd $dir
+    if [ -d t ]; then
+        export JUNIT_OUTPUT_FILE=`pwd`/junit_output.xml
+        $BINDIR/perl $BINDIR/prove --harness=TAP::Harness::JUnit -r -j 2
+    fi
+    popd
+done
