@@ -7,7 +7,9 @@ use namespace::autoclean;
 use Carp qw( confess );
 use Encode qw( encode );
 use JSON::XS;
+use Math::Int128 qw(uint128_to_hex);
 use MaxMind::IPDB::Writer::Serializer;
+use NetAddr::IP::Util qw(bcd2bin);
 use Regexp::Common qw( RE_num_real );
 
 use Moose;
@@ -359,15 +361,7 @@ sub _encode_unsigned_int {
 
     my $encoded_value;
     if ( $bits >= 64 ) {
-        my $hex = blessed $value ? $value->as_hex() : $value;
-
-        $hex =~ s/^0x//;
-        $hex = sprintf( '%0' . ( $bits / 4 ) . 's', $hex );
-
-        $encoded_value = pack(
-            'N*',
-            map { hex( substr( $hex, $_ * 8, 8 ) ) } 0 .. ( $bits / 32 ) - 1
-        );
+        $encoded_value = bcd2bin($value);
     }
     else {
         $encoded_value = pack( N => $value );

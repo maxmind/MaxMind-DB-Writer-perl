@@ -8,7 +8,7 @@ use Test::Bits;
 use Test::Fatal;
 use Test::More;
 
-use Bit::Vector;
+use Math::Int128 qw(uint128);
 use MaxMind::IPDB::Writer::Serializer;
 
 my $strings = test_cases_for(
@@ -152,7 +152,7 @@ my $strings = test_cases_for(
 {
     my $serializer = MaxMind::IPDB::Writer::Serializer->new();
 
-    my $int = do { use bigint; 2**128 - 1 };
+    my $int = uint128(0) - 1;
 
     $serializer->store_data( uint128 => $int );
 
