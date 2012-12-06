@@ -144,6 +144,7 @@ my $id = 0;
 }
 
 {
+
     package TreeIterator;
 
     use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
@@ -400,8 +401,8 @@ sub _subnet_as_v6 {
         . $subnet->first()->as_string() . '/'
         . ( $subnet->mask_length() + 96 );
 
-    return Net::Works::Network->new(
-        subnet  => $subnet_string,
+    return Net::Works::Network->new_from_string(
+        string  => $subnet_string,
         version => 6,
     );
 }
