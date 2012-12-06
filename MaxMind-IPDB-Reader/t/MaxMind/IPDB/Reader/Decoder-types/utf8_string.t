@@ -18,7 +18,17 @@ use Encode ();
         $tb->todo_output();
 }
 
-test_decoding_of_type( utf8_string => test_cases_for('utf8_string') );
+my $is_author
+    = $ENV{RELEASE_TESTING}
+    || $ENV{AUTHOR_TESTING}
+    || $ENV{BUILD_NUMBER};
+
+test_decoding_of_type(
+    utf8_string => test_cases_for(
+        'utf8_string',
+        skip_huge_strings => !$is_author,
+    )
+);
 
 {
     my $buffer = pack(
