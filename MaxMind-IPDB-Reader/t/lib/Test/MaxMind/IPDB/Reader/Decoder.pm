@@ -23,7 +23,7 @@ sub test_decoding_of_type {
     while ( my ( $expect, $input ) = $iter->() ) {
         my $desc = "decoded $type - ";
 
-        if ( ref $expect && ! blessed $expect ) {
+        if ( ref $expect && !blessed $expect ) {
             $desc .=
                 ref $expect eq 'HASH'
                 ? 'hash with ' . ( scalar keys %{$expect} ) . ' keys'
@@ -44,7 +44,7 @@ sub test_decoding_of_type {
         );
 
         # blessed objects are big ints
-        if ( ref $expect && ! blessed $expect ) {
+        if ( ref $expect && !blessed $expect ) {
             is_deeply(
                 scalar $decoder->decode(0),
                 $expect,

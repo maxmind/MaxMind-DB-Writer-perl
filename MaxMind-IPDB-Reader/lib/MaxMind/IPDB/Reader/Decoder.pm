@@ -9,7 +9,7 @@ use Carp qw( confess );
 use Encode ();
 use MaxMind::IPDB::Reader::Data::Container;
 use MaxMind::IPDB::Reader::Data::EndMarker;
-use Math::BigInt;
+use Math::Int128 qw(uint128);
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -283,14 +283,11 @@ sub _decode_uint {
         return unpack( 'N' => $self->_zero_pad_left( $buffer, $bytes ) );
     }
     else {
-        return Math::BigInt->new(0)
+        return uint128(0)
             if $size == 0;
 
-        return Math::BigInt->new(
-            '0x' . join q{},
-            map { sprintf( '%x', $_ ) }
-                unpack( 'N*', $self->_zero_pad_left( $buffer, $bytes ) )
-        );
+        use NetAddr::IP::Util qw(bin2bcd);
+        return uint128(bin2bcd($self->_zero_pad_left( $buffer, 16 ) ) );
     }
 }
 

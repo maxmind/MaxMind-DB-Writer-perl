@@ -4,19 +4,19 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-use Math::BigInt;
+use Math::Int128;
 
 use Moose;
 use Moose::Util::TypeConstraints;
 use MooseX::StrictConstructor;
 
 {
-    class_type('Math::BigInt');
+    class_type('Math::UInt128');
 
     my %metadata = (
         binary_format_major_version => 'Int',
         binary_format_minor_version => 'Int',
-        build_epoch                 => 'Int|Math::BigInt',
+        build_epoch                 => 'Int|Math::UInt128',
         database_type               => 'Str',
         description                 => 'HashRef[Str]',
         ip_version                  => 'Int',

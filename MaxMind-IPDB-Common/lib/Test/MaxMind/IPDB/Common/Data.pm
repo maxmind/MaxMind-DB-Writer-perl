@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Exporter qw( import );
-use Math::BigInt;
+use Math::Int128 qw( uint128 );
 
 our @EXPORT_OK = qw( test_cases_for );
 
@@ -336,19 +336,19 @@ sub _pointer {
 
 sub _uint128 {
     my @uint128 = (
-        Math::BigInt->new(0)   => [ 0b00000000, 0b00001010 ],
-        Math::BigInt->new(500) => [
+        uint128(0)   => [ 0b00000000, 0b00001010 ],
+        uint128(500) => [
             0b00000010, 0b00001010,
             0b00000001, 0b11110100
         ],
-        Math::BigInt->new(10872) => [
+        uint128(10872) => [
             0b00000010, 0b00001010,
             0b00101010, 0b01111000
         ],
     );
 
     for my $power ( 1 .. 16 ) {
-        my $key = Math::BigInt->new( '0b' . ( '1' x ( 8 * $power ) ) );
+        my $key = uint128(2)**( 8 * $power ) - uint128(1);
 
         my $value = [
             $power, 0b00001010,
@@ -363,19 +363,19 @@ sub _uint128 {
 
 sub _uint64 {
     my @uint64 = (
-        Math::BigInt->new(0)   => [ 0b00000000, 0b00001001 ],
-        Math::BigInt->new(500) => [
+        uint128(0)   => [ 0b00000000, 0b00001001 ],
+        uint128(500) => [
             0b00000010, 0b00001001,
             0b00000001, 0b11110100
         ],
-        Math::BigInt->new(10872) => [
+        uint128(10872) => [
             0b00000010, 0b00001001,
             0b00101010, 0b01111000
         ],
     );
 
     for my $power ( 1 .. 8 ) {
-        my $key = Math::BigInt->new( '0b' . ( '1' x ( 8 * $power ) ) );
+        my $key = uint128(2)**( 8 * $power ) - uint128(1);
 
         my $value = [
             $power, 0b00001001,

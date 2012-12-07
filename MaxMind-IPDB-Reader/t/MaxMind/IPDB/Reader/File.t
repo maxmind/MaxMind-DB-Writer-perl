@@ -195,8 +195,9 @@ sub _test_metadata {
         );
     }
 
+    my $epoch = $metadata->build_epoch();
     like(
-        $metadata->build_epoch(),
+        "$epoch",
         qr/^\d+$/,
         "build_epoch is an integer - $desc"
     );
