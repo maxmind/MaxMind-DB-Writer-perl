@@ -280,7 +280,7 @@ sub _find_cached_node {
 
     my $one_idx = $self->_first_shared_bit(
         $subnet->first()->as_integer(),
-        $cached_ipnum,
+        $cached_ipnum, $bits
     );
 
     my $cache_idx = min(
@@ -303,20 +303,16 @@ sub _first_shared_bit {
     my $self   = shift;
     my $ipnum1 = shift;
     my $ipnum2 = shift;
+    my $bits   = shift;
 
     my $xor_ipnum = $ipnum1 ^ $ipnum2;
-    my $string;
 
-    if ( blessed($xor_ipnum) ) {
-        my $hex = uint128_to_hex($xor_ipnum);
-        my @ha  = $hex =~ /.{8}/g;
-        $string = join q{}, map { sprintf( '%032b', hex($_) ) } @ha;
-    }
-    else {
-        $string = sprintf( '%32b', $xor_ipnum );
+    my $r = 0;
+    while ( $xor_ipnum >>= 1 ) {
+        $r++;
     }
 
-    return index( $string, '1' );
+    return $bits - $r - 1;
 }
 
 sub _first_only_mask {
