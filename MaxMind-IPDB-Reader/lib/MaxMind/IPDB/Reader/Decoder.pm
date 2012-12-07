@@ -10,6 +10,7 @@ use Encode ();
 use MaxMind::IPDB::Reader::Data::Container;
 use MaxMind::IPDB::Reader::Data::EndMarker;
 use Math::Int128 qw(uint128);
+use NetAddr::IP::Util qw(bin2bcd);
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -164,7 +165,7 @@ sub _decode_pointer {
     $self->_debug_string( 'Pointer to', $pointer )
         if DEBUG;
 
-    return ( $pointer, $offset + $pointer_size )
+    return ( $pointer, $offset + $pointer_size );
 }
 
 sub _decode_utf8_string {
@@ -286,8 +287,7 @@ sub _decode_uint {
         return uint128(0)
             if $size == 0;
 
-        use NetAddr::IP::Util qw(bin2bcd);
-        return uint128(bin2bcd($self->_zero_pad_left( $buffer, 16 ) ) );
+        return uint128( bin2bcd( $self->_zero_pad_left( $buffer, 16 ) ) );
     }
 }
 
