@@ -5,7 +5,6 @@ use warnings;
 
 use MaxMind::IPDB::Reader::Decoder;
 use List::AllUtils qw( natatime );
-use Math::BigInt;
 use Scalar::Util qw( blessed );
 use Test::More;
 

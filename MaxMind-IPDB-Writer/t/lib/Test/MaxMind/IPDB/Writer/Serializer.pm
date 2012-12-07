@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use List::AllUtils qw( all natatime );
-use Math::BigInt;
 use MaxMind::IPDB::Writer::Serializer;
 use Scalar::Util qw( blessed );
 use Test::Bits;
