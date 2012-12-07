@@ -68,26 +68,27 @@ sub _find_address_in_tree {
         version => $self->ip_version(),
     );
 
-    my $bit_string = $address->as_bit_string();
+    my $integer = $address->as_integer();
 
     if (DEBUG) {
         $self->_debug_newline();
         $self->_debug_string( 'IP Address', $address );
-        $self->_debug_string( 'Bit string', $bit_string );
+        $self->_debug_string( 'Integer', $integer );
     }
 
     # The first node of the tree is always node 0, at the beginning of the
     # value
     my $node_num = 0;
 
-    my $idx = 1;
-    foreach my $bit ( split //, $bit_string ) {
+    for my $bit_num (reverse( 0...$address->bits - 1 )) {
+        my $bit = 1 & ($integer >> $bit_num);
+
         my ( $left, $right ) = $self->_read_node($node_num);
 
         my $record = $bit ? $right : $left;
 
         if (DEBUG) {
-            $self->_debug_string( 'Bit #', $idx++ );
+            $self->_debug_string( 'Bit #', $address->bits() - $bit_num );
             $self->_debug_string( 'Bit value', $bit );
             $self->_debug_string( 'Record', $bit ? 'right' : 'left' );
             $self->_debug_string( 'Record value', $record );
