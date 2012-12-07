@@ -186,10 +186,8 @@ sub insert_subnet_as_alias {
 
     my $final_node = $self->_insert_subnet( $subnet, "\0" x _RECORD_SIZE );
 
-    my $last_bit_in_subnet = substr(
-        $subnet->first()->as_bit_string(),
-        $subnet->mask_length() - 1, 1
-    );
+    my $last_bit_in_subnet
+        = $subnet->first()->as_integer() & ( 1 << $subnet->mask_length() );
 
     # If the last bit of the subnet is a one then the alias only applies to
     # the right record in the tree. This can be verified visually by looking
