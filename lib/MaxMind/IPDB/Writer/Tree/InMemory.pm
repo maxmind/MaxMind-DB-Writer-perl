@@ -378,7 +378,8 @@ sub _split_node {
         my $t = ~uint128(0) << ( $bits - $subnet_netmask + $node_netmask );
         $old_start_ipnum = $start_ipnum & $t;
         $old_end_ipnum   = ~$t + $old_start_ipnum;
-        $end_ipnum = $start_ipnum | ~( ~0 << ( $bits - $subnet_netmask ) );
+        $end_ipnum
+            = $start_ipnum | ~( ~uint128(0) << ( $bits - $subnet_netmask ) );
     }
 
     my @subnets;
