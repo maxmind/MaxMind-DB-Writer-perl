@@ -5,7 +5,7 @@ use warnings;
 use namespace::autoclean;
 
 use IO::Handle;
-use Math::BigInt;
+use Math::Int128 qw(uint128);
 use Math::Round qw( round );
 use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use MaxMind::IPDB::Metadata;
@@ -360,7 +360,7 @@ sub _map_node_num {
         my $metadata = MaxMind::IPDB::Metadata->new(
             binary_format_major_version => 2,
             binary_format_minor_version => 0,
-            build_epoch                 => Math::BigInt->new( time() ),
+            build_epoch                 => uint128( time() ),
             database_type               => $self->_database_type(),
             description                 => $self->_description(),
             ip_version                  => $self->_ip_version(),

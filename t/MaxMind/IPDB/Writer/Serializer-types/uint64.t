@@ -8,7 +8,7 @@ use Test::MaxMind::IPDB::Common::Data qw( test_cases_for );
 use Test::MaxMind::IPDB::Writer::Serializer qw( test_encoding_of_type );
 use Test::More;
 
-use Math::BigInt;
+use Math::Int128 qw(uint128);
 use MaxMind::IPDB::Writer::Serializer;
 
 test_encoding_of_type( uint64 => test_cases_for('uint64') );
@@ -36,7 +36,7 @@ test_encoding_of_type( uint64 => test_cases_for('uint64') );
 
     like(
         exception {
-            $serializer->_encode_uint64( Math::BigInt->new( 2**65 ) );
+            $serializer->_encode_uint64( uint128(2**65) );
         },
         qr/\QYou cannot encode \E[\dA-F]+\Q as an unsigned 64-bit integer. It is too big./,
         'cannot encode 2**65 as an unsigned 64 bit integer'
