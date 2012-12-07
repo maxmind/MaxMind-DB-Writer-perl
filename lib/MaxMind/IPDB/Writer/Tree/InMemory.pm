@@ -7,7 +7,6 @@ use Carp qw( confess );
 use Digest::MD5 qw( md5 );
 use JSON::XS;
 use List::Util qw( min );
-use Math::BigInt only => 'GMP';
 use Math::Int128 qw( uint128 uint128_to_hex );
 use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use Net::Works 0.04;
@@ -270,7 +269,7 @@ sub _find_cached_node {
     my $netmask = $subnet->mask_length();
 
     my $bits         = $subnet->bits();
-    my $default_mask = $self->_all_ones_mask($bits);
+    my $default_mask = $self->_first_only_mask($bits);
 
     my $cache = $self->_insert_cache();
 
@@ -320,12 +319,14 @@ sub _first_shared_bit {
     return index( $string, '1' );
 }
 
-sub _all_ones_mask {
+sub _first_only_mask {
     my $self = shift;
     my $bits = shift;
 
     return 2**31 if $bits == 32;
 
+    # Changing this to uint128 doesn't work. Maybe we are expecting arbitrary
+    # precision later on. We should FIX it at some point probably.
     return do { use bigint; 2**127 };
 }
 
