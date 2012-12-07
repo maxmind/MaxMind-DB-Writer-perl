@@ -398,7 +398,7 @@ sub _encode_unsigned_int {
             if ( blessed $value && $value->isa('Math::UInt128') ) {
                 die
                     "You cannot encode $value as an $type_description. It is too big."
-                    if $bits != 128 && $value/(2**$bits);
+                    if $bits != 128 && $value/(2**$bits) > 1;
             }
             else {
                 die "You cannot encode $value as an $type_description. It is not an unsigned integer number."
