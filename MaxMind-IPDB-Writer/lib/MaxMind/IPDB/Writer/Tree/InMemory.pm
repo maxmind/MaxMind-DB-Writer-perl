@@ -9,6 +9,7 @@ use JSON::XS;
 use List::Util qw( min );
 use Math::Int128 0.06 qw( uint128 );
 use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
+use MaxMind::IPDB::Writer::Tree::Processor::NodeCounter;
 use Net::Works 0.04;
 use Scalar::Util qw( blessed );
 
@@ -260,6 +261,17 @@ sub _insert_subnet {
     $cache->{node_num_cache}[$idx] = $node;
 
     my $direction = $self->_direction( $ipnum, $bit_to_check );
+
+    my $existing = $self->get_record( $node, $direction );
+
+    # This happens when we insert a subnet that is bigger than an earlier
+    # subnet - for example we first insert 1.1.2.255/32 and then insert
+    # 1.1.2.254/31 - the latter overwrites the former, so we are effectively
+    # deleting nodes from the tree.
+    if ( my $pointer = $self->record_pointer_value($existing) ) {
+        $self->{_deleted_node_count}
+            += $self->_node_count_starting_at($pointer);
+    }
 
     $self->set_record( $node, $direction, $final_record );
 
@@ -570,14 +582,18 @@ sub write_svg_image {
 # self-reported node count.
 sub _real_node_count {
     my $self = shift;
-    my $file = shift;
 
-    require MaxMind::IPDB::Writer::Tree::Processor::NodeCounter;
+    return $self->_node_count_starting_at(0);
+}
+
+sub _node_count_starting_at {
+    my $self          = shift;
+    my $starting_node = shift;
 
     my $processor
         = MaxMind::IPDB::Writer::Tree::Processor::NodeCounter->new();
 
-    $self->iterate($processor);
+    $self->iterate( $processor, $starting_node );
 
     return $processor->node_count();
 }
