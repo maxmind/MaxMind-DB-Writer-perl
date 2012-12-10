@@ -7,7 +7,7 @@ export PERL5LIB=$LOCALLIB/lib/perl5:$LOCALLIB/lib/perl5/x86_64-linux
 BINDIR=`mm-perl -MConfig -e 'print $Config{bin}'`
 DIRS="MaxMind-IPDB-Common MaxMind-IPDB-Reader MaxMind-IPDB-Writer"
 
-$BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB TAP::Harness::JUnit Math::BigInt::GMP
+$BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB TAP::Harness::JUnit
 
 for dir in $DIRS; do
     pushd $dir
