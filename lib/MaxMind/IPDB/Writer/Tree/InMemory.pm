@@ -7,7 +7,7 @@ use Carp qw( confess );
 use Digest::MD5 qw( md5 );
 use JSON::XS;
 use List::Util qw( min );
-use Math::Int128 0.06 qw( uint128 uint128_to_hex );
+use Math::Int128 0.06 qw( uint128 );
 use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use Net::Works 0.04;
 use Scalar::Util qw( blessed );
