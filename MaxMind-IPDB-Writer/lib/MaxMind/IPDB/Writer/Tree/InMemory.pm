@@ -556,6 +556,22 @@ sub write_svg_image {
     return;
 }
 
+# This is really only useful for debugging problems with the tree's
+# self-reported node count.
+sub _real_node_count {
+    my $self = shift;
+    my $file = shift;
+
+    require MaxMind::IPDB::Writer::Tree::Processor::NodeCounter;
+
+    my $processor
+        = MaxMind::IPDB::Writer::Tree::Processor::NodeCounter->new();
+
+    $self->iterate($processor);
+
+    return $processor->node_count();
+}
+
 __PACKAGE__->meta()->make_immutable();
 
 1;
