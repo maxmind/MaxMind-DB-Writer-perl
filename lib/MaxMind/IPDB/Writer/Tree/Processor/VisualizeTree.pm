@@ -131,8 +131,10 @@ sub _subnet {
     my $ip_num  = shift;
     my $netmask = shift;
 
-    return Net::Works::Network->new_from_integer( integer => $ip_num,
-        mask_length => $netmask );
+    return Net::Works::Network->new_from_integer(
+        integer     => $ip_num,
+        mask_length => $netmask,
+    );
 }
 
 __PACKAGE__->meta()->make_immutable();
