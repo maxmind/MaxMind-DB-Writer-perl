@@ -8,7 +8,7 @@ use Test::Bits;
 use Test::Fatal;
 use Test::More;
 
-use Math::Int128 qw(uint128);
+use Math::Int128 qw( uint128 );
 use MaxMind::IPDB::Writer::Serializer;
 
 my $strings = test_cases_for(

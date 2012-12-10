@@ -5,7 +5,7 @@ use warnings;
 use namespace::autoclean;
 
 use IO::Handle;
-use Math::Int128 qw(uint128);
+use Math::Int128 qw( uint128 );
 use Math::Round qw( round );
 use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use MaxMind::IPDB::Metadata;

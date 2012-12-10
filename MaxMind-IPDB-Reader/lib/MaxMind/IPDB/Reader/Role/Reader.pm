@@ -73,29 +73,29 @@ sub _find_address_in_tree {
     if (DEBUG) {
         $self->_debug_newline();
         $self->_debug_string( 'IP Address', $address );
-        $self->_debug_string( 'Integer', $integer );
+        $self->_debug_string( 'Integer',    $integer );
     }
 
     # The first node of the tree is always node 0, at the beginning of the
     # value
     my $node_num = 0;
 
-    for my $bit_num (reverse( 0...$address->bits - 1 )) {
-        my $bit = 1 & ($integer >> $bit_num);
+    for my $bit_num ( reverse( 0 ... $address->bits - 1 ) ) {
+        my $bit = 1 & ( $integer >> $bit_num );
 
         my ( $left, $right ) = $self->_read_node($node_num);
 
         my $record = $bit ? $right : $left;
 
         if (DEBUG) {
-            $self->_debug_string( 'Bit #', $address->bits() - $bit_num );
+            $self->_debug_string( 'Bit #',     $address->bits() - $bit_num );
             $self->_debug_string( 'Bit value', $bit );
-            $self->_debug_string( 'Record', $bit ? 'right' : 'left' );
+            $self->_debug_string( 'Record',    $bit ? 'right' : 'left' );
             $self->_debug_string( 'Record value', $record );
         }
 
         unless ($record) {
-            $self->_debug_message( 'Record is empty' )
+            $self->_debug_message('Record is empty')
                 if DEBUG;
             return;
         }
@@ -169,6 +169,7 @@ sub _build_node_byte_size {
 }
 
 my $MetadataStartMarker = "\xab\xcd\xefMaxMind.com";
+
 sub _build_metadata {
     my $self = shift;
 
@@ -198,7 +199,7 @@ sub _build_metadata {
         . '). Is this a valid MaxMind IPDB file?'
         unless $start >= 0;
 
-    $start += bytes::length( $MetadataStartMarker );
+    $start += bytes::length($MetadataStartMarker);
 
     open my $fh, '<', \( substr( $last_block, $start ) );
 

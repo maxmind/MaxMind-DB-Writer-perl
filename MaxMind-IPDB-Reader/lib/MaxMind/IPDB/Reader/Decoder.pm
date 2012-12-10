@@ -9,8 +9,8 @@ use Carp qw( confess );
 use Encode ();
 use MaxMind::IPDB::Reader::Data::Container;
 use MaxMind::IPDB::Reader::Data::EndMarker;
-use Math::Int128 qw(uint128);
-use NetAddr::IP::Util qw(bin2bcd);
+use Math::Int128 qw( uint128 );
+use NetAddr::IP::Util qw( bin2bcd );
 
 use Moose;
 use MooseX::StrictConstructor;

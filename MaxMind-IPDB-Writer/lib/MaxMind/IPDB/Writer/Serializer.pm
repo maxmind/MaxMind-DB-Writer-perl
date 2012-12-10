@@ -7,9 +7,9 @@ use namespace::autoclean;
 use Carp qw( confess );
 use Encode qw( encode );
 use JSON::XS;
-use Math::Int128 qw(uint128_to_hex);
+use Math::Int128 qw( uint128_to_hex );
 use MaxMind::IPDB::Writer::Serializer;
-use NetAddr::IP::Util qw(bcd2bin);
+use NetAddr::IP::Util qw( bcd2bin );
 use Regexp::Common qw( RE_num_real );
 
 use Moose;
@@ -213,7 +213,7 @@ sub _encode_pointer {
         $ctrl_byte |= ord( shift @value_bytes );
     }
     elsif ( $value < 2**19 ) {
-        @value_bytes = split //, substr( pack( N => $value ), 1, 3);
+        @value_bytes = split //, substr( pack( N => $value ), 1, 3 );
         $ctrl_byte |= ( 1 << 3 ) | ord( shift @value_bytes );
     }
     elsif ( $value < 2**27 ) {
@@ -398,10 +398,11 @@ sub _encode_unsigned_int {
             if ( blessed $value && $value->isa('Math::UInt128') ) {
                 die
                     "You cannot encode $value as an $type_description. It is too big."
-                    if $bits != 128 && $value/(2**$bits) > 1;
+                    if $bits != 128 && $value / ( 2**$bits ) > 1;
             }
             else {
-                die "You cannot encode $value as an $type_description. It is not an unsigned integer number."
+                die
+                    "You cannot encode $value as an $type_description. It is not an unsigned integer number."
                     unless $value =~ /^[0-9]+$/;
             }
         }
