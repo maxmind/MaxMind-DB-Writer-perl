@@ -249,8 +249,8 @@ sub _insert_subnet {
                 $direction,
                 $record,
                 $ipnum,
-                $subnet,
                 $node_netmask,
+                $subnet,
             );
         }
 
@@ -347,8 +347,8 @@ sub _make_new_node {
     my $parent_direction = shift;
     my $parent_record    = shift;
     my $ipnum            = shift;
-    my $subnet           = shift;
     my $node_netmask     = shift;
+    my $subnet           = shift;
 
     my $new_node   = $self->_next_node_num;
     my $new_record = $self->mk_pointer_record($new_node);
