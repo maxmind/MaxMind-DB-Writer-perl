@@ -8,8 +8,7 @@ use Digest::MD5 qw( md5 );
 use JSON::XS;
 use List::Util qw( min );
 use Math::BigInt only => 'GMP';
-use Math::Int128 qw(uint128);
-use Math::Int128 qw(uint128_to_hex);
+use Math::Int128 qw( uint128 uint128_to_hex );
 use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use Net::Works 0.04;
 use Scalar::Util qw( blessed );
@@ -311,8 +310,8 @@ sub _first_shared_bit {
 
     if ( blessed($xor_ipnum) ) {
         my $hex = uint128_to_hex($xor_ipnum);
-        my @ha = $hex =~ /.{8}/g;
-        $string =  join '',  map { sprintf('%032b', hex($_)) } @ha;
+        my @ha  = $hex =~ /.{8}/g;
+        $string = join q{}, map { sprintf( '%032b', hex($_) ) } @ha;
     }
     else {
         $string = sprintf( '%32b', $xor_ipnum );

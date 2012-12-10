@@ -144,7 +144,6 @@ my $id = 0;
 }
 
 {
-
     package TreeIterator;
 
     use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
