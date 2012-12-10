@@ -332,26 +332,26 @@ sub _direction {
 }
 
 sub _make_new_node {
-    my $self         = shift;
-    my $node         = shift;
-    my $direction    = shift;
-    my $record       = shift;
-    my $ipnum        = shift;
-    my $subnet       = shift;
-    my $node_netmask = shift;
+    my $self             = shift;
+    my $parent_node      = shift;
+    my $parent_direction = shift;
+    my $parent_record    = shift;
+    my $ipnum            = shift;
+    my $subnet           = shift;
+    my $node_netmask     = shift;
 
     my $new_node   = $self->_next_node_num;
     my $new_record = $self->mk_pointer_record($new_node);
-    $self->set_record( $node, $direction, $new_record );
+    $self->set_record( $parent_node, $parent_direction, $new_record );
 
-    unless ( $self->record_is_empty($record) ) {
+    unless ( $self->record_is_empty($parent_record) ) {
         $self->{_needs_move}{subnets} = $self->_split_node(
             $ipnum,
             $node_netmask,
             $subnet,
         );
 
-        $self->{_needs_move}{data} = $self->{_data_index}{$record};
+        $self->{_needs_move}{data} = $self->{_data_index}{$parent_record};
     }
 
     return $new_node;
