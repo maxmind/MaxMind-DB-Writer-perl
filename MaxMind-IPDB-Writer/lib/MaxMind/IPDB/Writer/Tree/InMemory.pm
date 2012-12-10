@@ -53,6 +53,13 @@ has _used_node_count => (
     default  => 0,
 );
 
+has _deleted_node_count => (
+    is       => 'ro',
+    isa      => 'Int',
+    init_arg => undef,
+    default  => 0,
+);
+
 has _insert_cache => (
     is       => 'ro',
     isa      => 'HashRef',
@@ -158,7 +165,7 @@ sub record_pointer_value {
 }
 
 sub node_count {
-    return $_[0]->_used_node_count();
+    return $_[0]->_used_node_count() - $_[0]->_deleted_node_count();
 }
 
 # This turns out to be faster than using Storable.
@@ -175,6 +182,8 @@ sub insert_subnet {
     $self->{_data_index}{$key} ||= $data;
 
     $self->_insert_subnet( $subnet, $key );
+
+    return;
 }
 
 sub insert_subnet_as_alias {
@@ -320,6 +329,7 @@ sub _first_only_mask {
 
     return 2**31 if $bits == 32;
 
+    # This is 2**127
     return uint128('170141183460469231731687303715884105728');
 }
 
