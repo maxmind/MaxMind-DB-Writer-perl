@@ -7,7 +7,6 @@ use Test::More;
 use MaxMind::IPDB::Writer::Tree::InMemory;
 
 use Net::Works::Network;
-use Socket qw( inet_ntoa );
 
 {
     my $tree = MaxMind::IPDB::Writer::Tree::InMemory->new();
