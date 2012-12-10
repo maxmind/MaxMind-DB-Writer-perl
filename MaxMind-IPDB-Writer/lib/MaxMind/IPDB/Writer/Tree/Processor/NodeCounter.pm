@@ -34,10 +34,6 @@ sub process_node {
 }
 
 sub process_pointer_record {
-    my $self     = shift;
-    my $node_num = shift;
-    my $dir      = shift;
-
     return 1;
 }
 
