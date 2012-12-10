@@ -284,7 +284,8 @@ sub _encode_record {
 
     my $record_size = $self->_record_size();
 
-    # XXX - this may not work for larger record sizes with bigint
+    # XXX - this may not work for larger record sizes unless we use a
+    # Math::UInt128 to do the calculation.
     die 'Cannot store a value greater than 2**' . $record_size
         if $value > 2**$record_size;
 

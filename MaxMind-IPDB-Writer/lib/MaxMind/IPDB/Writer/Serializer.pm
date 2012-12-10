@@ -148,8 +148,8 @@ sub _should_cache_value {
     }
 }
 
-# We allow blessed objects because it's possible we'll be storing bigint
-# objects.
+# We allow blessed objects because it's possible we'll be storing
+# Math::UInt128 objects.
 my $json = JSON::XS->new()->canonical()->allow_blessed();
 
 sub _key_for_data {
