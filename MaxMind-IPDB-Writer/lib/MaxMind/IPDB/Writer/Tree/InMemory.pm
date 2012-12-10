@@ -7,7 +7,7 @@ use Carp qw( confess );
 use Digest::MD5 qw( md5 );
 use JSON::XS;
 use List::Util qw( min );
-use Math::Int128 qw( uint128 uint128_to_hex );
+use Math::Int128 0.06 qw( uint128 uint128_to_hex );
 use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use Net::Works 0.04;
 use Scalar::Util qw( blessed );
@@ -228,6 +228,7 @@ sub _insert_subnet {
         $cache->{node_num_cache}[ $idx++ ] = $node;
 
         my $direction = $self->_direction( $ipnum, $bit_to_check );
+
         my $record = $self->get_record( $node, $direction );
 
         if ( my $next_node = $self->record_pointer_value($record) ) {
@@ -319,9 +320,7 @@ sub _first_only_mask {
 
     return 2**31 if $bits == 32;
 
-    # Changing this to uint128 doesn't work. Maybe we are expecting arbitrary
-    # precision later on. We should FIX it at some point probably.
-    return do { use bigint; 2**127 };
+    return uint128('170141183460469231731687303715884105728');
 }
 
 sub _direction {
