@@ -5,9 +5,10 @@ use warnings;
 use namespace::autoclean;
 use autodie;
 
+use List::AllUtils qw( min );
 use MaxMind::IPDB::Reader::Decoder;
 use MaxMind::IPDB::Metadata;
-use List::AllUtils qw( min );
+use Net::Works::Address;
 
 use Moose::Role;
 
