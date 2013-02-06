@@ -156,7 +156,6 @@ and 32 bit records. Larger record sizes follow this same pattern.
     | <------------- node --------------->|
     | 23 .. 0 | 27..24 | 27..24 | 23 .. 0 |
 
-
 Note, the last 4 bits of each pointer are combined into the middle byte.
 
 #### 32 bits (large database), one node is 8 bytes
