@@ -14,7 +14,7 @@ use MaxMind::IPDB::Writer::Serializer;
 
     bits_is(
         ${ $serializer->buffer() },
-        [ 0b00000000, 0b00001101 ],
+        [ 0b00000000, 0b00000110 ],
         'encoding of end_marker type'
     );
 }

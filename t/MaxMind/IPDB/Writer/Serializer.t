@@ -157,7 +157,7 @@ my $strings = test_cases_for(
     $serializer->store_data( uint128 => $int );
 
     my $expect = [
-        0b00010000, 0b00001010,
+        0b00010000, 0b00000011,
         (0b11111111) x 16
     ];
 
