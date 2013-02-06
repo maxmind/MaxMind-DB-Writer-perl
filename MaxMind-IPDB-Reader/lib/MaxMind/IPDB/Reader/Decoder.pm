@@ -134,6 +134,13 @@ sub decode {
         : $self->$method( $buffer, $size );
 }
 
+my %pointer_value_offset = (
+    1 => 0,
+    2 => 2**11,
+    3 => 2**19 + 2**11,
+    4 => 0,
+);
+
 sub _decode_pointer {
     my $self      = shift;
     my $ctrl_byte = shift;
@@ -161,6 +168,7 @@ sub _decode_pointer {
         if DEBUG;
 
     my $pointer = unpack( 'N' => $packed ) + $self->_pointer_base();
+    $pointer += $pointer_value_offset{$pointer_size};
 
     $self->_debug_string( 'Pointer to', $pointer )
         if DEBUG;

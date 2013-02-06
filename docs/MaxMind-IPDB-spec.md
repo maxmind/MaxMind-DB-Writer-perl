@@ -362,6 +362,10 @@ contain a number from 1 to 7, the actual type for the field.
 We've tried to assign the most commonly used types as numbers 1-7 as an
 optimization.
 
+With an extended type, the type number in the second byte is the number minus
+7. In other words, an array (type 11) will be stored with a 0 for the type in
+the first byte and a 4 in the second.
+
 Here is an example of how the control byte may combine with the next byte to
 tell us the type:
 
@@ -369,8 +373,8 @@ tell us the type:
     010XXXXX          UTF-8 string
     010XXXXX          unsigned 32-bit int (ASCII)
     000XXXXX 00001010 unsigned 128-bit int (binary)
-    000XXXXX 00001011 data cache container
-    000XXXXX 00001100 end marker
+    000XXXXX 00000100 array
+    000XXXXX 00000110 end marker
 
 #### Payload Size
 
@@ -458,10 +462,10 @@ If the size is 0, the pointer is built by appending the next byte to the last
 three bits to produce an 11-bit value.
 
 If the size is 1, the pointer is built by appending the next two bytes to the
-last three bits to produce a 19-bit value.
+last three bits to produce a 19-bit value + 2047.
 
 If the size is 2, the pointer is built by appending the next three bytes to the
-last three bits to produce a 27-bit value.
+last three bits to produce a 27-bit value + 526335.
 
 Finally, if the size is 3, the pointer's value is contained in the next four
 bytes as a 32-bit value. In this case, the last three bits of the control byte
