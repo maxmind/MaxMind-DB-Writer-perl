@@ -489,7 +489,7 @@ sub _encode_unsigned_int {
         }
         else {
             $first_byte  = ( $Types{extended} << 5 );
-            $second_byte = $type;
+            $second_byte = $type - 7;
             $template .= 'C';
         }
 

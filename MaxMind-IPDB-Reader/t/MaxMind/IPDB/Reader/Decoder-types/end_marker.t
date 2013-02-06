@@ -9,7 +9,7 @@ use Test::More;
 
 {
     my $buffer = pack(
-        C2 => 0b00000000, 0b00001101,
+        C2 => 0b00000000, 0b00000110,
     );
 
     open my $fh, '<', \$buffer;
