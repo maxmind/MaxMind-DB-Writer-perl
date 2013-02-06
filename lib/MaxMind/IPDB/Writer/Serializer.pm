@@ -198,6 +198,28 @@ my %Types = (
     end_marker  => 13,
 );
 
+my @pointer_thresholds;
+push @pointer_thresholds,
+    {
+    cutoff => 2**11,
+    offset => 0,
+    };
+push @pointer_thresholds,
+    {
+    cutoff => 2**19 + $pointer_thresholds[-1]{cutoff},
+    offset => $pointer_thresholds[-1]{cutoff},
+    };
+push @pointer_thresholds,
+    {
+    cutoff => 2**27 + $pointer_thresholds[-1],
+    offset => $pointer_thresholds[-1]{cutoff},
+    };
+push @pointer_thresholds,
+    {
+    cutoff => 2**32,
+    offset => 0,
+    };
+
 sub _encode_pointer {
     my $self  = shift;
     my $value = shift;
@@ -207,24 +229,42 @@ sub _encode_pointer {
     my $ctrl_byte = ord( $self->_control_bytes( $Types{pointer}, 0 ) );
 
     my @value_bytes;
-    if ( $value < 2**11 ) {
-        @value_bytes = split //, pack( n => $value );
-        $ctrl_byte |= ord( shift @value_bytes );
-    }
-    elsif ( $value < 2**19 ) {
-        @value_bytes = split //, substr( pack( N => $value ), 1, 3 );
-        $ctrl_byte |= ( 1 << 3 ) | ord( shift @value_bytes );
-    }
-    elsif ( $value < 2**27 ) {
-        @value_bytes = split //, pack( N => $value );
-        $ctrl_byte |= ( 2 << 3 ) | ord( shift @value_bytes );
-    }
-    else {
-        @value_bytes = pack( N => $value );
-        $ctrl_byte |= ( 3 << 3 );
+    for my $n ( 0 .. 3 ) {
+        if ( $value < $pointer_thresholds[$n]{cutoff} ) {
+
+            my $pack_method = '_pack_' . ( $n + 1 ) . '_byte_pointer';
+            @value_bytes = split //,
+                $self->$pack_method(
+                $value - $pointer_thresholds[$n]{offset} );
+
+            if ( $n == 3 ) {
+                $ctrl_byte |= ( 3 << 3 );
+            }
+            else {
+                $ctrl_byte |= ( $n << 3 ) | ord( shift @value_bytes );
+            }
+
+            last;
+        }
     }
 
     $self->_write_encoded_data( pack( 'C', $ctrl_byte ), @value_bytes );
+}
+
+sub _pack_1_byte_pointer {
+    return pack( n => $_[1] );
+}
+
+sub _pack_2_byte_pointer {
+    return substr( pack( N => $_[1] ), 1, 3 );
+}
+
+sub _pack_3_byte_pointer {
+    return pack( N => $_[1] );
+}
+
+sub _pack_4_byte_pointer {
+    return pack( N => $_[1] );
 }
 
 sub _encode_utf8_string {
