@@ -90,13 +90,15 @@ sub store_data {
         if DEBUG;
 
     if ( defined $position ) {
-        $self->_store_data( pointer => $position );
+        return $self->_store_data( pointer => $position );
     }
     else {
         my $position = $self->_store_data( $type, $data, $member_type );
         $self->_debug_string( 'Stored data at position', $position )
             if DEBUG;
         $self->_save_position( $key_for_data => $position );
+
+        return $position;
     }
 }
 
