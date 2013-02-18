@@ -73,8 +73,9 @@ sub _find_address_in_tree {
 
     if (DEBUG) {
         $self->_debug_newline();
-        $self->_debug_string( 'IP Address', $address );
-        $self->_debug_string( 'Integer',    $integer );
+        $self->_debug_string( 'IP address',      $address );
+        $self->_debug_string( 'IP address bits', $address->as_bit_string() );
+        $self->_debug_newline();
     }
 
     # The first node of the tree is always node 0, at the beginning of the
