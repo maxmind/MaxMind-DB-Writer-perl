@@ -10,6 +10,8 @@ use Moose;
 use Moose::Util::TypeConstraints;
 use MooseX::StrictConstructor;
 
+with 'MaxMind::DB::Role::Debugs';
+
 {
     class_type('Math::UInt128');
 
@@ -49,6 +51,45 @@ sub metadata_to_encode {
     }
 
     return \%metadata;
+}
+
+sub debug_dump {
+    my $self = shift;
+
+    $self->_debug_newline();
+
+    $self->_debug_message('Metadata:');
+    my $version = join '.',
+        $self->binary_format_major_version(),
+        $self->binary_format_minor_version();
+    $self->_debug_string( '  Binary format version', $version );
+
+    require DateTime;
+    $self->_debug_string(
+        '  Build epoch',
+        $self->build_epoch() . ' ('
+            . DateTime->from_epoch( epoch => $self->build_epoch() ) . ')'
+    );
+
+    $self->_debug_string('  Database type', $self->database_type() );
+
+    my $description = $self->description();
+    for my $locale ( sort keys %{$description} ) {
+        $self->_debug_string(
+            "  Description [$locale]",
+            $description->{$locale}
+        );
+    }
+
+    $self->_debug_string( '  IP version',            $self->ip_version() );
+    $self->_debug_string( '  Node count',            $self->node_count() );
+    $self->_debug_string( '  Record size (in bits)', $self->record_size() );
+    $self->_debug_string(
+        '  Languages', join ', ',
+        @{ $self->languages() }
+    );
+
+    return;
 }
 
 __PACKAGE__->meta()->make_immutable();

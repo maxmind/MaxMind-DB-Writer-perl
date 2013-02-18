@@ -204,11 +204,15 @@ sub _build_metadata {
 
     open my $fh, '<', \( substr( $last_block, $start ) );
 
-    my $metadata = MaxMind::DB::Reader::Decoder->new(
+    my $raw = MaxMind::DB::Reader::Decoder->new(
         data_source => $fh,
     )->decode(0);
 
-    return MaxMind::DB::Metadata->new($metadata);
+    my $metadata = MaxMind::DB::Metadata->new($raw);
+
+    $metadata->debug_dump() if DEBUG;
+
+    return $metadata;
 }
 
 sub _build_decoder {
