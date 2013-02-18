@@ -40,8 +40,8 @@ sub _debug_string {
 }
 
 sub _debug_structure {
-    my $self = shift;
-    my $label = shift;
+    my $self      = shift;
+    my $label     = shift;
     my $structure = shift;
 
     require Data::Dumper::Concise;
