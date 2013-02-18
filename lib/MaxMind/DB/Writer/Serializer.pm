@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
+require bytes;
 use Carp qw( confess );
 use Encode qw( encode );
 use JSON::XS;
@@ -173,7 +174,7 @@ sub _store_data {
     my $data        = shift;
     my $member_type = shift;
 
-    my $current_position = length ${ $self->buffer() };
+    my $current_position = bytes::length ${ $self->buffer() };
 
     my $method = '_encode_' . $type;
     $self->$method( $data, $member_type );
