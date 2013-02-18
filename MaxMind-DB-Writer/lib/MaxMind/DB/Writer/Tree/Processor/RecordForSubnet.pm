@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Writer::Tree::Processor::RecordForSubnet;
+package MaxMind::DB::Writer::Tree::Processor::RecordForSubnet;
 
 use strict;
 use warnings;

@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Role::Debugs;
+package MaxMind::DB::Role::Debugs;
 
 use strict;
 use warnings;

@@ -1,10 +1,10 @@
-package Test::MaxMind::IPDB::Writer::Serializer;
+package Test::MaxMind::DB::Writer::Serializer;
 
 use strict;
 use warnings;
 
 use List::AllUtils qw( all natatime );
-use MaxMind::IPDB::Writer::Serializer;
+use MaxMind::DB::Writer::Serializer;
 use Scalar::Util qw( blessed );
 use Test::Bits;
 use Test::More;
@@ -36,7 +36,7 @@ sub test_encoding_of_type {
                 : $input;
         }
 
-        my $serializer = MaxMind::IPDB::Writer::Serializer->new(
+        my $serializer = MaxMind::DB::Writer::Serializer->new(
             _deduplicate_data     => 0,
             map_key_type_callback => \&_map_key_type,
         );

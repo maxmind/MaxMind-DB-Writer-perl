@@ -1,9 +1,9 @@
 #!/bin/bash
 
-for dir in MaxMind-IPDB-Common MaxMind-IPDB-Reader MaxMind-IPDB-Writer; do
+for dir in MaxMind-DB-Common MaxMind-DB-Reader MaxMind-DB-Writer; do
     if [ -d "$dir/t" ]; then
         pushd $dir
-        prove -I ../lib -I ../MaxMind-IPDB-Common/lib -I ../MaxMind-IPDB-Reader/lib -I ../MaxMind-IPDB-Writer/lib -lr -j 4 t/
+        prove -I ../lib -I ../MaxMind-DB-Common/lib -I ../MaxMind-DB-Reader/lib -I ../MaxMind-DB-Writer/lib -lr -j 4 t/
         popd
     fi
 done

@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Writer::Serializer;
+package MaxMind::DB::Writer::Serializer;
 
 use strict;
 use warnings;
@@ -8,15 +8,15 @@ use Carp qw( confess );
 use Encode qw( encode );
 use JSON::XS;
 use Math::Int128 qw( uint128_to_net );
-use MaxMind::IPDB::Writer::Serializer;
+use MaxMind::DB::Writer::Serializer;
 use Regexp::Common qw( RE_num_real );
 
 use Moose;
 use MooseX::StrictConstructor;
 
-with 'MaxMind::IPDB::Role::Debugs';
+with 'MaxMind::DB::Role::Debugs';
 
-use constant DEBUG => $ENV{MAXMIND_IPDB_SERIALIZER_DEBUG};
+use constant DEBUG => $ENV{MAXMIND_DB_SERIALIZER_DEBUG};
 
 binmode STDERR, ':utf8'
     if DEBUG;

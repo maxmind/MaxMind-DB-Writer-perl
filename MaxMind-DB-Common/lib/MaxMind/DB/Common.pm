@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Common;
+package MaxMind::DB::Common;
 
 use strict;
 use warnings;
@@ -14,5 +14,5 @@ our @EXPORT_OK = qw( LEFT_RECORD RIGHT_RECORD );
 
 1;
 
-# ABSTRACT: Code shared by the IPDB reader and writer modules
+# ABSTRACT: Code shared by the DB reader and writer modules
 

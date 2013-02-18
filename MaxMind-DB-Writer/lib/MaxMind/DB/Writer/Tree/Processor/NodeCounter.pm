@@ -1,9 +1,9 @@
-package MaxMind::IPDB::Writer::Tree::Processor::NodeCounter;
+package MaxMind::DB::Writer::Tree::Processor::NodeCounter;
 
 use strict;
 use warnings;
 
-use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
+use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
 
 use Moose;
 

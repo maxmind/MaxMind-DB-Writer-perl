@@ -1,8 +1,8 @@
-# MaxMind IPDB Format
+# MaxMind DB Format
 
 ## Version
 
-This spec documents **version 2.0** of the MaxMind IPDB binary format.
+This spec documents **version 2.0** of the MaxMind DB binary format.
 
 The version number consists of separate major and minor version numbers. It
 should not be considered a decimal number. In other words, version 2.10 comes

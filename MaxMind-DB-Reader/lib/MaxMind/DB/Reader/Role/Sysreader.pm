@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Reader::Role::Sysreader;
+package MaxMind::DB::Reader::Role::Sysreader;
 
 use strict;
 use warnings;

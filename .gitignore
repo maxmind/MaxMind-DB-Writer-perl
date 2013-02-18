@@ -13,6 +13,6 @@ Makefile.PL
 Makefile
 Makefile.old
 pm_to_blib*
-MaxMind-IPDB-Common/MaxMind-IPDB-Common-*
-MaxMind-IPDB-Reader/MaxMind-IPDB-Reader-*
-MaxMind-IPDB-Writer/MaxMind-IPDB-Writer-*
+MaxMind-DB-Common/MaxMind-DB-Common-*
+MaxMind-DB-Reader/MaxMind-DB-Reader-*
+MaxMind-DB-Writer/MaxMind-DB-Writer-*

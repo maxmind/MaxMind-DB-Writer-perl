@@ -1,10 +1,10 @@
 use strict;
 use warnings;
 
-use MaxMind::IPDB::Reader;
+use MaxMind::DB::Reader;
 use Test::More;
 
-my $geoip2 = MaxMind::IPDB::Reader->new;
+my $geoip2 = MaxMind::DB::Reader->new;
 
 my $host       = 'www.maxmind.com';
 my $ip_address = $geoip2->_resolve_hostname( $host );

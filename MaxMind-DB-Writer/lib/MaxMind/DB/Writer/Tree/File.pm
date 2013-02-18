@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Writer::Tree::File;
+package MaxMind::DB::Writer::Tree::File;
 
 use strict;
 use warnings;
@@ -7,9 +7,9 @@ use namespace::autoclean;
 use IO::Handle;
 use Math::Int128 qw( uint128 );
 use Math::Round qw( round );
-use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
-use MaxMind::IPDB::Metadata;
-use MaxMind::IPDB::Writer::Serializer;
+use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
+use MaxMind::DB::Metadata;
+use MaxMind::DB::Writer::Serializer;
 use Net::Works::Network;
 
 use Moose;
@@ -32,7 +32,7 @@ has _map_key_type_callback => (
 
 has _tree => (
     is       => 'ro',
-    isa      => 'MaxMind::IPDB::Writer::Tree::InMemory',
+    isa      => 'MaxMind::DB::Writer::Tree::InMemory',
     init_arg => 'tree',
     required => 1,
 );
@@ -144,7 +144,7 @@ has _tree_buffer => (
 
 has _serializer => (
     is       => 'ro',
-    isa      => 'MaxMind::IPDB::Writer::Serializer',
+    isa      => 'MaxMind::DB::Writer::Serializer',
     init_arg => undef,
     lazy     => 1,
     builder  => '_build_serializer',
@@ -358,7 +358,7 @@ sub _map_node_num {
     sub _encoded_metadata {
         my $self = shift;
 
-        my $metadata = MaxMind::IPDB::Metadata->new(
+        my $metadata = MaxMind::DB::Metadata->new(
             binary_format_major_version => 2,
             binary_format_minor_version => 0,
             build_epoch                 => uint128( time() ),
@@ -370,7 +370,7 @@ sub _map_node_num {
             record_size                 => $self->_record_size(),
         );
 
-        my $serializer = MaxMind::IPDB::Writer::Serializer->new(
+        my $serializer = MaxMind::DB::Writer::Serializer->new(
             map_key_type_callback => $type_callback,
         );
 
@@ -397,7 +397,7 @@ sub _build_tree_buffer {
 sub _build_serializer {
     my $self = shift;
 
-    return MaxMind::IPDB::Writer::Serializer->new(
+    return MaxMind::DB::Writer::Serializer->new(
         (
             $self->_has_map_key_type_callback()
             ? ( map_key_type_callback => $self->_map_key_type_callback() )

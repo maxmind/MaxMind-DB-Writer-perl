@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Reader::Data::Container;
+package MaxMind::DB::Reader::Data::Container;
 
 use strict;
 use warnings;

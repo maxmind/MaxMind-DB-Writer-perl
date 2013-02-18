@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Reader::Role::Reader;
+package MaxMind::DB::Reader::Role::Reader;
 
 use strict;
 use warnings;
@@ -6,15 +6,15 @@ use namespace::autoclean;
 use autodie;
 
 use List::AllUtils qw( min );
-use MaxMind::IPDB::Reader::Decoder;
-use MaxMind::IPDB::Metadata;
+use MaxMind::DB::Reader::Decoder;
+use MaxMind::DB::Metadata;
 use Net::Works::Address;
 
 use Moose::Role;
 
-use constant DEBUG => $ENV{MAXMIND_IPDB_READER_DEBUG};
+use constant DEBUG => $ENV{MAXMIND_DB_READER_DEBUG};
 
-with 'MaxMind::IPDB::Role::Debugs', 'MaxMind::IPDB::Reader::Role::Sysreader';
+with 'MaxMind::DB::Role::Debugs', 'MaxMind::DB::Reader::Role::Sysreader';
 
 has _node_byte_size => (
     is       => 'ro',
@@ -26,11 +26,11 @@ has _node_byte_size => (
 
 has metadata => (
     is       => 'ro',
-    isa      => 'MaxMind::IPDB::Metadata',
+    isa      => 'MaxMind::DB::Metadata',
     init_arg => undef,
     lazy     => 1,
     builder  => '_build_metadata',
-    handles  => [ MaxMind::IPDB::Metadata->meta()->get_attribute_list() ],
+    handles  => [ MaxMind::DB::Metadata->meta()->get_attribute_list() ],
 );
 
 has _search_tree_size => (
@@ -43,7 +43,7 @@ has _search_tree_size => (
 
 has _decoder => (
     is       => 'ro',
-    isa      => 'MaxMind::IPDB::Reader::Decoder',
+    isa      => 'MaxMind::DB::Reader::Decoder',
     init_arg => undef,
     lazy     => 1,
     builder  => '_build_decoder',
@@ -195,26 +195,26 @@ sub _build_metadata {
 
     my $start = rindex( $last_block, $MetadataStartMarker );
 
-    die 'Could not find a MaxMind IPDB metadata marker in this file ('
+    die 'Could not find a MaxMind DB metadata marker in this file ('
         . $self->file()
-        . '). Is this a valid MaxMind IPDB file?'
+        . '). Is this a valid MaxMind DB file?'
         unless $start >= 0;
 
     $start += bytes::length($MetadataStartMarker);
 
     open my $fh, '<', \( substr( $last_block, $start ) );
 
-    my $metadata = MaxMind::IPDB::Reader::Decoder->new(
+    my $metadata = MaxMind::DB::Reader::Decoder->new(
         data_source => $fh,
     )->decode(0);
 
-    return MaxMind::IPDB::Metadata->new($metadata);
+    return MaxMind::DB::Metadata->new($metadata);
 }
 
 sub _build_decoder {
     my $self = shift;
 
-    return MaxMind::IPDB::Reader::Decoder->new(
+    return MaxMind::DB::Reader::Decoder->new(
         data_source  => $self->data_source(),
         pointer_base => $self->_search_tree_size(),
     );

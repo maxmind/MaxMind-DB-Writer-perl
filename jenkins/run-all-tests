@@ -1,11 +1,11 @@
 #!/bin/bash
 
 git clean -dxf
-export LOCALLIB=$HOME/local-lib/MaxMind-IPDB-perl
+export LOCALLIB=$HOME/local-lib/MaxMind-DB-perl
 export PERL5LIB=$LOCALLIB/lib/perl5:$LOCALLIB/lib/perl5/x86_64-linux
 
 BINDIR=`mm-perl -MConfig -e 'print $Config{bin}'`
-DIRS="MaxMind-IPDB-Common MaxMind-IPDB-Reader MaxMind-IPDB-Writer"
+DIRS="MaxMind-DB-Common MaxMind-DB-Reader MaxMind-DB-Writer"
 
 $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB TAP::Harness::JUnit
 

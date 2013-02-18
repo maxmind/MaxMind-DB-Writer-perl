@@ -4,14 +4,14 @@ use warnings;
 use lib 't/lib';
 
 use Test::Fatal;
-use Test::MaxMind::IPDB::Common::Data qw( test_cases_for );
-use Test::MaxMind::IPDB::Writer::Serializer qw( test_encoding_of_type );
+use Test::MaxMind::DB::Common::Data qw( test_cases_for );
+use Test::MaxMind::DB::Writer::Serializer qw( test_encoding_of_type );
 use Test::More;
 
 test_encoding_of_type( pointer => test_cases_for('pointer') );
 
 {
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new();
 
     like(
         exception { $serializer->_encode_pointer(undef) },

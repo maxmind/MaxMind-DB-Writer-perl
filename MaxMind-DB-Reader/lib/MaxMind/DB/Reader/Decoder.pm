@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Reader::Decoder;
+package MaxMind::DB::Reader::Decoder;
 
 use strict;
 use warnings;
@@ -7,21 +7,21 @@ use autodie;
 
 use Carp qw( confess );
 use Encode ();
-use MaxMind::IPDB::Reader::Data::Container;
-use MaxMind::IPDB::Reader::Data::EndMarker;
+use MaxMind::DB::Reader::Data::Container;
+use MaxMind::DB::Reader::Data::EndMarker;
 use Math::Int128 qw( uint128 );
 use NetAddr::IP::Util qw( bin2bcd );
 
 use Moose;
 use MooseX::StrictConstructor;
 
-with 'MaxMind::IPDB::Role::Debugs', 'MaxMind::IPDB::Reader::Role::Sysreader';
+with 'MaxMind::DB::Role::Debugs', 'MaxMind::DB::Reader::Role::Sysreader';
 
-use constant DEBUG => $ENV{MAXMIND_IPDB_DECODER_DEBUG};
+use constant DEBUG => $ENV{MAXMIND_DB_DECODER_DEBUG};
 
 # This is a constant so that outside of testing any references to it can be
 # optimised away by the compiler.
-use constant POINTER_TEST_HACK => $ENV{MAXMIND_IPDB_POINTER_TEST_HACK};
+use constant POINTER_TEST_HACK => $ENV{MAXMIND_DB_POINTER_TEST_HACK};
 
 binmode STDERR, ':utf8'
     if DEBUG;
@@ -325,11 +325,11 @@ sub _decode_array {
 }
 
 sub _decode_container {
-    return MaxMind::IPDB::Reader::Data::Container->new();
+    return MaxMind::DB::Reader::Data::Container->new();
 }
 
 sub _decode_end_marker {
-    return MaxMind::IPDB::Reader::Data::EndMarker->new();
+    return MaxMind::DB::Reader::Data::EndMarker->new();
 }
 
 sub _size_from_ctrl_byte {

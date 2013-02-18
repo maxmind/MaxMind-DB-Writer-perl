@@ -5,11 +5,11 @@ use autodie;
 use Test::More;
 
 use File::Temp qw( tempdir );
-use MaxMind::IPDB::Writer::Tree::InMemory;
-use MaxMind::IPDB::Writer::Tree::File;
+use MaxMind::DB::Writer::Tree::InMemory;
+use MaxMind::DB::Writer::Tree::File;
 use Net::Works::Network;
 
-use MaxMind::IPDB::Reader::File;
+use MaxMind::DB::Reader::File;
 
 my $tempdir = tempdir( CLEANUP => 1 );
 
@@ -23,7 +23,7 @@ for my $record_size ( 24, 28, 32 ) {
         my ( $tree, $filename )
             = _write_tree( $record_size, \@subnets, { ip_version => 4 } );
 
-        my $reader = MaxMind::IPDB::Reader::File->new( file => $filename );
+        my $reader = MaxMind::DB::Reader::File->new( file => $filename );
 
         _test_metadata(
             $reader, $tree,
@@ -77,7 +77,7 @@ for my $record_size ( 24, 28, 32 ) {
         my ( $tree, $filename )
             = _write_tree( $record_size, \@subnets, { ip_version => 6 } );
 
-        my $reader = MaxMind::IPDB::Reader::File->new( file => $filename );
+        my $reader = MaxMind::DB::Reader::File->new( file => $filename );
 
         _test_metadata(
             $reader, $tree,
@@ -131,7 +131,7 @@ sub _write_tree {
     my $subnets     = shift;
     my $metadata    = shift;
 
-    my $tree = MaxMind::IPDB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
 
     for my $subnet ( @{$subnets} ) {
         $tree->insert_subnet(
@@ -140,7 +140,7 @@ sub _write_tree {
         );
     }
 
-    my $writer = MaxMind::IPDB::Writer::Tree::File->new(
+    my $writer = MaxMind::DB::Writer::Tree::File->new(
         tree        => $tree,
         record_size => $record_size,
         _standard_metadata(),
@@ -148,7 +148,7 @@ sub _write_tree {
         map_key_type_callback => sub { 'utf8_string' },
     );
 
-    my $filename = $tempdir . "/Test-IPv$metadata->{ip_version}.mmipdb";
+    my $filename = $tempdir . "/Test-IPv$metadata->{ip_version}.mmdb";
     open my $fh, '>', $filename;
 
     $writer->write_tree($fh);

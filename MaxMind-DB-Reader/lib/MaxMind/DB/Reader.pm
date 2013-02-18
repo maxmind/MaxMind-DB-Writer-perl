@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Reader;
+package MaxMind::DB::Reader;
 
 use strict;
 use warnings;
@@ -6,12 +6,12 @@ use namespace::autoclean;
 
 use Data::Validate::Domain qw( is_hostname );
 use Data::Validate::IP qw( is_ipv4 is_ipv6 is_private_ipv4 );
-use MaxMind::IPDB::Metadata;
-use MaxMind::IPDB::Reader::File;
+use MaxMind::DB::Metadata;
+use MaxMind::DB::Reader::File;
 use Socket qw( inet_ntoa );
 
-#use MaxMind::IPDB::Reader::Memory;
-#use MaxMind::IPDB::Reader::PartialMemory;
+#use MaxMind::DB::Reader::Memory;
+#use MaxMind::DB::Reader::PartialMemory;
 
 use Moose;
 
@@ -22,11 +22,11 @@ has file => (
 
 has _reader => (
     is       => 'ro',
-    does     => 'MaxMind::IPDB::Reader::Role::Reader',
+    does     => 'MaxMind::DB::Reader::Role::Reader',
     init_arg => undef,
     lazy     => 1,
     builder  => '_build_reader',
-    handles  => [ MaxMind::IPDB::Metadata->meta()->get_attribute_list() ],
+    handles  => [ MaxMind::DB::Metadata->meta()->get_attribute_list() ],
 );
 
 sub BUILD {
@@ -93,11 +93,11 @@ sub _is_private_ipv6 {
 
 sub _build_reader {
     my $self = shift;
-    return MaxMind::IPDB::Reader::File->new( file => $self->file );
+    return MaxMind::DB::Reader::File->new( file => $self->file );
 }
 
 __PACKAGE__->meta()->make_immutable();
 
 1;
 
-# ABSTRACT: Read MaxMind IPDB files
+# ABSTRACT: Read MaxMind DB files

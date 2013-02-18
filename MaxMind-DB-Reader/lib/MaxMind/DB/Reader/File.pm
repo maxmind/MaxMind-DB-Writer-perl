@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Reader::File;
+package MaxMind::DB::Reader::File;
 
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ use namespace::autoclean;
 use Moose;
 use MooseX::StrictConstructor;
 
-with 'MaxMind::IPDB::Reader::Role::Reader';
+with 'MaxMind::DB::Reader::Role::Reader';
 
 has file => (
     is       => 'ro',

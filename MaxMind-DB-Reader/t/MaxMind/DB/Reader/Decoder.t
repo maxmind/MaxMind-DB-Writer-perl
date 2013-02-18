@@ -4,13 +4,13 @@ use warnings;
 use Test::Fatal;
 use Test::More;
 
-use MaxMind::IPDB::Reader::Decoder;
+use MaxMind::DB::Reader::Decoder;
 
 {
     my $ignored;
     open my $fh, '<', \$ignored;
 
-    my $decoder = MaxMind::IPDB::Reader::Decoder->new(
+    my $decoder = MaxMind::DB::Reader::Decoder->new(
         data_source => $fh,
     );
 
@@ -38,7 +38,7 @@ use MaxMind::IPDB::Reader::Decoder;
     my $data = 'this is some data';
     open my $fh, '<', \$data;
 
-    my $decoder = MaxMind::IPDB::Reader::Decoder->new(
+    my $decoder = MaxMind::DB::Reader::Decoder->new(
         data_source => $fh,
     );
 

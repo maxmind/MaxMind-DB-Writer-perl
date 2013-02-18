@@ -6,10 +6,10 @@ use lib 't/lib';
 use Test::Bits;
 use Test::More;
 
-use MaxMind::IPDB::Writer::Serializer;
+use MaxMind::DB::Writer::Serializer;
 
 {
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new();
     $serializer->_encode_end_marker();
 
     bits_is(

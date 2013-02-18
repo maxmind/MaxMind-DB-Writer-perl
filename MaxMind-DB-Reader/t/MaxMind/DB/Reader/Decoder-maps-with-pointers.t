@@ -4,10 +4,10 @@ use warnings;
 use Test::Bits;
 use Test::More;
 
-use MaxMind::IPDB::Reader::Decoder;
-use MaxMind::IPDB::Writer::Serializer;
+use MaxMind::DB::Reader::Decoder;
+use MaxMind::DB::Writer::Serializer;
 
-my $serializer = MaxMind::IPDB::Writer::Serializer->new(
+my $serializer = MaxMind::DB::Writer::Serializer->new(
     map_key_type_callback => sub { 'utf8_string' } );
 
 $serializer->store_data( map => { long_key  => 'long_value1' } );
@@ -19,7 +19,7 @@ $serializer->store_data( map => { long_key2 => 'long_value2' } );
 
 open my $fh, '<', $serializer->buffer();
 
-my $decoder = MaxMind::IPDB::Reader::Decoder->new( data_source => $fh );
+my $decoder = MaxMind::DB::Reader::Decoder->new( data_source => $fh );
 
 my %tests = (
     0  => { long_key  => 'long_value1' },

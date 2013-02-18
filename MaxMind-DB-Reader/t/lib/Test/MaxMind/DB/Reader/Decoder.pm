@@ -1,9 +1,9 @@
-package Test::MaxMind::IPDB::Reader::Decoder;
+package Test::MaxMind::DB::Reader::Decoder;
 
 use strict;
 use warnings;
 
-use MaxMind::IPDB::Reader::Decoder;
+use MaxMind::DB::Reader::Decoder;
 use List::AllUtils qw( natatime );
 use Scalar::Util qw( blessed );
 use Test::More;
@@ -38,7 +38,7 @@ sub test_decoding_of_type {
         my $encoded = join q{}, map { chr($_) } @{$input};
         open my $fh, '<', \$encoded;
 
-        my $decoder = MaxMind::IPDB::Reader::Decoder->new(
+        my $decoder = MaxMind::DB::Reader::Decoder->new(
             data_source => $fh,
         );
 

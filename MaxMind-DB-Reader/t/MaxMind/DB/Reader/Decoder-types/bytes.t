@@ -3,8 +3,8 @@ use warnings;
 
 use lib 't/lib';
 
-use Test::MaxMind::IPDB::Common::Data qw( test_cases_for );
-use Test::MaxMind::IPDB::Reader::Decoder qw( test_decoding_of_type );
+use Test::MaxMind::DB::Common::Data qw( test_cases_for );
+use Test::MaxMind::DB::Reader::Decoder qw( test_decoding_of_type );
 use Test::More;
 
 use Encode ();
@@ -28,7 +28,7 @@ test_decoding_of_type( bytes => test_cases_for('bytes') );
 
     open my $fh, '<', \$buffer;
 
-    my $decoder = MaxMind::IPDB::Reader::Decoder->new(
+    my $decoder = MaxMind::DB::Reader::Decoder->new(
         data_source => $fh,
     );
 

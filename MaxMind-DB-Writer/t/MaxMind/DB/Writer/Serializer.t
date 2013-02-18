@@ -3,13 +3,13 @@ use warnings;
 
 use lib 't/lib';
 
-use Test::MaxMind::IPDB::Common::Data qw( test_cases_for );
+use Test::MaxMind::DB::Common::Data qw( test_cases_for );
 use Test::Bits;
 use Test::Fatal;
 use Test::More;
 
 use Math::Int128 qw( uint128 );
-use MaxMind::IPDB::Writer::Serializer;
+use MaxMind::DB::Writer::Serializer;
 
 my $strings = test_cases_for(
     'utf8_string',
@@ -17,7 +17,7 @@ my $strings = test_cases_for(
 );
 
 {
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new();
 
     for my $i ( 0, 2, 4, 6 ) {
         $serializer->store_data( utf8_string => $strings->[$i] );
@@ -41,7 +41,7 @@ my $strings = test_cases_for(
 }
 
 {
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new();
 
     for my $i ( 4, 6, 8, 10 ) {
         $serializer->store_data( utf8_string => $strings->[$i] );
@@ -68,7 +68,7 @@ my $strings = test_cases_for(
 {
     my $uint16s = test_cases_for('uint16');
 
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new();
 
     for my $i ( 0, 2, 4, 6 ) {
         $serializer->store_data( uint16 => $uint16s->[$i] );
@@ -96,7 +96,7 @@ my $strings = test_cases_for(
 {
     my $uint64s = test_cases_for('uint64');
 
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new();
 
     for my $i ( 0, 2, 4, 6 ) {
         $serializer->store_data( uint64 => $uint64s->[$i] );
@@ -124,7 +124,7 @@ my $strings = test_cases_for(
 {
     my $uint128s = test_cases_for('uint128');
 
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new();
 
     for my $i ( 0, 2, 4, 6 ) {
         $serializer->store_data( uint128 => $uint128s->[$i] );
@@ -150,7 +150,7 @@ my $strings = test_cases_for(
 }
 
 {
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new();
 
     my $int = uint128(0) - 1;
 
@@ -181,7 +181,7 @@ my $strings = test_cases_for(
 {
     my $maps = test_cases_for('map');
 
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new(
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
         map_key_type_callback => sub { ref $_[1] ? 'map' : 'utf8_string' } );
 
     for my $i ( 0, 2, 4, 6 ) {

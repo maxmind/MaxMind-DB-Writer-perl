@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Metadata;
+package MaxMind::DB::Metadata;
 
 use strict;
 use warnings;

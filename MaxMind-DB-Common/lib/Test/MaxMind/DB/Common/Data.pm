@@ -1,4 +1,4 @@
-package Test::MaxMind::IPDB::Common::Data;
+package Test::MaxMind::DB::Common::Data;
 
 use strict;
 use warnings;

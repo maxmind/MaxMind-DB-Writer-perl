@@ -3,9 +3,9 @@ use warnings;
 
 use Test::More;
 
-use MaxMind::IPDB::Metadata;
-use MaxMind::IPDB::Writer::Tree::InMemory;
-use MaxMind::IPDB::Writer::Tree::File;
+use MaxMind::DB::Metadata;
+use MaxMind::DB::Writer::Tree::InMemory;
+use MaxMind::DB::Writer::Tree::File;
 
 use Net::Works::Network;
 
@@ -96,7 +96,7 @@ sub _write_tree {
     my $subnets     = shift;
     my $metadata    = shift;
 
-    my $tree = MaxMind::IPDB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
 
     for my $subnet ( @{$subnets} ) {
         $tree->insert_subnet(
@@ -105,7 +105,7 @@ sub _write_tree {
         );
     }
 
-    my $writer = MaxMind::IPDB::Writer::Tree::File->new(
+    my $writer = MaxMind::DB::Writer::Tree::File->new(
         tree          => $tree,
         record_size   => $record_size,
         database_type => 'Test',
@@ -137,7 +137,7 @@ sub _test_metadata {
     );
 
     for my $key ( sort map { $_->name() }
-        MaxMind::IPDB::Metadata->meta()->get_all_attributes() ) {
+        MaxMind::DB::Metadata->meta()->get_all_attributes() ) {
 
         like(
             $buffer,

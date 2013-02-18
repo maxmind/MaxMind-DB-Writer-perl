@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Reader::Data::EndMarker;
+package MaxMind::DB::Reader::Data::EndMarker;
 
 use strict;
 use warnings;
