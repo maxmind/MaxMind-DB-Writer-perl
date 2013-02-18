@@ -3,7 +3,7 @@ use warnings;
 
 use Test::More;
 
-use MaxMind::IPDB::Writer::Tree::InMemory;
+use MaxMind::DB::Writer::Tree::InMemory;
 
 use List::AllUtils qw( all );
 use Net::Works::Address;
@@ -146,7 +146,7 @@ my $id = 0;
 {
     package TreeIterator;
 
-    use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
+    use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
 
     sub new {
         bless {}, shift;
@@ -308,7 +308,7 @@ sub _test_tree {
 sub _make_tree {
     my $pairs = shift;
 
-    my $tree = MaxMind::IPDB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
 
     for my $pair ( @{$pairs} ) {
         my ( $subnet, $data ) = @{$pair};

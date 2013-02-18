@@ -4,15 +4,15 @@ use warnings;
 use Test::Fatal;
 use Test::More;
 
-use MaxMind::IPDB::Writer::Tree::InMemory;
+use MaxMind::DB::Writer::Tree::InMemory;
 
 use Net::Works::Network;
 
 {
-    my $tree = MaxMind::IPDB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
 
     no warnings 'redefine';
-    local *MaxMind::IPDB::Writer::Tree::InMemory::_split_node
+    local *MaxMind::DB::Writer::Tree::InMemory::_split_node
         = sub { die 'called _split_node' };
 
     is(

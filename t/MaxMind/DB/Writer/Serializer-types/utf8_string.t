@@ -5,8 +5,8 @@ use lib 't/lib';
 
 use Test::Bits;
 use Test::Fatal;
-use Test::MaxMind::IPDB::Common::Data qw( test_cases_for );
-use Test::MaxMind::IPDB::Writer::Serializer qw( test_encoding_of_type );
+use Test::MaxMind::DB::Common::Data qw( test_cases_for );
+use Test::MaxMind::DB::Writer::Serializer qw( test_encoding_of_type );
 use Test::More;
 
 {
@@ -30,7 +30,7 @@ _test_long_string(
 {
     my $string_too_big = 'x' x ( $max_size + 1 );
 
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new();
 
     like(
         exception { $serializer->_encode_utf8_string($string_too_big) },
@@ -45,7 +45,7 @@ sub _test_long_string {
     my $length = shift;
     my $first_4 = shift;
 
-    my $serializer = MaxMind::IPDB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new();
 
     my $string = 'x' x $length;
 

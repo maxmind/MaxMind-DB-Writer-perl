@@ -1,11 +1,11 @@
-package MaxMind::IPDB::Writer::Tree::Processor::VisualizeTree;
+package MaxMind::DB::Writer::Tree::Processor::VisualizeTree;
 
 use strict;
 use warnings;
 
 use Data::Dumper::Concise;
 use GraphViz2;
-use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
+use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
 
 use Moose;
 
@@ -120,7 +120,7 @@ sub _label_for_node {
     my $subnet = $self->_subnet( $ip_num, $netmask );
 
     return $labels->{$node_num} //=
-          "IPDB $node_num - "
+          "DB $node_num - "
         . $subnet->as_string() . ' ('
         . $subnet->first()->as_string . ' - '
         . $subnet->last()->as_string() . ')';

@@ -4,9 +4,9 @@ use warnings;
 use Test::Bits;
 use Test::More;
 
-use MaxMind::IPDB::Writer::Serializer;
+use MaxMind::DB::Writer::Serializer;
 
-my $serializer = MaxMind::IPDB::Writer::Serializer->new(
+my $serializer = MaxMind::DB::Writer::Serializer->new(
     map_key_type_callback => sub { 'utf8_string' } );
 
 $serializer->store_data( map => { long_key  => 'long_value1' } );

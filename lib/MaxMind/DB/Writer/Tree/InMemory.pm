@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Writer::Tree::InMemory;
+package MaxMind::DB::Writer::Tree::InMemory;
 
 use strict;
 use warnings;
@@ -8,8 +8,8 @@ use Digest::MD5 qw( md5 );
 use JSON::XS;
 use List::Util qw( min );
 use Math::Int128 0.06 qw( uint128 );
-use MaxMind::IPDB::Common qw( LEFT_RECORD RIGHT_RECORD );
-use MaxMind::IPDB::Writer::Tree::Processor::NodeCounter;
+use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
+use MaxMind::DB::Writer::Tree::Processor::NodeCounter;
 use Net::Works 0.04;
 use Scalar::Util qw( blessed );
 
@@ -296,7 +296,7 @@ sub _find_cached_node {
     my $cached_ipnum = $cache->{last_ipnum};
 
     return ( $self->root_node_num(), 0, $netmask, $default_mask )
-        if $ENV{MAXMIND_IPDB_WRITER_NO_CACHE} || !$cached_ipnum;
+        if $ENV{MAXMIND_DB_WRITER_NO_CACHE} || !$cached_ipnum;
 
     my $one_idx = $self->_first_shared_bit(
         $subnet->first()->as_integer(),
@@ -525,10 +525,10 @@ sub lookup_ip_address {
     my $self    = shift;
     my $address = shift;
 
-    require MaxMind::IPDB::Writer::Tree::Processor::LookupIPAddress;
+    require MaxMind::DB::Writer::Tree::Processor::LookupIPAddress;
 
     my $processor
-        = MaxMind::IPDB::Writer::Tree::Processor::LookupIPAddress->new(
+        = MaxMind::DB::Writer::Tree::Processor::LookupIPAddress->new(
         ip_address => $address );
 
     $self->iterate($processor);
@@ -550,10 +550,10 @@ sub pointer_record_for_subnet {
     my $self   = shift;
     my $subnet = shift;
 
-    require MaxMind::IPDB::Writer::Tree::Processor::RecordForSubnet;
+    require MaxMind::DB::Writer::Tree::Processor::RecordForSubnet;
 
     my $processor
-        = MaxMind::IPDB::Writer::Tree::Processor::RecordForSubnet->new(
+        = MaxMind::DB::Writer::Tree::Processor::RecordForSubnet->new(
         subnet => $subnet );
 
     $self->iterate($processor);
@@ -565,10 +565,10 @@ sub write_svg_image {
     my $self = shift;
     my $file = shift;
 
-    require MaxMind::IPDB::Writer::Tree::Processor::VisualizeTree;
+    require MaxMind::DB::Writer::Tree::Processor::VisualizeTree;
 
     my $processor
-        = MaxMind::IPDB::Writer::Tree::Processor::VisualizeTree->new(
+        = MaxMind::DB::Writer::Tree::Processor::VisualizeTree->new(
         ip_version => $self->{_saw_ipv6} ? 6 : 4 );
 
     $self->iterate($processor);
@@ -591,7 +591,7 @@ sub _node_count_starting_at {
     my $starting_node = shift;
 
     my $processor
-        = MaxMind::IPDB::Writer::Tree::Processor::NodeCounter->new();
+        = MaxMind::DB::Writer::Tree::Processor::NodeCounter->new();
 
     $self->iterate( $processor, $starting_node );
 

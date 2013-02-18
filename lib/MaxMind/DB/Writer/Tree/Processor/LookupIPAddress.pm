@@ -1,4 +1,4 @@
-package MaxMind::IPDB::Writer::Tree::Processor::LookupIPAddress;
+package MaxMind::DB::Writer::Tree::Processor::LookupIPAddress;
 
 use strict;
 use warnings;

@@ -3,11 +3,11 @@ use warnings;
 
 use Test::More;
 
-use MaxMind::IPDB::Writer::Tree::InMemory;
-use MaxMind::IPDB::Writer::Tree::File;
+use MaxMind::DB::Writer::Tree::InMemory;
+use MaxMind::DB::Writer::Tree::File;
 
 use File::Temp qw( tempdir );
-use MaxMind::IPDB::Reader::File;
+use MaxMind::DB::Reader::File;
 use Net::Works::Network;
 
 my $tempdir = tempdir( CLEANUP => 1 );
@@ -15,7 +15,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 {
     my ( $tree, $filename ) = _write_tree();
 
-    my $reader = MaxMind::IPDB::Reader::File->new( file => $filename );
+    my $reader = MaxMind::DB::Reader::File->new( file => $filename );
 
     my %tests = (
         '1.1.1.1'          => { subnet => '::1.1.1.1/128' },
@@ -52,7 +52,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 done_testing();
 
 sub _write_tree {
-    my $tree = MaxMind::IPDB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
 
     my @subnets = map {
         Net::Works::Network->new_from_string( string => $_, version => 6 )
@@ -71,7 +71,7 @@ sub _write_tree {
         );
     }
 
-    my $writer = MaxMind::IPDB::Writer::Tree::File->new(
+    my $writer = MaxMind::DB::Writer::Tree::File->new(
         tree          => $tree,
         record_size   => 24,
         database_type => 'Test',
@@ -85,7 +85,7 @@ sub _write_tree {
         map_key_type_callback => sub { 'utf8_string' },
     );
 
-    my $filename = $tempdir . "/Test-ipv6-alias.mmipdb";
+    my $filename = $tempdir . "/Test-ipv6-alias.mmdb";
     open my $fh, '>', $filename;
 
     $writer->write_tree($fh);

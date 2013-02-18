@@ -3,7 +3,7 @@ use warnings;
 
 use Test::More;
 
-use MaxMind::IPDB::Writer::Tree::InMemory;
+use MaxMind::DB::Writer::Tree::InMemory;
 
 use Net::Works::Network;
 
@@ -12,7 +12,7 @@ use Net::Works::Network;
 # to account for that in the node count.
 
 {
-    my $tree = MaxMind::IPDB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
 
     for my $string ( qw( 1.1.2.255/32 1.1.2.254/31 ) ) {
         my $subnet
@@ -29,7 +29,7 @@ use Net::Works::Network;
 }
 
 {
-    my $tree = MaxMind::IPDB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
 
     for my $string ( qw( 1.1.2.254/32 1.1.2.254/31 ) ) {
         my $subnet
