@@ -182,12 +182,12 @@ in bytes, but the actual node count) in the search tree (this is stored in the
 database metadata), then the value is a node number. In this case, we find
 that node in the search tree and repeat the lookup algorithm from there.
 
-If the record value is 0, that means that we do not have any data for the IP
-address, and the search ends here.
+If the record value is equal to the number of nodes, that means that we do not
+have any data for the IP address, and the search ends here.
 
 If the record value is *greater* than the number of nodes in the search tree,
 then it is an actual pointer value pointing into the data section. The value
-of the pointer is calculates from the start of the data section, *not* from
+of the pointer is calculated from the start of the data section, *not* from
 the start of the file.
 
 In order to determine where in the search tree we should start looking, we use
@@ -235,11 +235,17 @@ The Teredo subnet cannot be accounted for in the tree. Instead, code that
 searches the tree can offer to decode the IPv4 portion of a Teredo address and
 look that up.
 
-## Output Data Section
+## Data Section Separator
 
-The data section starts with a single NULL byte. This is the target address
-for failed searches (where the IP address isn't in the database). The rest of
-the data section contains actual data.
+There are 16 bytes of NULLs in between the search tree and the data
+section. This separator exists in order to make it possible for a verification
+tool to distinguish between the two sections.
+
+This separator is not considered part of the data section itself. In other
+words, the data section starts at `$size_of_search_tree + 16" bytes in the
+file.
+
+## Output Data Section
 
 Each output data field has an associated type, and that type is encoded as a
 number that begins the data field. Some types are variable length. In those

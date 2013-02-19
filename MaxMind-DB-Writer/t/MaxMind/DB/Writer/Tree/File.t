@@ -23,6 +23,12 @@ for my $record_size ( 24, 28, 32 ) {
             { ip_version => 4 },
         );
 
+        like(
+            $buffer,
+            qr/\0{16}/,
+            "written-out database includes 16 bytes of 0s"
+        );
+
         my $expect = join q{}, map { chr($_) } (
 
             # map with 1 key

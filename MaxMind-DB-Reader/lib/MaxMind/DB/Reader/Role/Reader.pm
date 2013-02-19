@@ -12,6 +12,8 @@ use Moose::Role;
 
 use constant DEBUG => $ENV{MAXMIND_DB_READER_DEBUG};
 
+my $DataSectionStartMarkerSize = 16;
+
 with 'MaxMind::DB::Role::Debugs', 'MaxMind::DB::Reader::Role::NodeReader';
 
 has _node_byte_size => (
@@ -85,7 +87,7 @@ sub _find_address_in_tree {
             $self->_debug_string( 'Record value', $record );
         }
 
-        unless ($record) {
+        if ( $record == $self->node_count() ) {
             $self->_debug_message('Record is empty')
                 if DEBUG;
             return;
@@ -108,15 +110,22 @@ sub _resolve_data_pointer {
     my $self    = shift;
     my $pointer = shift;
 
-    $pointer = ( $pointer - $self->node_count() )
-        + $self->node_count() * $self->_node_byte_size();
+    my $resolved
+        = ( $pointer - $self->node_count() ) + $self->_search_tree_size();
 
-    $self->_debug_string( 'Resolved data pointer', $pointer )
-        if DEBUG;
+    if (DEBUG) {
+        my $node_count = $self->node_count();
+        my $tree_size  = $self->_search_tree_size();
+
+        $self->_debug_string(
+            'Resolved data pointer',
+            "( $pointer - $node_count ) + $tree_size = $resolved"
+        );
+    }
 
     # We only want the data from the decoder, not the offset where it was
     # found.
-    return scalar $self->_decoder()->decode($pointer);
+    return scalar $self->_decoder()->decode($resolved);
 }
 
 sub _build_node_byte_size {
@@ -130,7 +139,7 @@ sub _build_decoder {
 
     return MaxMind::DB::Reader::Decoder->new(
         data_source  => $self->data_source(),
-        pointer_base => $self->_search_tree_size(),
+        pointer_base => $self->_search_tree_size() + $DataSectionStartMarkerSize,
     );
 }
 
