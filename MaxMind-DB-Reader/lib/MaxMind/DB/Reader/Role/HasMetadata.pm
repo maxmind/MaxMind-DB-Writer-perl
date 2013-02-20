@@ -23,6 +23,21 @@ has metadata => (
     handles  => [ MaxMind::DB::Metadata->meta()->get_attribute_list() ],
 );
 
+has _data_source_size => (
+    is       => 'ro',
+    isa      => 'Int',
+    init_arg => undef,
+    lazy     => 1,
+    builder  => '_build_data_source_size',
+);
+
+has _data_section_end => (
+    is       => 'rw',
+    writer   => '_set_data_section_end',
+    isa      => 'Int',
+    init_arg => undef,
+);
+
 my $MetadataStartMarker = "\xab\xcd\xefMaxMind.com";
 
 sub _build_metadata {
@@ -41,7 +56,7 @@ sub _build_metadata {
     # extremely long descriptions or descriptions in 80 languages before this
     # became too long.
 
-    my $size = ( stat( $self->data_source() ) )[7];
+    my $size = $self->_data_source_size();
 
     my $last_bytes = min( $size, 20 * 1024 );
     my $last_block = q{};
@@ -54,6 +69,12 @@ sub _build_metadata {
         . '). Is this a valid MaxMind DB file?'
         unless $start >= 0;
 
+    # XXX - this is really gross but I couldn't come up with a better way to
+    # factor this out that doesn't involve either looking for the metadata
+    # marker multiple times _or_ storing the whole metadata raw chunk in
+    # memory so we can calculate this later
+    $self->_set_data_section_end( $size - ( $last_bytes - $start ) );
+
     $start += bytes::length($MetadataStartMarker);
 
     open my $fh, '<', \( substr( $last_block, $start ) );
@@ -65,6 +86,12 @@ sub _build_metadata {
     my $metadata = MaxMind::DB::Metadata->new($raw);
 
     return $metadata;
+}
+
+sub _build_data_source_size {
+    my $self = shift;
+
+    return ( stat $self->data_source() )[7];
 }
 
 1;

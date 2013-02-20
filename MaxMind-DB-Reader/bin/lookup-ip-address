@@ -1,0 +1,29 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Data::Printer;
+use Getopt::Long;
+use MaxMind::DB::Reader;
+
+sub main {
+    my ( $file, $ip );
+    GetOptions(
+        'file:s' => \$file,
+        'ip:s'   => \$ip,
+    );
+
+    my $reader = MaxMind::DB::Reader->new( file => $file );
+    my $record = $reader->record_for_address($ip);
+
+    if ($record) {
+        p($record);
+    }
+    else {
+        print "No record found for $ip\n";
+    }
+}
+
+main();
+

@@ -5,7 +5,6 @@ use warnings;
 use namespace::autoclean;
 use autodie;
 
-use MaxMind::DB::Reader::Decoder;
 use Net::Works::Address;
 
 use Moose::Role;
@@ -14,31 +13,9 @@ use constant DEBUG => $ENV{MAXMIND_DB_READER_DEBUG};
 
 my $DataSectionStartMarkerSize = 16;
 
-with 'MaxMind::DB::Role::Debugs', 'MaxMind::DB::Reader::Role::NodeReader';
-
-has _node_byte_size => (
-    is       => 'ro',
-    isa      => 'Int',
-    init_arg => undef,
-    lazy     => 1,
-    builder  => '_build_node_byte_size',
-);
-
-has _search_tree_size => (
-    is       => 'ro',
-    isa      => 'Int',
-    init_arg => undef,
-    lazy     => 1,
-    builder  => '_build_search_tree_size',
-);
-
-has _decoder => (
-    is       => 'ro',
-    isa      => 'MaxMind::DB::Reader::Decoder',
-    init_arg => undef,
-    lazy     => 1,
-    builder  => '_build_decoder',
-);
+with 'MaxMind::DB::Role::Debugs',
+    'MaxMind::DB::Reader::Role::NodeReader',
+    'MaxMind::DB::Reader::Role::HasDecoder';
 
 sub data_for_address {
     my $self = shift;
@@ -126,27 +103,6 @@ sub _resolve_data_pointer {
     # We only want the data from the decoder, not the offset where it was
     # found.
     return scalar $self->_decoder()->decode($resolved);
-}
-
-sub _build_node_byte_size {
-    my $self = shift;
-
-    return $self->record_size() * 2 / 8;
-}
-
-sub _build_decoder {
-    my $self = shift;
-
-    return MaxMind::DB::Reader::Decoder->new(
-        data_source  => $self->data_source(),
-        pointer_base => $self->_search_tree_size() + $DataSectionStartMarkerSize,
-    );
-}
-
-sub _build_search_tree_size {
-    my $self = shift;
-
-    return $self->node_count() * $self->_node_byte_size();
 }
 
 around _build_metadata => sub {

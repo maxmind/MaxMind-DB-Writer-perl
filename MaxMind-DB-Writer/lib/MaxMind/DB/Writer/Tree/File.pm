@@ -150,8 +150,8 @@ has _serializer => (
     builder  => '_build_serializer',
 );
 
-my $DataSectionStartMarker = "\0" x 16;
-my $MetadataMarker = "\xab\xcd\xefMaxMind.com";
+my $DataSectionSeparator = "\0" x 16;
+my $MetadataMarker       = "\xab\xcd\xefMaxMind.com";
 
 sub write_tree {
     my $self   = shift;
@@ -168,7 +168,7 @@ sub write_tree {
             ${ $self->_tree_buffer() }, 0,
             $self->_node_size() * $self->_node_count()
         ),
-        $DataSectionStartMarker,
+        $DataSectionSeparator,
         ${ $self->_serializer()->buffer() },
         $MetadataMarker,
         $self->_encoded_metadata(),
@@ -253,7 +253,7 @@ sub process_value_record {
         $pointer
             = $data_pointer
             + $self->_node_count()
-            + length $DataSectionStartMarker;
+            + length $DataSectionSeparator;
 
         $self->_encode_record(
             $self->_map_node_num($node_num),

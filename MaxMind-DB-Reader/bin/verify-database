@@ -1,0 +1,8 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use MaxMind::DB::Verifier;
+
+exit !MaxMind::DB::Verifier->new_with_options()->run();
