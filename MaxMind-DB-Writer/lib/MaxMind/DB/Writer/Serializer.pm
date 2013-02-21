@@ -255,7 +255,7 @@ push @pointer_thresholds,
     };
 push @pointer_thresholds,
     {
-    cutoff => 2**27 + $pointer_thresholds[-1],
+    cutoff => 2**27 + $pointer_thresholds[-1]{cutoff},
     offset => $pointer_thresholds[-1]{cutoff},
     };
 push @pointer_thresholds,
