@@ -9,8 +9,6 @@ use MaxMind::DB::Reader::Decoder;
 
 use Moose::Role;
 
-use constant DEBUG => $ENV{MAXMIND_DB_READER_DEBUG};
-
 with 'MaxMind::DB::Role::Debugs';
 
 # Can't require accessors :(
