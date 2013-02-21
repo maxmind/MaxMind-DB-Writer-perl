@@ -103,10 +103,12 @@ sub store_data {
 
     my $position = $self->_position_for_data($key_for_data);
 
-    $self->_debug_string( 'Found data at position', $position )
-        if DEBUG;
-
     if ( defined $position ) {
+        if (DEBUG) {
+            $self->_debug_string( 'Found data at position', $position );
+            $self->_debug_string( 'Storing pointer to',     $position );
+        }
+
         return $self->_store_data( pointer => $position );
     }
     else {
@@ -575,6 +577,9 @@ sub _write_encoded_data {
     my @encoded = @_;
 
     ${ $self->buffer() } .= $_ for @_;
+
+    $self->_debug_binary( 'Wrote', join q{}, @_ )
+        if DEBUG;
 
     return;
 }
