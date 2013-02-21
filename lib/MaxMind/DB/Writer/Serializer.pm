@@ -17,7 +17,14 @@ use MooseX::StrictConstructor;
 
 with 'MaxMind::DB::Role::Debugs';
 
-use constant DEBUG => $ENV{MAXMIND_DB_SERIALIZER_DEBUG};
+use constant DEBUG  => $ENV{MAXMIND_DB_SERIALIZER_DEBUG};
+use constant VERIFY => $ENV{MAXMIND_DB_SERIALIZER_VERIFY};
+
+if (VERIFY) {
+    require MaxMind::DB::Reader::Decoder;
+    require Test::Deep::NoTest;
+    Test::Deep::NoTest->import(qw( cmp_details deep_diag));
+}
 
 binmode STDERR, ':utf8'
     if DEBUG;
@@ -63,6 +70,14 @@ has _cache => (
     },
 );
 
+has _decoder => (
+    is       => 'ro',
+    isa      => 'MaxMind::DB::Reader::Decoder',
+    init_arg => undef,
+    lazy     => 1,
+    builder  => '_build_decoder',
+);
+
 my $MinimumCacheableSize = 5;
 
 sub store_data {
@@ -101,6 +116,29 @@ sub store_data {
 
         return $position;
     }
+}
+
+if (VERIFY) {
+    around store_data => sub {
+        my $orig        = shift;
+        my $self        = shift;
+        my $type        = shift;
+        my $data        = shift;
+        my $member_type = shift;
+
+        my $position = $self->$orig( $type, $data, $member_type );
+
+        my $stored_data = $self->_decoder()->decode($position);
+        my ( $ok, $stack ) = cmp_details( $data, $stored_data );
+
+        unless ($ok) {
+            my $diag = deep_diag($stack);
+            die
+                "Data we just stored does not decode to value we expected:\n$diag\n";
+        }
+
+        return $position;
+    };
 }
 
 # These types never take more than 4 bytes to store.
@@ -538,6 +576,16 @@ sub _write_encoded_data {
     ${ $self->buffer() } .= $_ for @_;
 
     return;
+}
+
+sub _build_decoder {
+    my $self = shift;
+
+    open my $fh, '<:raw', $self->buffer();
+
+    return MaxMind::DB::Reader::Decoder->new(
+        data_source => $fh,
+    );
 }
 
 __PACKAGE__->meta()->make_immutable();
