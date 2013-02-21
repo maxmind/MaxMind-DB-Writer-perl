@@ -63,6 +63,7 @@ has _cache => (
     is       => 'ro',
     isa      => 'HashRef',
     init_arg => undef,
+    lazy     => 1,
     default  => sub { {} },
     handles  => {
         _save_position     => 'set',
