@@ -152,8 +152,6 @@ sub _verify_all_nodes {
         if ( $node_num % 10000 == 0 ) {
             $self->_output("  checked $node_num nodes out of $expected_count");
         }
-
-        last if $node_num >= 50000;
     }
 }
 
