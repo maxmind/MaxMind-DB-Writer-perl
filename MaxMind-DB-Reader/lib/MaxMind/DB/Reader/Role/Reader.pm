@@ -11,8 +11,6 @@ use Moose::Role;
 
 use constant DEBUG => $ENV{MAXMIND_DB_READER_DEBUG};
 
-my $DataSectionStartMarkerSize = 16;
-
 with 'MaxMind::DB::Role::Debugs',
     'MaxMind::DB::Reader::Role::NodeReader',
     'MaxMind::DB::Reader::Role::HasDecoder';
