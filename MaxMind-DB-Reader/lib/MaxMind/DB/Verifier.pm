@@ -224,8 +224,10 @@ sub _verify_data_section {
         $offset = $new_offset;
     }
 
-    if ( keys %{$pointers} ) {
-        #...
+    if ( my $count = keys %{$pointers} ) {
+        $self->_verification_error(
+            "Found $count pointers in the search tree that we didn't see while stepping through the data section"
+        );
     }
 }
 
