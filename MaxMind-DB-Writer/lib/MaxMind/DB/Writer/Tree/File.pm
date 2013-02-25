@@ -7,7 +7,8 @@ use namespace::autoclean;
 use IO::Handle;
 use Math::Int128 qw( uint128 );
 use Math::Round qw( round );
-use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
+use MaxMind::DB::Common
+    qw( DATA_SECTION_SEPARATOR_SIZE LEFT_RECORD RIGHT_RECORD );
 use MaxMind::DB::Metadata;
 use MaxMind::DB::Writer::Serializer;
 use Net::Works::Network;
@@ -15,6 +16,10 @@ use Net::Works::Network;
 use Moose;
 use Moose::Util::TypeConstraints;
 use MooseX::StrictConstructor;
+
+with 'MaxMind::DB::Role::Debugs';
+
+use constant DEBUG => $ENV{MAXMIND_DB_WRITER_DEBUG};
 
 has _alias_ipv6_to_ipv4 => (
     is       => 'ro',
@@ -150,7 +155,7 @@ has _serializer => (
     builder  => '_build_serializer',
 );
 
-my $DataSectionSeparator = "\0" x 16;
+my $DataSectionSeparator = "\0" x DATA_SECTION_SEPARATOR_SIZE;
 my $MetadataMarker       = "\xab\xcd\xefMaxMind.com";
 
 sub write_tree {
@@ -224,6 +229,15 @@ sub process_pointer_record {
     my $is_right = shift;
     my $pointer  = shift;
 
+    if (DEBUG) {
+        $self->_debug_sprintf(
+            'Writing %d[%s], node pointer = %d',
+            $self->_map_node_num($node_num),
+            ( $is_right ? 'right' : 'left' ),
+            $self->_map_node_num($pointer)
+        );
+    }
+
     $self->_encode_record(
         $self->_map_node_num($node_num),
         $is_right,
@@ -241,6 +255,15 @@ sub process_value_record {
     my $value    = shift;
 
     if ( my $pointer = $self->{_seen_data}{$key} ) {
+        if (DEBUG) {
+            $self->_debug_sprintf(
+                'Writing %d[%s], data pointer (seen) = %d',
+                $self->_map_node_num($node_num),
+                ( $is_right ? 'right' : 'left' ),
+                $pointer,
+            );
+        }
+
         $self->_encode_record(
             $self->_map_node_num($node_num),
             $is_right,
@@ -253,7 +276,24 @@ sub process_value_record {
         $pointer
             = $data_pointer
             + $self->_node_count()
-            + length $DataSectionSeparator;
+            + DATA_SECTION_SEPARATOR_SIZE;
+
+        if (DEBUG) {
+            $self->_debug_sprintf(
+                'Writing %d[%s], data pointer (new) = %d',
+                $self->_map_node_num($node_num),
+                ( $is_right ? 'right' : 'left' ),
+                $pointer,
+            );
+
+            $self->_debug_sprintf(
+                '  %d = %d (data section position) + %d (node count) + %d (data section separator length)',
+                $pointer,
+                $data_pointer,
+                $self->_node_count(),
+                DATA_SECTION_SEPARATOR_SIZE,
+            );
+        }
 
         $self->_encode_record(
             $self->_map_node_num($node_num),
@@ -271,6 +311,15 @@ sub process_empty_record {
     my $self     = shift;
     my $node_num = shift;
     my $is_right = shift;
+
+    if (DEBUG) {
+        $self->_debug_sprintf(
+            'Writing %d[%s], empty = %d',
+            $self->_map_node_num($node_num),
+            ( $is_right ? 'right' : 'left' ),
+            $self->_node_count(),
+        );
+    }
 
     $self->_encode_record(
         $self->_map_node_num($node_num),
