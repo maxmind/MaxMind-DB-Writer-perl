@@ -190,11 +190,10 @@ then it is an actual pointer value pointing into the data section. The value
 of the pointer is calculated from the start of the data section, *not* from
 the start of the file.
 
-In order to determine where in the search tree we should start looking, we use
+In order to determine where in the data section we should start looking, we use
 the following formula:
 
-    $real_offset = ( $record_value - $node_count ) +
-                   $size_of_tree_in_bytes
+    $data_section_offset = $record_value - $node_count;
 
 The reason that we subtract the `$node_count` is best demonstrated by an example.
 
@@ -204,12 +203,21 @@ bits, or 6 bytes. The size of the tree in bytes is 6,000.
 When a record in the tree contains a number that is <= 1,000, this is a *node
 number*, and we look up that node. If a record contains a value >= 1,001, we
 know that it is a data section value. We subtract the node count (1,000),
-giving us the number 1. Then we add the size of tree in bytes (6,000) to this
-number, giving us 6,001, which is the start of the data section as an offset
-from the beginning of the entire database.
+giving us the number 1.
 
 If a record contained the value 6,000, the formula would give us an offset of
-11,000, which would be about 5,000 bytes into the data section.
+5,000.
+
+In order to determine where in the file this offset really points to, we also
+need to know where the data section starts. This can be calculated by
+determining the size of the search tree in bytes and then adding an additional
+16 bytes for the data section separator (see below).
+
+So the final formula to determine the offset in the file is:
+
+   $offset_in_file = ( $record_value - $node_count )
+                     + $search_tree_size_in_bytes
+                     + 16 (data section separator size)
 
 ### IPv4 addresses in an IPv6 tree
 
