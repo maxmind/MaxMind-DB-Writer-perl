@@ -40,7 +40,7 @@ has _allocated_node_count => (
     default  => 0,
 );
 
-has root_node_num => (
+has _root_node_num => (
     is       => 'ro',
     writer   => '_set_root_node_num',
     isa      => 'Int',
@@ -295,7 +295,7 @@ sub _find_cached_node {
 
     my $cached_ipnum = $cache->{last_ipnum};
 
-    return ( $self->root_node_num(), 0, $netmask, $default_mask )
+    return ( $self->_root_node_num(), 0, $netmask, $default_mask )
         if $ENV{MAXMIND_DB_WRITER_NO_CACHE} || !$cached_ipnum;
 
     my $one_idx = $self->_first_shared_bit(
@@ -310,7 +310,7 @@ sub _find_cached_node {
     );
 
     return (
-        $cache->{node_num_cache}[$cache_idx] || $self->root_node_num(),
+        $cache->{node_num_cache}[$cache_idx] || $self->_root_node_num(),
         $cache_idx,
         $netmask - $cache_idx,
         $default_mask >> $cache_idx,
@@ -435,7 +435,7 @@ sub _split_node {
 sub iterate {
     my $self              = shift;
     my $object            = shift;
-    my $starting_node_num = shift || $self->root_node_num();
+    my $starting_node_num = shift || $self->_root_node_num();
 
     my $ip_integer = 0;
 
