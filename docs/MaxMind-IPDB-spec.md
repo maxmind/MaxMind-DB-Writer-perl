@@ -476,10 +476,10 @@ If the size is 0, the pointer is built by appending the next byte to the last
 three bits to produce an 11-bit value.
 
 If the size is 1, the pointer is built by appending the next two bytes to the
-last three bits to produce a 19-bit value + 2047.
+last three bits to produce a 19-bit value + 2048.
 
 If the size is 2, the pointer is built by appending the next three bytes to the
-last three bits to produce a 27-bit value + 526335.
+last three bits to produce a 27-bit value + 526336.
 
 Finally, if the size is 3, the pointer's value is contained in the next four
 bytes as a 32-bit value. In this case, the last three bits of the control byte
