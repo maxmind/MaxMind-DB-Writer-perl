@@ -193,7 +193,8 @@ the start of the file.
 In order to determine where in the data section we should start looking, we use
 the following formula:
 
-    $data_section_offset = $record_value - $node_count;
+    $data_section_offset = ( $record_value - $node_count )
+                           - 16 (data section separator size)
 
 The reason that we subtract the `$node_count` is best demonstrated by an example.
 
@@ -201,9 +202,9 @@ Let's assume we have a 24-bit tree with 1,000 nodes. Each node contains 48
 bits, or 6 bytes. The size of the tree in bytes is 6,000.
 
 When a record in the tree contains a number that is <= 1,000, this is a *node
-number*, and we look up that node. If a record contains a value >= 1,001, we
-know that it is a data section value. We subtract the node count (1,000),
-giving us the number 1.
+number*, and we look up that node. If a record contains a value >= 1,017, we
+know that it is a data section value. We subtract the node count (1,000) and
+then subtract 16 for the data section separator, giving us the number 1.
 
 If a record contained the value 6,000, the formula would give us an offset of
 5,000.
@@ -217,7 +218,6 @@ So the final formula to determine the offset in the file is:
 
    $offset_in_file = ( $record_value - $node_count )
                      + $search_tree_size_in_bytes
-                     + 16 (data section separator size)
 
 ### IPv4 addresses in an IPv6 tree
 
