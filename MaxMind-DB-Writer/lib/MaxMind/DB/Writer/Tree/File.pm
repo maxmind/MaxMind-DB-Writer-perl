@@ -287,7 +287,7 @@ sub process_value_record {
             );
 
             $self->_debug_sprintf(
-                '  %d = %d (data section position) + %d (node count) + %d (data section separator length)',
+                '  %d = %d (data section position) + %d (node count) + %d (data section separator size)',
                 $pointer,
                 $data_pointer,
                 $self->_node_count(),
