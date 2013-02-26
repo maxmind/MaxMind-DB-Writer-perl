@@ -12,7 +12,7 @@ use MaxMind::DB::Writer::Tree::File;
 my $tempdir = tempdir( CLEANUP => 1 );
 
 for my $record_size ( 24, 28, 32 ) {
-    my $file = "$dir/IPv4-$record_size.mmdb",;
+    my $file = "$tempdir/IPv4-$record_size.mmdb",;
 
     _write_tree(
         $record_size,
