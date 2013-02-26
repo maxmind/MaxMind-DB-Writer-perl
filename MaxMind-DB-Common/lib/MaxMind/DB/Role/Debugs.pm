@@ -39,6 +39,12 @@ sub _debug_string {
     warn "$label: $string\n";
 }
 
+sub _debug_sprintf {
+    my $self = shift;
+
+    warn sprintf( shift . "\n", @_ );
+}
+
 sub _debug_structure {
     my $self      = shift;
     my $label     = shift;
