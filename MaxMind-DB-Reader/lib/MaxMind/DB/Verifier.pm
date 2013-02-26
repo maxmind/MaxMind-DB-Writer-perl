@@ -29,14 +29,6 @@ has quiet => (
     default => 0,
 );
 
-has _data_section_size => (
-    is       => 'ro',
-    isa      => 'Int',
-    init_arg => undef,
-    lazy     => 1,
-    builder  => '_build_data_section_size',
-);
-
 has _max_pointer_in_search_tree => (
     is       => 'ro',
     isa      => 'Int',
@@ -90,6 +82,8 @@ sub verify {
             $self->_output('   ok');
         }
     }
+
+    return 1;
 }
 
 sub _verify_metadata {
@@ -162,6 +156,8 @@ sub _verify_all_nodes {
         my $self     = shift;
         my $node_num = shift;
 
+        my $node_count = $self->node_count();
+
         my %records;
         @records{@directions} = $self->_read_node($node_num);
 
@@ -171,15 +167,13 @@ sub _verify_all_nodes {
                     "Node $node_num, $dir record == 0");
             }
 
-            my $node_count = $self->node_count();
-
             next if $records{$dir} <= $self->node_count();
 
-            if ( $records{$dir} <= $self->_max_pointer_in_search_tree() ) {
-                my $resolved
-                    = ( $records{$dir} - $self->node_count() )
+            my $resolved
+                = ( $records{$dir} - $self->node_count() )
                     + $self->_search_tree_size();
 
+            if ( $resolved <= $self->_max_pointer_in_search_tree() ) {
                 $self->_search_tree_data_pointers()->{$resolved}
                     = [ $node_num, $dir ];
             }
@@ -198,19 +192,25 @@ sub _verify_data_section {
     my $self = shift;
 
     my $pointers = $self->_search_tree_data_pointers();
+    my $pointer_count = scalar keys %{$pointers};
+
     my $decoder  = $self->_decoder();
 
-    my $offset = $self->_search_tree_size() + DATA_SECTION_SEPARATOR_SIZE;
-    while ( $offset < $self->_data_section_size() ) {
-        delete $pointers->{$offset};
+    my $data_section_start
+        = $self->_search_tree_size() + DATA_SECTION_SEPARATOR_SIZE;
+    my $offset = $data_section_start;
 
+    my $data_section_end = $self->_data_section_end();
+
+    while ( $offset < $data_section_end ) {
         my ( $data, $new_offset );
         try {
             ( $data, $new_offset ) = $self->_decoder()->decode($offset);
         }
         catch {
             $self->_verification_error(
-                "Error stepping through the data section at offset $offset - $_");
+                "Error stepping through the data section at offset $offset - $_"
+            );
         };
 
         last unless $data;
@@ -221,12 +221,22 @@ sub _verify_data_section {
             );
         }
 
+        if ( $pointers->{$offset} ) {
+            delete $pointers->{$offset};
+        }
+        else {
+            $self->_verification_error(
+                "Found a chunk of data in the section (file offset $offset) that the search tree does not point to"
+            );
+        }
+
         $offset = $new_offset;
     }
 
-    if ( my $count = keys %{$pointers} ) {
+    if ( my $final_count = keys %{$pointers} ) {
         $self->_verification_error(
-            "Found $count pointers in the search tree that we didn't see while stepping through the data section"
+            "Found $final_count pointers (of $pointer_count) in the search tree"
+                . " that we didn't see while stepping through the data section"
         );
     }
 }
@@ -256,19 +266,12 @@ sub _build_data_source {
     return $fh;
 }
 
-sub _build_data_section_size {
-    my $self = shift;
-
-    return ( ( $self->_data_section_end() + $self->node_count() )
-        - $self->_search_tree_size() );
-}
-
 sub _build_max_pointer_in_search_tree {
     my $self = shift;
 
     # We should not find something that resolves past the last byte of the
     # data section.
-    return $self->_data_section_size() - 1;
+    return $self->_data_section_end() - 1;
 }
 
 __PACKAGE__->meta()->make_immutable();
