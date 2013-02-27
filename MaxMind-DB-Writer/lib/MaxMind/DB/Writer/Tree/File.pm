@@ -356,24 +356,22 @@ sub _encode_record {
         $encoded = substr( pack( N => $value ), 1, 3 );
     }
     elsif ( $record_size == 28 ) {
-        my $other_record = substr(
-            ${$buffer}, $offset + $is_right * $record_byte_size,
-            $write_size
+        my $middle_byte = substr(
+            ${$buffer},
+            $offset + ( $is_right ? 0 : $record_byte_size ), 1
         );
 
         if ($is_right) {
             $encoded
                 = pack(
-                N => ( ( 0b11110000 & unpack( C => $other_record ) ) << 28 )
+                N => ( ( 0b11110000 & unpack( C => $middle_byte ) ) << 24 )
                     | $value );
         }
         else {
             $encoded = pack(
-                N => (
-                    ( ( $value & 0b11111111_11111111_11111111 ) << 8 ) | (
-                        ( ( $value >> 20 ) & 0b11110000 )
-                        | ( 0b00001111 & unpack( x3C => $other_record ) )
-                    )
+                N => ( ( $value & 0b11111111_11111111_11111111 ) << 8 ) | (
+                    ( ( $value >> 20 ) & 0b11110000 )
+                    | ( 0b00001111 & unpack( C => $middle_byte ) )
                 )
             );
         }
