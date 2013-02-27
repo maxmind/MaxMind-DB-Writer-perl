@@ -364,15 +364,15 @@ sub _encode_record {
         if ($is_right) {
             $encoded
                 = pack(
-                N => ( ( 0xf0 & unpack( C => $other_record ) ) << 28 )
+                N => ( ( 0b11110000 & unpack( C => $other_record ) ) << 28 )
                     | $value );
         }
         else {
             $encoded = pack(
                 N => (
-                    ( ( $value & 0xffffff ) << 8 ) | (
-                        ( ( $value >> 20 ) & 0xf0 )
-                        | ( 15 & unpack( x3C => $other_record ) )
+                    ( ( $value & 0b11111111_11111111_11111111 ) << 8 ) | (
+                        ( ( $value >> 20 ) & 0b11110000 )
+                        | ( 0b00001111 & unpack( x3C => $other_record ) )
                     )
                 )
             );
