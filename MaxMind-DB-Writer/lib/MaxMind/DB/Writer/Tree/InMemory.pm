@@ -177,7 +177,21 @@ sub insert_subnet {
     my $subnet = shift;
     my $data   = shift;
 
-    $self->{_saw_ipv6} ||= $subnet->version() == 6;
+    my $ip_version = $subnet->version();
+    if ( $ip_version == 6 && !$self->{_saw_ipv6} && $self->node_count() > 1 )
+    {
+        my $description = $subnet->as_string();
+        die
+            "You cannot insert an IPv6 subnet ($description) into an IPv4 tree.\n";
+    }
+
+    $self->{_saw_ipv6} ||= $ip_version == 6;
+
+    if ( $self->{_saw_ipv6} && $ip_version == 4 ) {
+        my $description = $subnet->as_string();
+        die
+            "You cannot insert an IPv4 subnet ($description) into an IPv6 tree.\n";
+    }
 
     my $key = 'D' . md5( $JSON->encode($data) );
     $self->{_data_index}{$key} ||= $data;
