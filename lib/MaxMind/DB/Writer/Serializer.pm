@@ -79,7 +79,7 @@ has _decoder => (
     builder  => '_build_decoder',
 );
 
-my $MinimumCacheableSize = 5;
+my $MinimumCacheableSize = 4;
 
 sub store_data {
     my $self        = shift;
