@@ -363,6 +363,11 @@ before beginning the deserialization.
 
 This data type is not followed by a payload, and its size is always zero.
 
+### boolean - 14
+
+A true or false value. The length information for a boolean type will always
+be 0 or 1, indicating the value. There is no payload for this field.
+
 ### Data Field Format
 
 Each field starts with a control byte. This control byte provides information

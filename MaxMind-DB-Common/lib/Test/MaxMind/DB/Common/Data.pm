@@ -503,4 +503,15 @@ sub _utf8_string {
     return \@string;
 }
 
+sub _boolean {
+    return [
+        0 => [
+            0b00000000, 0b00000111,
+        ],
+        1 => [
+            0b00000001, 0b00000111,
+        ],
+    ];
+}
+
 1;

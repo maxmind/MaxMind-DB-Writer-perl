@@ -41,6 +41,7 @@ my %Types = (
     11 => 'array',
     12 => 'container',
     13 => 'end_marker',
+    14 => 'boolean',
 );
 
 has _pointer_base => (
@@ -120,6 +121,9 @@ sub decode {
 
     return $self->_decode_array( $size, $offset )
         if $type eq 'array';
+
+    return $self->_decode_boolean( $size, $offset )
+        if $type eq 'boolean';
 
     my $buffer;
     $self->_read( \$buffer, $offset, $size )
@@ -330,6 +334,14 @@ sub _decode_container {
 
 sub _decode_end_marker {
     return MaxMind::DB::Reader::Data::EndMarker->new();
+}
+
+sub _decode_boolean {
+    my $self   = shift;
+    my $size   = shift;
+    my $offset = shift;
+
+    return wantarray ? ( $size, $offset ) : $size;
 }
 
 sub _size_from_ctrl_byte {

@@ -240,6 +240,7 @@ my %Types = (
     array       => 11,
     container   => 12,
     end_marker  => 13,
+    boolean     => 14,
 );
 
 my @pointer_thresholds;
@@ -416,6 +417,14 @@ sub _encode_uint128 {
     my $self = shift;
 
     $self->_encode_unsigned_int( 128 => @_ );
+}
+
+sub _encode_boolean {
+    my $self  = shift;
+    my $value = shift;
+
+    $self->_write_encoded_data(
+        $self->_control_bytes( $Types{boolean}, $value ? 1 : 0 ) );
 }
 
 sub _encode_end_marker {
