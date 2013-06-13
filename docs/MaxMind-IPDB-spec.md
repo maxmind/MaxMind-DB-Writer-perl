@@ -64,7 +64,7 @@ This is a string that indicates the structure of each data record associated
 with an IP address. The actual definition of these structures is left up to
 the database creator.
 
-Names starting with "GeoIP-" are reserved for use by MaxMind (and "GeoIP" is a
+Names starting with "GeoIP" are reserved for use by MaxMind (and "GeoIP" is a
 trademark anyway).
 
 ### languages
