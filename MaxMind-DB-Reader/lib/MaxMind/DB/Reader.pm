@@ -26,7 +26,7 @@ has _reader => (
     init_arg => undef,
     lazy     => 1,
     builder  => '_build_reader',
-    handles  => [ MaxMind::DB::Metadata->meta()->get_attribute_list() ],
+    handles  => [ 'metadata', MaxMind::DB::Metadata->meta()->get_attribute_list() ],
 );
 
 sub BUILD {
