@@ -1,0 +1,65 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Data::Printer;
+use Getopt::Long;
+use MaxMind::DB::Reader;
+
+sub main {
+    my $file;
+    GetOptions(
+        'file:s' => \$file,
+    );
+
+    my $reader = MaxMind::DB::Reader->new( file => $file );
+    my $metadata = $reader->metadata()->metadata_to_encode();
+
+    my $has_datetime = eval { require DateTime; 1 };
+
+    my $languages = shift @{ $metadata->{languages} };
+    $languages .= "\n";
+    $languages .= join "\n", map { "                         $_" }
+        sort @{ $metadata->{languages} };
+
+    my $format = <<"EOF";
+  %s
+  type:                  %s
+  languages:             $languages
+  binary format version: %s.%s
+  build epoch:           %s%s
+  IP version:            %s
+  node count:            %s
+  record size:           %s bits
+EOF
+
+    printf( $format,
+        $metadata->{description}{en},
+        $metadata->{database_type},
+        $metadata->{binary_format_major_version},
+        $metadata->{binary_format_minor_version},
+        _commify( $metadata->{build_epoch} ),
+        (
+            $has_datetime
+            ? ' ('
+                . DateTime->from_epoch(
+                epoch => $metadata->{build_epoch} + 0 )
+                ->format_cldr('YYYY-MM-dd HH:mm::ss vvv') . ')'
+            : q{}
+        ),
+        $metadata->{ip_version},
+        _commify( $metadata->{node_count} ),
+        $metadata->{record_size},
+    );
+}
+
+main();
+
+sub _commify {
+    my $str = reverse $_[0];
+
+    $str =~ s/(\d\d\d)/$1,/g;
+
+    return scalar reverse $str;
+}
