@@ -31,7 +31,7 @@ my $serializer = MaxMind::DB::Writer::Serializer->new();
 
 like(
     exception { $serializer->store_data( bytes => $input ) },
-    qr/\QYou are attempted to store a characters string (人) as bytes/,
+    qr/\QYou attempted to store a characters string (人) as bytes/,
     'got an error when trying to serialize a character string as bytes'
 );
 
