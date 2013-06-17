@@ -7,7 +7,7 @@ use namespace::autoclean;
 require bytes;
 use Carp qw( confess );
 use Data::IEEE754 qw( pack_double_be pack_float_be );
-use Encode qw( encode );
+use Encode qw( encode is_utf8 FB_CROAK );
 use JSON::XS;
 use Math::Int128 qw( uint128_to_net );
 use MaxMind::DB::Writer::Serializer;
@@ -316,7 +316,10 @@ sub _pack_4_byte_pointer {
 sub _encode_utf8_string {
     my $self = shift;
 
-    $self->_simple_encode( utf8_string => encode( 'utf-8', shift ) );
+    my $string = shift;
+
+    $self->_simple_encode(
+        utf8_string => encode( 'UTF-8', $string, FB_CROAK ) );
 }
 
 sub _encode_double {
@@ -340,7 +343,11 @@ sub _encode_float {
 sub _encode_bytes {
     my $self = shift;
 
-    $self->_simple_encode( bytes => @_ );
+    my $bytes = shift;
+    die "You are attempted to store a characters string ($bytes) as bytes"
+        if is_utf8($bytes);
+
+    $self->_simple_encode( bytes => $bytes );
 }
 
 sub _encode_uint16 {
