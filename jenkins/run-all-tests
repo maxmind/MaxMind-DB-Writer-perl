@@ -33,7 +33,7 @@ for dir in $DIRS; do
 
         unset -e
         $BINDIR/perl $BINDIR/prove --harness=TAP::Harness::JUnit -r -j 2
-        if [ "$?" -ne 0 ]; do
+        if [ "$?" -ne 0 ]; then
             last_exit=$?
         fi
         set -e
