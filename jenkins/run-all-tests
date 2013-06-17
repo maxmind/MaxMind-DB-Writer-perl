@@ -31,7 +31,7 @@ for dir in $DIRS; do
     if [ -d t ]; then
         export JUNIT_OUTPUT_FILE=`pwd`/junit_output.xml
 
-        unset -e
+        set +e
         $BINDIR/perl $BINDIR/prove --harness=TAP::Harness::JUnit -r -j 2
         if [ "$?" -ne 0 ]; then
             last_exit=$?
