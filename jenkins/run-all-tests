@@ -7,13 +7,13 @@ export PERL5LIB=$LOCALLIB/lib/perl5:$LOCALLIB/lib/perl5/x86_64-linux
 BINDIR=`mm-perl -MConfig -e 'print $Config{bin}'`
 DIRS="MaxMind-DB-Common MaxMind-DB-Reader MaxMind-DB-Writer"
 
-$BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB TAP::Harness::JUnit
+$BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB TAP::Harness::JUnit Dist::Zilla
 
 for dir in $DIRS; do
     pushd $dir
     if [ -f dist.ini ]; then
-        $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB `$BINDIR/dzil authordeps`
-        $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB `$BINDIR/dzil listdeps`
+        $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB `$LOCALLLIB/bin/dzil authordeps`
+        $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB `$LOCALLLIB/bin/dzil listdeps`
     fi
     popd
 
