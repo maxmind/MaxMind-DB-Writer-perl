@@ -15,8 +15,8 @@ $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB TAP::Harness::JUnit Dist::Zilla
 for dir in $DIRS; do
     pushd $dir
     if [ -f dist.ini ]; then
-        $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB `$LOCALLIB/bin/dzil authordeps`
-        $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB `$LOCALLIB/bin/dzil listdeps`
+        $LOCALLIB/bin/dzil authordeps | $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB
+        $LOCALLIB/bin/dzil listdeps | grep -v '^MaxMind::DB' | $BINDIR/perl $BINDIR/cpanm -n -L $LOCALLIB
     fi
     popd
 
