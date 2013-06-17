@@ -344,7 +344,7 @@ sub _encode_bytes {
     my $self = shift;
 
     my $bytes = shift;
-    die "You are attempted to store a characters string ($bytes) as bytes"
+    die "You attempted to store a characters string ($bytes) as bytes"
         if is_utf8($bytes);
 
     $self->_simple_encode( bytes => $bytes );
