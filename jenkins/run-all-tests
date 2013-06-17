@@ -25,7 +25,7 @@ for dir in $DIRS; do
     export PERL5LIB=$PERL5LIB:`pwd`/$dir/lib
 done
 
-$last_exit=0
+last_exit=0
 for dir in $DIRS; do
     pushd $dir
     if [ -d t ]; then
@@ -34,7 +34,7 @@ for dir in $DIRS; do
         unset -e
         $BINDIR/perl $BINDIR/prove --harness=TAP::Harness::JUnit -r -j 2
         if [ $? != 0 ]; do
-            $last_exit=$?
+            last_exit=$?
         fi
         set -e
     fi
