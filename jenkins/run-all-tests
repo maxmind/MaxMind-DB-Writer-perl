@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -u
+
 git clean -dxf
 export LOCALLIB=$HOME/local-lib/MaxMind-DB-perl
 export PERL5LIB=$LOCALLIB/lib/perl5:$LOCALLIB/lib/perl5/x86_64-linux
@@ -20,11 +23,20 @@ for dir in $DIRS; do
     export PERL5LIB=$PERL5LIB:`pwd`/$dir/lib
 done
 
+$last_exit = 0
 for dir in $DIRS; do
     pushd $dir
     if [ -d t ]; then
         export JUNIT_OUTPUT_FILE=`pwd`/junit_output.xml
+
+        unset -e
         $BINDIR/perl $BINDIR/prove --harness=TAP::Harness::JUnit -r -j 2
+        if [ $? != 0 ]; do
+            $last_exit = $?
+        fi
+        set -e
     fi
     popd
 done
+
+exit $last_exit
