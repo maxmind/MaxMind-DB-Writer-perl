@@ -7,7 +7,7 @@ use Test::More;
 use MaxMind::DB::Writer::Tree::InMemory;
 use MaxMind::DB::Writer::Tree::File;
 
-my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
+my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 4 );
 $tree->{_used_node_count} = 850_000;
 
 my $writer = MaxMind::DB::Writer::Tree::File->new(

@@ -12,7 +12,7 @@ my $ipv4_subnet
 my $ipv6_subnet = Net::Works::Network->new_from_string( string => '::2/128' );
 
 {
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 4 );
 
     $tree->insert_subnet( $ipv4_subnet, 'foo' );
     like(
@@ -23,7 +23,7 @@ my $ipv6_subnet = Net::Works::Network->new_from_string( string => '::2/128' );
 }
 
 {
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 6 );
 
     $tree->insert_subnet( $ipv6_subnet, 'foo' );
     like(

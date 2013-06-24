@@ -51,7 +51,7 @@ my $utf8_string = "\x{4eba}";
 done_testing();
 
 sub _write_tree {
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 4 );
 
     my $subnet = Net::Works::Network->new_from_string(
         string  => '1.2.3.0/24',

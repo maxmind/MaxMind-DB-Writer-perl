@@ -52,7 +52,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 done_testing();
 
 sub _write_tree {
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 6 );
 
     my @subnets = map {
         Net::Works::Network->new_from_string( string => $_, version => 6 )

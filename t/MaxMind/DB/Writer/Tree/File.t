@@ -102,7 +102,8 @@ sub _write_tree {
     my $subnets     = shift;
     my $metadata    = shift;
 
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new(
+        ip_version => $metadata->{ip_version} );
 
     for my $subnet ( @{$subnets} ) {
         $tree->insert_subnet(

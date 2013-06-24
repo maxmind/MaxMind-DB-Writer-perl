@@ -9,7 +9,7 @@ use MaxMind::DB::Writer::Tree::InMemory;
 use Net::Works::Network;
 
 {
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 4 );
 
     no warnings 'redefine';
     local *MaxMind::DB::Writer::Tree::InMemory::_split_node

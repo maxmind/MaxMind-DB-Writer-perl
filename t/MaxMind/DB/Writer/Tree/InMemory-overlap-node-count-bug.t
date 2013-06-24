@@ -12,9 +12,9 @@ use Net::Works::Network;
 # to account for that in the node count.
 
 {
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 4 );
 
-    for my $string ( qw( 1.1.2.255/32 1.1.2.254/31 ) ) {
+    for my $string (qw( 1.1.2.255/32 1.1.2.254/31 )) {
         my $subnet
             = Net::Works::Network->new_from_string( string => $string );
 
@@ -29,9 +29,9 @@ use Net::Works::Network;
 }
 
 {
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 4 );
 
-    for my $string ( qw( 1.1.2.254/32 1.1.2.254/31 ) ) {
+    for my $string (qw( 1.1.2.254/32 1.1.2.254/31 )) {
         my $subnet
             = Net::Works::Network->new_from_string( string => $string );
 
