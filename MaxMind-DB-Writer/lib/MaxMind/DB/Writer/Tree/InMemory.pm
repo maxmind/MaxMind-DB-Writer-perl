@@ -16,6 +16,12 @@ use Scalar::Util qw( blessed );
 use Moose;
 use MooseX::StrictConstructor;
 
+has ip_version => (
+    is       => 'ro',
+    isa      => 'Int',
+    required => 1,
+);
+
 # We intentionally access most of these attributes by calling $self->{...}
 # rather than using accessors, but declaring them makes it easy to provide a
 # default and provides a little bit of documentation on their types.
@@ -177,20 +183,13 @@ sub insert_subnet {
     my $subnet = shift;
     my $data   = shift;
 
-    my $ip_version = $subnet->version();
-    if ( $ip_version == 6 && !$self->{_saw_ipv6} && $self->node_count() > 1 )
-    {
+    if ( $subnet->version() != $self->ip_version() ) {
         my $description = $subnet->as_string();
-        die
-            "You cannot insert an IPv6 subnet ($description) into an IPv4 tree.\n";
-    }
-
-    $self->{_saw_ipv6} ||= $ip_version == 6;
-
-    if ( $self->{_saw_ipv6} && $ip_version == 4 ) {
-        my $description = $subnet->as_string();
-        die
-            "You cannot insert an IPv4 subnet ($description) into an IPv6 tree.\n";
+        die 'You cannot insert an IPv'
+            . $subnet->version()
+            . " subnet ($description) into an IPv"
+            . $self->ip_version()
+            . " tree.\n";
     }
 
     my $key = 'D' . md5( $JSON->encode($data) );

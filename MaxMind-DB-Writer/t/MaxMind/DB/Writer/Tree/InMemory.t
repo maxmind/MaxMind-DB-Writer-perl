@@ -247,7 +247,7 @@ sub _test_subnet_permutations {
         # we expect
         _test_tree(
             \@expect, \@expect,
-            "ordered subnets - $desc"
+            "ordered subnets - $desc",
         );
     }
 
@@ -308,7 +308,8 @@ sub _test_tree {
 sub _make_tree {
     my $pairs = shift;
 
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new();
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new(
+        ip_version => $pairs->[0][0]->version() );
 
     for my $pair ( @{$pairs} ) {
         my ( $subnet, $data ) = @{$pair};
