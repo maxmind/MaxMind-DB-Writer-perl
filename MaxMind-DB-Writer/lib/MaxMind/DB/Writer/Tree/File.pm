@@ -83,6 +83,22 @@ has _real_node_num => (
     );
 }
 
+# Will be set in BUILD so we can access it via $self->{...} later
+has _record_byte_size => (
+    is       => 'rw',
+    writer   => '_set_record_byte_size',
+    isa      => 'Int',
+    init_arg => undef,
+);
+
+# Same as _record_byte_size
+has _record_write_size => (
+    is       => 'rw',
+    writer   => '_set_record_write_size',
+    isa      => 'Int',
+    init_arg => undef,
+);
+
 has _node_count => (
     is       => 'ro',
     traits   => ['Number'],
@@ -154,6 +170,15 @@ has _serializer => (
     lazy     => 1,
     builder  => '_build_serializer',
 );
+
+sub BUILD {
+    my $self = shift;
+
+    $self->_set_record_byte_size( int( $self->_record_size() / 8 ) );
+    $self->_set_record_write_size( round( $self->_record_size() / 8 ) );
+
+    return;
+}
 
 my $DataSectionSeparator = "\0" x DATA_SECTION_SEPARATOR_SIZE;
 my $MetadataMarker       = "\xab\xcd\xefMaxMind.com";
@@ -346,8 +371,8 @@ sub _encode_record {
     my $base_offset = $node_num * $self->_node_size();
     my $buffer      = $self->_tree_buffer();
 
-    my $record_byte_size = int( $record_size / 8 );
-    my $write_size       = round( $record_size / 8 );
+    my $record_byte_size = $self->{_record_byte_size};
+    my $write_size       = $self->{_record_write_size};
 
     my $offset = $base_offset + $is_right * $record_byte_size;
 
