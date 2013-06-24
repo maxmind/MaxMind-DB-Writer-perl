@@ -12,6 +12,7 @@ use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use MaxMind::DB::Writer::Tree::Processor::NodeCounter;
 use Net::Works 0.04;
 use Scalar::Util qw( blessed );
+use Storable qw( dclone );
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -302,7 +303,7 @@ sub _find_cached_node {
     my $netmask = $subnet->mask_length();
 
     my $bits         = $subnet->bits();
-    my $default_mask = $self->_first_only_mask($bits);
+    my $default_mask = $self->_mask_for_leftmost_bit();
 
     my $cache = $self->_insert_cache();
 
@@ -348,14 +349,22 @@ sub _first_shared_bit {
     return $bits - $r - 1;
 }
 
-sub _first_only_mask {
-    my $self = shift;
-    my $bits = shift;
-
-    return 2**31 if $bits == 32;
+{
+    my $mask_4 = 2**31;
 
     # This is 2**127
-    return uint128('170141183460469231731687303715884105728');
+    my $mask_6 = uint128('170141183460469231731687303715884105728');
+
+    sub _mask_for_leftmost_bit {
+        my $self = shift;
+
+        # We need to dclone the IPv6 mask because it's really an object, and
+        # when we call >> on it, the object gets modified in place. This means
+        # that if we can't return the same object for each call.
+        return $self->ip_version() == 4
+            ? 2**31
+            : dclone($mask_6);
+    }
 }
 
 sub _direction {
