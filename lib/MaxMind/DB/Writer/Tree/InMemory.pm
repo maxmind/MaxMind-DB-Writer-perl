@@ -211,7 +211,7 @@ sub insert_subnet_as_alias {
     my $final_node = $self->_insert_subnet( $subnet, "\0" x _RECORD_SIZE );
 
     my $last_bit_in_subnet
-        = $subnet->first()->as_integer() & ( 1 << $subnet->mask_length() );
+        = $subnet->first_as_integer() & ( 1 << $subnet->mask_length() );
 
     # If the last bit of the subnet is a one then the alias only applies to
     # the right record in the tree. This can be verified visually by looking
@@ -237,7 +237,7 @@ sub _insert_subnet {
     my $subnet       = shift;
     my $final_record = shift;
 
-    my $ipnum = $subnet->first()->as_integer();
+    my $ipnum = $subnet->first_as_integer();
 
     my ( $node, $idx, $node_netmask, $bit_to_check )
         = $self->_find_cached_node($subnet);
@@ -313,7 +313,7 @@ sub _find_cached_node {
         if $ENV{MAXMIND_DB_WRITER_NO_CACHE} || !$cached_ipnum;
 
     my $one_idx = $self->_first_shared_bit(
-        $subnet->first()->as_integer(),
+        $subnet->first_as_integer(),
         $cached_ipnum, $bits
     );
 
