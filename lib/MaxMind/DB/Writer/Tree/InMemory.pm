@@ -313,7 +313,8 @@ sub _find_cached_node {
 
     my $one_idx = $self->_first_shared_bit(
         $subnet->first_as_integer(),
-        $cached_ipnum, $bits
+        $cached_ipnum,
+        $bits,
     );
 
     my $cache_idx = min(
@@ -338,14 +339,15 @@ sub _first_shared_bit {
     my $ipnum2 = shift;
     my $bits   = shift;
 
-    my $xor_ipnum = $ipnum1 ^ $ipnum2;
+    # This is hack that we do instead of right shifting the $xor_ipnum value
+    # one bit at a time until we find the last 1 bit. Doing it that way is
+    # fairly slow since it involves an overloaded Math::Int128 operation for
+    # each shift. This is about 3.5x as fast as the right shift approach.
+    my $xor_string = join q{}, map { sprintf( '%08b', ord($_) ) } split //,
+        Math::Int128::int128_to_net( $ipnum1 ^ $ipnum2 );
 
-    my $r = 0;
-    while ( $xor_ipnum >>= 1 ) {
-        $r++;
-    }
-
-    return $bits - $r - 1;
+    my $idx = index( $xor_string, '1' );
+    return $idx >= 0 ? $bits - ( 127 - $idx ) - 1 : $bits - 1;
 }
 
 sub _mask_for_leftmost_bit {
