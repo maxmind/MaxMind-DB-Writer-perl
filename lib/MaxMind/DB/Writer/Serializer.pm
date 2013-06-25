@@ -6,11 +6,11 @@ use namespace::autoclean;
 
 require bytes;
 use Carp qw( confess );
-use Data::IEEE754 qw( pack_double_be pack_float_be );
 use Encode qw( encode is_utf8 FB_CROAK );
 use JSON::XS;
 use Math::Int128 qw( uint128_to_net );
 use MaxMind::DB::Writer::Serializer;
+use Regexp::Common qw( RE_num_real );
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -241,7 +241,6 @@ my %Types = (
     container   => 12,
     end_marker  => 13,
     boolean     => 14,
-    float       => 15,
 );
 
 my @pointer_thresholds;
@@ -323,21 +322,16 @@ sub _encode_utf8_string {
 }
 
 sub _encode_double {
-    my $self = shift;
+    my $self  = shift;
+    my $value = shift;
 
-    $self->_write_encoded_data(
-        $self->_control_bytes( $Types{double}, 8, ),
-        pack_double_be(shift)
-    );
-}
+    # This accepts values like "42." but we want to reject them, thus the
+    # extra check.
+    my $re = RE_num_real();
+    die "The string $value does not contain a double"
+        unless $value =~ /^$re$/ && $value !~ /\.$/;
 
-sub _encode_float {
-    my $self = shift;
-
-    $self->_write_encoded_data(
-        $self->_control_bytes( $Types{float}, 4, ),
-        pack_float_be(shift)
-    );
+    $self->_simple_encode( double => $value );
 }
 
 sub _encode_bytes {
