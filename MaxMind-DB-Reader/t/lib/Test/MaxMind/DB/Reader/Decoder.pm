@@ -42,28 +42,18 @@ sub test_decoding_of_type {
             data_source => $fh,
         );
 
-        my $value = $decoder->decode(0);
-
         # blessed objects are big ints
         if ( ref $expect && !blessed $expect ) {
             is_deeply(
-                $value,
+                scalar $decoder->decode(0),
                 $expect,
-                $desc
-            );
-        }
-        elsif ( $type eq 'float' ) {
-            cmp_ok(
-                abs( $value - $decoder->decode(0) ),
-                '<',
-                0.001,
                 $desc
             );
         }
         else {
             is(
-                $value,
-                $expect,
+                scalar $decoder->decode(0),
+                ( $type eq 'double' ? $expect + 0 : $expect ),
                 $desc
             );
         }

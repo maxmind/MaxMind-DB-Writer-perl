@@ -6,7 +6,6 @@ use namespace::autoclean;
 use autodie;
 
 use Carp qw( confess );
-use Data::IEEE754 qw( unpack_double_be unpack_float_be );
 use Encode ();
 use MaxMind::DB::Reader::Data::Container;
 use MaxMind::DB::Reader::Data::EndMarker;
@@ -43,7 +42,6 @@ my %Types = (
     12 => 'container',
     13 => 'end_marker',
     14 => 'boolean',
-    15 => 'float',
 );
 
 has _pointer_base => (
@@ -197,15 +195,9 @@ sub _decode_double {
     my $buffer = shift;
     my $size   = shift;
 
-    return unpack_double_be($buffer);
-}
+    return 0 if $size == 0;
 
-sub _decode_float {
-    my $self   = shift;
-    my $buffer = shift;
-    my $size   = shift;
-
-    return unpack_float_be($buffer);
+    return $buffer + 0;
 }
 
 sub _decode_bytes {

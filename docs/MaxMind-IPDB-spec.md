@@ -280,8 +280,12 @@ A variable length byte sequence that contains valid utf8.
 
 ### double - 3
 
-This is stored as an IEEE-754 double (binary64) in big-endian format. The
-length of a double is always 8 bytes.
+This is stored as an ASCII sequence. In other words, these values are stored
+as something like "521.4" or "-31.3245".
+
+**XXX**: This is encoded as ASCII for lack of a better binary format that
+works across different CPUs and multiple scripting languages. We still need to
+investigate a better format.
 
 ### bytes - 4
 
@@ -363,16 +367,6 @@ This data type is not followed by a payload, and its size is always zero.
 
 A true or false value. The length information for a boolean type will always
 be 0 or 1, indicating the value. There is no payload for this field.
-
-### float - 15
-
-This is stored as an IEEE-754 float (binary32) in big-endian format. The
-length of a float is always 4 bytes.
-
-This type is provided primarily for completeness. Because of the way floating
-point numbers are stored, this type can easily lose precision when serialized
-and then deserialized. If this is an issue for you, consider using a double
-instead.
 
 ### Data Field Format
 
