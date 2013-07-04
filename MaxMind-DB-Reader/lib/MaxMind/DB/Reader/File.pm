@@ -2,6 +2,7 @@ package MaxMind::DB::Reader::File;
 
 use strict;
 use warnings;
+use autodie;
 use namespace::autoclean;
 
 use Moose;
