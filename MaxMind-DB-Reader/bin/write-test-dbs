@@ -7,6 +7,7 @@ use autodie;
 use Carp qw( croak );
 use MaxMind::DB::Writer::Tree::InMemory;
 use MaxMind::DB::Writer::Tree::File;
+use Test::MaxMind::DB::Reader::Util qw( standard_metadata );
 use Net::Works::Network;
 
 use lib '../MaxMind-DB-Writer/lib';
@@ -50,12 +51,13 @@ sub write_tree {
     my $writer = MaxMind::DB::Writer::Tree::File->new(
         tree        => $tree,
         record_size => $record_size,
-        _standard_metadata(),
+        standard_metadata(),
         %{$metadata},
         map_key_type_callback => sub {'utf8_string'},
     );
 
-    my $filename = sprintf( 't/test-data/ipv%i-%i.mmdb', $metadata->{ip_version}, $record_size );
+    my $filename = sprintf( 't/test-data/ipv%i-%i.mmdb',
+        $metadata->{ip_version}, $record_size );
     open my $fh, '>', $filename;
 
     $writer->write_tree( $fh );
@@ -63,13 +65,3 @@ sub write_tree {
     return ( $tree, $filename );
 }
 
-sub _standard_metadata {
-    return (
-        database_type => 'Test',
-        languages     => [ 'en', 'zh' ],
-        description   => {
-            en => 'Test Database',
-            zh => 'Test Database Chinese',
-        },
-    );
-}
