@@ -15,5 +15,5 @@ our @EXPORT_OK = qw( LEFT_RECORD RIGHT_RECORD DATA_SECTION_SEPARATOR_SIZE );
 
 1;
 
-# ABSTRACT: Code shared by the DB reader and writer modules
+# ABSTRACT: Code shared by the MaxMind::DB:Reader and MaxMind::DB::Writer modules
 

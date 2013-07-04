@@ -579,3 +579,6 @@ sub _boolean {
 }
 
 1;
+
+# ABSTRACT: Data required for testing MaxMind::DB::Reader and MaxMind::DB::Writer
+
