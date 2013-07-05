@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::Bits;
+use Test::DescribeMe qw(author);
 use Test::More;
 
 use MaxMind::DB::Reader::Decoder;

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export AUTHOR_TESTING=1
+
 for dir in MaxMind-DB-Common MaxMind-DB-Reader MaxMind-DB-Writer; do
     if [ -d "$dir/t" ]; then
         pushd $dir
