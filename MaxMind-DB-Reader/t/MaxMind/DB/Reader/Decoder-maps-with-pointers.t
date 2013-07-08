@@ -3,7 +3,7 @@ use warnings;
 
 use Test::Bits;
 use Test::DescribeMe qw(author);
-use Test::More;
+use Test::More  skip_all => 'Initial release';
 
 use MaxMind::DB::Reader::Decoder;
 use MaxMind::DB::Writer::Serializer;
