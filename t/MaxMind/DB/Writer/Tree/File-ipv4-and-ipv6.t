@@ -7,7 +7,7 @@ use MaxMind::DB::Writer::Tree::InMemory;
 use MaxMind::DB::Writer::Tree::File;
 
 use File::Temp qw( tempdir );
-use MaxMind::DB::Reader::File;
+use MaxMind::DB::Reader;
 use Net::Works::Network;
 
 my $tempdir = tempdir( CLEANUP => 1 );
@@ -15,7 +15,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 {
     my ( $tree, $filename ) = _write_tree();
 
-    my $reader = MaxMind::DB::Reader::File->new( file => $filename );
+    my $reader = MaxMind::DB::Reader->new( file => $filename );
 
     my %tests = (
         '1.1.1.1'          => { subnet => '::1.1.1.1/128' },

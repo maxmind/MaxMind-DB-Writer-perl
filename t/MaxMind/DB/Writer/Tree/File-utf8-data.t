@@ -8,7 +8,7 @@ use MaxMind::DB::Writer::Tree::File;
 
 use Encode ();
 use File::Temp qw( tempdir );
-use MaxMind::DB::Reader::File;
+use MaxMind::DB::Reader;
 use Net::Works::Network;
 
 {
@@ -27,7 +27,7 @@ my $utf8_string = "\x{4eba}";
 {
     my $filename = _write_tree();
 
-    my $reader = MaxMind::DB::Reader::File->new( file => $filename );
+    my $reader = MaxMind::DB::Reader->new( file => $filename );
 
     for my $address (qw( 1.2.3.0 1.2.3.128 1.2.3.255 )) {
         is_deeply(
