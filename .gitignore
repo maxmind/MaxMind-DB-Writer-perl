@@ -1,0 +1,17 @@
+\#*\#
+.\#*
+.build
+Build
+Debian_CPANTS.txt
+MANIFEST
+META.yml
+Makefile
+Makefile.PL
+Makefile.old
+MaxMind-DB-Writer-*
+README
+\#*\#
+_build
+blib*
+cover_db*
+pm_to_blib*
