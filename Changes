@@ -1,9 +1,3 @@
 {{$NEXT}}
 
-0.02
-
-- Added support for boolean type
-
-0.01
-
-- Never released externally
+- First public release
