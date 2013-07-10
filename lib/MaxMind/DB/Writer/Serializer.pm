@@ -10,7 +10,7 @@ use Data::IEEE754 qw( pack_double_be pack_float_be );
 use Encode qw( encode is_utf8 FB_CROAK );
 use JSON::XS;
 use Math::Int128 qw( uint128_to_net );
-use MaxMind::DB::Writer::Serializer;
+use MaxMind::DB::Common qw( %TypeNameToNum );
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -225,25 +225,6 @@ sub _store_data {
     return $current_position;
 }
 
-my %Types = (
-    extended    => 0,
-    pointer     => 1,
-    utf8_string => 2,
-    double      => 3,
-    bytes       => 4,
-    uint16      => 5,
-    uint32      => 6,
-    map         => 7,
-    int32       => 8,
-    uint64      => 9,
-    uint128     => 10,
-    array       => 11,
-    container   => 12,
-    end_marker  => 13,
-    boolean     => 14,
-    float       => 15,
-);
-
 my @pointer_thresholds;
 push @pointer_thresholds,
     {
@@ -272,7 +253,7 @@ sub _encode_pointer {
 
     $self->_require_x_bits_unsigned_integer( 32, $value );
 
-    my $ctrl_byte = ord( $self->_control_bytes( $Types{pointer}, 0 ) );
+    my $ctrl_byte = ord( $self->_control_bytes( $TypeNameToNum{pointer}, 0 ) );
 
     my @value_bytes;
     for my $n ( 0 .. 3 ) {
@@ -326,7 +307,7 @@ sub _encode_double {
     my $self = shift;
 
     $self->_write_encoded_data(
-        $self->_control_bytes( $Types{double}, 8, ),
+        $self->_control_bytes( $TypeNameToNum{double}, 8, ),
         pack_double_be(shift)
     );
 }
@@ -335,7 +316,7 @@ sub _encode_float {
     my $self = shift;
 
     $self->_write_encoded_data(
-        $self->_control_bytes( $Types{float}, 4, ),
+        $self->_control_bytes( $TypeNameToNum{float}, 4, ),
         pack_float_be(shift)
     );
 }
@@ -367,7 +348,7 @@ sub _encode_map {
     my $map  = shift;
 
     $self->_write_encoded_data(
-        $self->_control_bytes( $Types{map}, scalar keys %{$map} ) );
+        $self->_control_bytes( $TypeNameToNum{map}, scalar keys %{$map} ) );
 
     # We sort to make testing possible.
     for my $k ( sort keys %{$map} ) {
@@ -389,7 +370,7 @@ sub _encode_array {
     my $value_type = shift;
 
     $self->_write_encoded_data(
-        $self->_control_bytes( $Types{array}, scalar @{$array} ) );
+        $self->_control_bytes( $TypeNameToNum{array}, scalar @{$array} ) );
 
     $self->store_data( $value_type, $_ ) for @{$array};
 }
@@ -415,7 +396,7 @@ sub _encode_int32 {
     $encoded_value =~ s/^\x00+//;
 
     $self->_write_encoded_data(
-        $self->_control_bytes( $Types{int32}, length($encoded_value) ),
+        $self->_control_bytes( $TypeNameToNum{int32}, length($encoded_value) ),
         $encoded_value,
     );
 }
@@ -437,7 +418,7 @@ sub _encode_boolean {
     my $value = shift;
 
     $self->_write_encoded_data(
-        $self->_control_bytes( $Types{boolean}, $value ? 1 : 0 ) );
+        $self->_control_bytes( $TypeNameToNum{boolean}, $value ? 1 : 0 ) );
 }
 
 sub _encode_end_marker {
@@ -452,7 +433,7 @@ sub _simple_encode {
     my $value = shift;
 
     $self->_write_encoded_data(
-        $self->_control_bytes( $Types{$type}, length($value) ),
+        $self->_control_bytes( $TypeNameToNum{$type}, length($value) ),
         $value,
     );
 }
@@ -476,7 +457,7 @@ sub _encode_unsigned_int {
 
     $self->_write_encoded_data(
         $self->_control_bytes(
-            $Types{ 'uint' . $bits },
+            $TypeNameToNum{ 'uint' . $bits },
             length($encoded_value)
         ),
         $encoded_value,
@@ -554,7 +535,7 @@ sub _encode_unsigned_int {
             $first_byte = ( $type << 5 );
         }
         else {
-            $first_byte  = ( $Types{extended} << 5 );
+            $first_byte  = ( $TypeNameToNum{extended} << 5 );
             $second_byte = $type - 7;
             $template .= 'C';
         }
