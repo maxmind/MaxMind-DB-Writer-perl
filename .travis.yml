@@ -29,7 +29,7 @@ install:
    - "dzil listdeps --missing | grep -v MaxMind::DB | cpanm --verbose"
 
 script:
-   - dzil test
+   - dzil test --release
 
 notifications:
   email:
