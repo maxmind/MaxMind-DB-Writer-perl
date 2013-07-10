@@ -10,7 +10,7 @@ use Data::IEEE754 qw( pack_double_be pack_float_be );
 use Encode qw( encode is_utf8 FB_CROAK );
 use JSON::XS;
 use Math::Int128 qw( uint128_to_net );
-use MaxMind::DB::Common qw( %TypeNameToNum );
+use MaxMind::DB::Common 0.031000 qw( %TypeNameToNum );
 
 use Moose;
 use MooseX::StrictConstructor;
