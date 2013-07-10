@@ -165,7 +165,7 @@ sub _should_cache_value {
     }
 
     if ( $type eq 'uint64' || $type eq 'uint128' ) {
-        my $non_zero = $data =~ s/^0+//r;
+        ( my $non_zero = $data ) =~ s/^0+//;
 
         my $stored_bytes = ( length($non_zero) / 4 );
 
