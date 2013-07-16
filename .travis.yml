@@ -5,8 +5,6 @@ perl:
    - 5.18
    - 5.16
    - 5.14
-   - 5.12
-   - 5.10
 
 before_install:
    - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=j10:c HARNESS_TIMER=1 SKIP_POD_LINKCHECK=1
