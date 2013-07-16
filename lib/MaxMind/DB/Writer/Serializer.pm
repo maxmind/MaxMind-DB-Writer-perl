@@ -8,9 +8,9 @@ require bytes;
 use Carp qw( confess );
 use Data::IEEE754 qw( pack_double_be pack_float_be );
 use Encode qw( encode is_utf8 FB_CROAK );
-use JSON::XS;
 use Math::Int128 qw( uint128_to_net );
 use MaxMind::DB::Common 0.031000 qw( %TypeNameToNum );
+use Sereal::Encoder;
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -191,21 +191,19 @@ sub _should_cache_value {
     }
 }
 
-# We allow blessed objects because it's possible we'll be storing
-# Math::UInt128 objects.
-my $json = JSON::XS->new()->canonical()->allow_blessed();
+{
+    my $Encoder = Sereal::Encoder->new( { sort_keys => 1 } );
 
-sub _key_for_data {
-    my $self = shift;
-    my $data = shift;
+    sub _key_for_data {
+        my $self = shift;
+        my $data = shift;
 
-    if ( ref $data ) {
-
-        # Based on our benchmarks JSON::XS is about twice as fast as Storable.
-        return $json->encode($data);
-    }
-    else {
-        return $data;
+        if ( ref $data ) {
+            return $Encoder->encode($data);
+        }
+        else {
+            return $data;
+        }
     }
 }
 
