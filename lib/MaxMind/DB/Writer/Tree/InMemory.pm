@@ -403,17 +403,11 @@ sub _split_node {
     my $subnet_netmask = $subnet->mask_length();
     my $bits           = $subnet->bits();
 
-    my $old_start_ipnum;
-    my $old_end_ipnum;
-    my $end_ipnum;
-
-    {
-        my $t = ~uint128(0) << ( $bits - $subnet_netmask + $node_netmask );
-        $old_start_ipnum = $start_ipnum & $t;
-        $old_end_ipnum   = ~$t + $old_start_ipnum;
-        $end_ipnum
-            = $start_ipnum | ~( ~uint128(0) << ( $bits - $subnet_netmask ) );
-    }
+    my $t = ~uint128(0) << ( $bits - $subnet_netmask + $node_netmask );
+    my $old_start_ipnum = $start_ipnum & $t;
+    my $old_end_ipnum   = ~$t + $old_start_ipnum;
+    my $end_ipnum
+        = $start_ipnum | ~( ~uint128(0) << ( $bits - $subnet_netmask ) );
 
     my @subnets;
     if ( $old_start_ipnum < $start_ipnum ) {
