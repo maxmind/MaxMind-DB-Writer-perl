@@ -8,7 +8,7 @@ use MaxMind::DB::Writer::Tree::File;
 
 use Encode ();
 use File::Temp qw( tempdir );
-use MaxMind::DB::Reader;
+use MaxMind::DB::Reader 0.040000;
 use Net::Works::Network;
 
 {
@@ -31,7 +31,7 @@ my $utf8_string = "\x{4eba}";
 
     for my $address (qw( 1.2.3.0 1.2.3.128 1.2.3.255 )) {
         is_deeply(
-            $reader->data_for_address($address),
+            $reader->record_for_address($address),
             {
                 subnet => '1.2.3.0/24',
                 string => $utf8_string,
@@ -40,7 +40,7 @@ my $utf8_string = "\x{4eba}";
         );
     }
 
-    my $string = $reader->data_for_address('1.2.3.0')->{string};
+    my $string = $reader->record_for_address('1.2.3.0')->{string};
 
     ok(
         Encode::is_utf8($string),

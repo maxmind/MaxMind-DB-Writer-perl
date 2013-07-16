@@ -7,7 +7,7 @@ use MaxMind::DB::Writer::Tree::InMemory;
 use MaxMind::DB::Writer::Tree::File;
 
 use File::Temp qw( tempdir );
-use MaxMind::DB::Reader;
+use MaxMind::DB::Reader 0.040000;
 use Net::Works::Network;
 
 my $tempdir = tempdir( CLEANUP => 1 );
@@ -42,7 +42,7 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
     for my $address ( sort keys %tests ) {
         is_deeply(
-            $reader->data_for_address($address),
+            $reader->record_for_address($address),
             $tests{$address},
             "got expected data for $address"
         );
