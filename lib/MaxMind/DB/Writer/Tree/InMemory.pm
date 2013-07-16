@@ -5,13 +5,13 @@ use warnings;
 
 use Carp qw( confess );
 use Digest::MD5 qw( md5 );
-use JSON::XS;
 use List::Util qw( min );
 use Math::Int128 0.06 qw( uint128 );
 use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use MaxMind::DB::Writer::Tree::Processor::NodeCounter;
 use Net::Works 0.11;
 use Scalar::Util qw( blessed );
+use Sereal::Encoder;
 
 use Moose;
 use MooseX::StrictConstructor;
@@ -175,29 +175,30 @@ sub node_count {
     return $_[0]->_used_node_count() - $_[0]->_deleted_node_count();
 }
 
-# This turns out to be faster than using Storable.
-my $JSON = JSON::XS->new()->utf8()->allow_nonref();
+{
+    my $Encoder = Sereal::Encoder->new( { sort_keys => 1 } );
 
-sub insert_subnet {
-    my $self   = shift;
-    my $subnet = shift;
-    my $data   = shift;
+    sub insert_subnet {
+        my $self   = shift;
+        my $subnet = shift;
+        my $data   = shift;
 
-    if ( $subnet->version() != $self->ip_version() ) {
-        my $description = $subnet->as_string();
-        die 'You cannot insert an IPv'
-            . $subnet->version()
-            . " subnet ($description) into an IPv"
-            . $self->ip_version()
-            . " tree.\n";
+        if ( $subnet->version() != $self->ip_version() ) {
+            my $description = $subnet->as_string();
+            die 'You cannot insert an IPv'
+                . $subnet->version()
+                . " subnet ($description) into an IPv"
+                . $self->ip_version()
+                . " tree.\n";
+        }
+
+        my $key = 'D' . md5( $Encoder->encode($data) );
+        $self->{_data_index}{$key} ||= $data;
+
+        $self->_insert_subnet( $subnet, $key );
+
+        return;
     }
-
-    my $key = 'D' . md5( $JSON->encode($data) );
-    $self->{_data_index}{$key} ||= $data;
-
-    $self->_insert_subnet( $subnet, $key );
-
-    return;
 }
 
 sub insert_subnet_as_alias {
