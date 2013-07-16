@@ -26,11 +26,12 @@ use Net::Works::Network;
         'no exception inserting data that includes a Math::UInt128 object'
     );
 
-    is_deeply(
-        $tree->lookup_ip_address(
-            Net::Works::Address->new_from_string( string => '1.1.1.1' )
-        ),
-        { value => $int128 },
+    my $record = $tree->lookup_ip_address(
+        Net::Works::Address->new_from_string( string => '1.1.1.1' ) );
+
+    is(
+        $record->{value},
+        $int128,
         'got expected value back with Math::UInt128 object'
     );
 }
