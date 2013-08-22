@@ -10,6 +10,7 @@ use Math::Int128 0.06 qw( uint128 );
 use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use MaxMind::DB::Writer::Tree::Processor::NodeCounter;
 use Net::Works 0.11;
+use Net::Works::Network;
 use Scalar::Util qw( blessed );
 use Sereal::Encoder;
 
@@ -276,6 +277,15 @@ sub _insert_subnet {
 
     my $direction = $self->_direction( $ipnum, $bit_to_check );
 
+    if ($final_record eq $self->get_record( $node, ( $direction + 1 ) % 2 )) {
+        my $parent_subnet = Net::Works::Network->new_from_integer(
+            integer     => $subnet->first_as_integer,
+            mask_length => $subnet->mask_length - 1,
+        );
+        $self->_insert_subnet( $parent_subnet, $final_record );
+        return $node;
+    }
+
     my $existing = $self->get_record( $node, $direction );
 
     # This happens when we insert a subnet that is bigger than an earlier
@@ -283,10 +293,12 @@ sub _insert_subnet {
     # 1.1.2.254/31 - the latter overwrites the former, so we are effectively
     # deleting nodes from the tree.
     if ( my $pointer = $self->record_pointer_value($existing) ) {
+
+        # We have to subtract one if we are going to merge this node so that
+        # we don't double count it as we move up the tree
         $self->{_deleted_node_count}
             += $self->_node_count_starting_at($pointer);
     }
-
     $self->set_record( $node, $direction, $final_record );
 
     for my $subnet ( @{ $self->{_needs_move}{subnets} } ) {
@@ -598,8 +610,7 @@ sub _node_count_starting_at {
     my $self          = shift;
     my $starting_node = shift;
 
-    my $processor
-        = MaxMind::DB::Writer::Tree::Processor::NodeCounter->new();
+    my $processor = MaxMind::DB::Writer::Tree::Processor::NodeCounter->new();
 
     $self->iterate( $processor, $starting_node );
 

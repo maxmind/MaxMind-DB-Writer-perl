@@ -144,6 +144,7 @@ my $id = 0;
 }
 
 {
+
     package TreeIterator;
 
     use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
@@ -232,6 +233,29 @@ my $id = 0;
         ],
         'saw expected values for records'
     );
+}
+
+# Tests merging of nodes
+{
+    for my $split_count ( 2 ... 10 ) {
+        my $tree
+            = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 4 );
+        my @subnets = (
+            Net::Works::Network->new_from_string( string => '0.0.0.0/1' ) );
+
+        @subnets = map { $_->split } @subnets for ( 1 .. $split_count );
+
+        for my $subnet (@subnets) {
+            $tree->insert_subnet( $subnet, 'duplicate' );
+        }
+
+        $tree->insert_subnet( $_, $_->as_string )
+            for (
+            Net::Works::Network->new_from_string( string => '128.0.0.0/1' )
+            ->split );
+
+        is( $tree->node_count, 2, @subnets . ' duplicates merged' );
+    }
 }
 
 done_testing();
