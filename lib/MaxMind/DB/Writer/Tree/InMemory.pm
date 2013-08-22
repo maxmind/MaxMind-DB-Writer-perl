@@ -9,7 +9,7 @@ use List::Util qw( min );
 use Math::Int128 0.06 qw( uint128 );
 use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
 use MaxMind::DB::Writer::Tree::Processor::NodeCounter;
-use Net::Works 0.11;
+use Net::Works 0.13;
 use Net::Works::Network;
 use Scalar::Util qw( blessed );
 use Sereal::Encoder;
