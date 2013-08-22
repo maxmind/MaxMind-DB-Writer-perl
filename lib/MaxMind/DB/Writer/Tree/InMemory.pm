@@ -282,8 +282,7 @@ sub _insert_subnet {
             integer     => $subnet->first_as_integer,
             mask_length => $subnet->mask_length - 1,
         );
-        $self->_insert_subnet( $parent_subnet, $final_record );
-        return $node;
+        return $self->_insert_subnet( $parent_subnet, $final_record );
     }
 
     my $existing = $self->get_record( $node, $direction );
