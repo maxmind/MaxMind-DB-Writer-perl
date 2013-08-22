@@ -277,7 +277,8 @@ sub _insert_subnet {
 
     my $direction = $self->_direction( $ipnum, $bit_to_check );
 
-    if ($final_record eq $self->get_record( $node, ( $direction + 1 ) % 2 )) {
+    if ( $final_record eq $self->get_record( $node, ( $direction + 1 ) % 2 ) )
+    {
         my $parent_subnet = Net::Works::Network->new_from_integer(
             integer     => $subnet->first_as_integer,
             mask_length => $subnet->mask_length - 1,
