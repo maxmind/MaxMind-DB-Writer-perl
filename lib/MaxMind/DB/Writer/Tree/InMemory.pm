@@ -209,7 +209,7 @@ sub insert_subnet_as_alias {
 
     my $node_count = $self->node_count();
 
-    my $final_node = $self->_insert_subnet( $subnet, "\0" x _RECORD_SIZE );
+    my $final_node = $self->_insert_subnet( $subnet, "\0" x _RECORD_SIZE, 1 );
 
     my $last_bit_in_subnet
         = $subnet->first_as_integer() & ( 1 << $subnet->mask_length() );
@@ -237,6 +237,7 @@ sub _insert_subnet {
     my $self         = shift;
     my $subnet       = shift;
     my $final_record = shift;
+    my $no_merging   = shift;
 
     my $ipnum = $subnet->first_as_integer();
 
@@ -277,8 +278,8 @@ sub _insert_subnet {
 
     my $direction = $self->_direction( $ipnum, $bit_to_check );
 
-    if ( $final_record eq $self->get_record( $node, ( $direction + 1 ) % 2 ) )
-    {
+    if ( $final_record eq $self->get_record( $node, ( $direction + 1 ) % 2 )
+        && !$no_merging ) {
         my $parent_subnet = Net::Works::Network->new_from_integer(
             integer     => $subnet->first_as_integer,
             mask_length => $subnet->mask_length - 1,
