@@ -36,8 +36,8 @@ my $tempdir = tempdir( CLEANUP => 1 );
         '2002:101:102::'   => { subnet => '::1.1.1.2/127' },
         '2002:101:103::'   => { subnet => '::1.1.1.2/127' },
         '2002:ffff:ff02::' => { subnet => '::255.255.255.0/120' },
-        '2003::'           => { subnet => '2003::/96' },
-        '2003::9:a'        => { subnet => '2003::/96' },
+        '2004::'           => { subnet => '2004::/96' },
+        '2004::9:a'        => { subnet => '2004::/96' },
     );
 
     for my $address ( sort keys %tests ) {
@@ -54,6 +54,9 @@ done_testing();
 sub _write_tree {
     my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 6 );
 
+    # Note: we don't want all of the alias nodes (::ffff:0.0.0.0 and 2002::)
+    # to have adjacent nodes with data, as we want to make sure that the
+    # merging of empty nodes does not merge the alias nodes.
     my @subnets = map {
         Net::Works::Network->new_from_string( string => $_, version => 6 )
         } qw(
@@ -61,7 +64,7 @@ sub _write_tree {
         ::1.1.1.2/127
         ::255.255.255.0/120
         ::fffe:0:0/96
-        2003::/96
+        2004::/96
     );
 
     for my $net (@subnets) {
