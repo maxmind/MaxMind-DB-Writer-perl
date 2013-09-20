@@ -221,11 +221,10 @@ sub write_tree {
         my $ipv4_root_node_num = $tree->node_num_for_subnet($ipv4_subnet);
 
         for my $subnet (@ipv6_alias_subnets) {
-            my $added = $tree->insert_subnet_as_alias(
+            $tree->insert_subnet_as_alias(
                 $subnet,
                 $ipv4_root_node_num,
             );
-            $self->_increase_node_count($added);
         }
     }
 }

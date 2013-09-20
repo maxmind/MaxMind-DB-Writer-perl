@@ -8,6 +8,7 @@ use MaxMind::DB::Metadata;
 use MaxMind::DB::Verifier;
 use MaxMind::DB::Writer::Tree::InMemory;
 use MaxMind::DB::Writer::Tree::File;
+use Net::Works::Network;
 
 my $tempdir = tempdir( CLEANUP => 1 );
 
@@ -16,26 +17,43 @@ for my $record_size ( 24, 28, 32 ) {
 
     _write_tree(
         $record_size,
-        [
-            Net::Works::Network->range_as_subnets(
-                '1.1.1.1', '1.1.1.32'
-            )
-        ],
-        { ip_version => 4 },
+        [ Net::Works::Network->range_as_subnets( '1.1.1.1', '1.1.1.32' ) ],
+        {
+            ip_version => 4,
+        },
         $file,
     );
 
     my $desc = "IPv4 - $record_size-bit record";
+    _verify( $file, $desc );
+}
 
-    my $verifier = MaxMind::DB::Verifier->new(
-        file  => $file,
-        quiet => 1,
-    );
+for my $record_size ( 24, 28, 32 ) {
+    for my $should_alias ( 0, 1 ) {
+        my $file
+            = "$tempdir/IPv6-$record_size-alias-$should_alias.mmdb";
 
-    ok(
-        $verifier->verify(),
-        "verifier says the database file is valid - $desc"
-    );
+        _write_tree(
+            $record_size,
+            [
+                Net::Works::Network->range_as_subnets(
+                    '::1.1.1.1', '::1.1.1.32'
+                ),
+                Net::Works::Network->range_as_subnets(
+                    '2003::', '2003::FFFF'
+                )
+            ],
+            {
+                ip_version         => 6,
+                alias_ipv6_to_ipv4 => $should_alias,
+            },
+            $file,
+        );
+
+        my $desc
+            = "IPv6 - $record_size-bit record - alias: $should_alias";
+        _verify( $file, $desc );
+    }
 }
 
 done_testing();
@@ -44,9 +62,10 @@ sub _write_tree {
     my $record_size = shift;
     my $subnets     = shift;
     my $metadata    = shift;
-    my $file = shift;
+    my $file        = shift;
 
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 4 );
+    my $tree = MaxMind::DB::Writer::Tree::InMemory->new(
+        ip_version => $metadata->{ip_version} );
 
     for my $subnet ( @{$subnets} ) {
         $tree->insert_subnet(
@@ -73,4 +92,19 @@ sub _write_tree {
     $writer->write_tree($fh);
 
     return;
+}
+
+sub _verify {
+    my $file = shift;
+    my $desc = shift;
+
+    my $verifier = MaxMind::DB::Verifier->new(
+        file  => $file,
+        quiet => 1,
+    );
+
+    ok(
+        $verifier->verify(),
+        "verifier says the database file is valid - $desc"
+    );
 }
