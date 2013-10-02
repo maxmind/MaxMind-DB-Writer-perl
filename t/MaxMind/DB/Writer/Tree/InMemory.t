@@ -144,6 +144,36 @@ my $id = 0;
 }
 
 {
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '0.0.0.0/32' ),
+            { ip => '0.0.0.0' }
+        ]
+    );
+
+    _test_tree(
+        \@pairs,
+        \@pairs,
+        '0.0.0.0/32 network'
+    );
+}
+
+{
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '::0.0.0.0/128' ),
+            { ip => '0.0.0.0' }
+        ]
+    );
+
+    _test_tree(
+        \@pairs,
+        \@pairs,
+        '::0.0.0.0/128 network'
+    );
+}
+
+{
     package TreeIterator;
 
     use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
