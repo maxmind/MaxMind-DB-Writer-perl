@@ -3,9 +3,12 @@ use warnings;
 
 use Test::More;
 
+use Test::Requires (
+    'MaxMind::DB::Verifier' => 0,
+);
+
 use File::Temp qw( tempdir );
 use MaxMind::DB::Metadata;
-use MaxMind::DB::Verifier;
 use MaxMind::DB::Writer::Tree::InMemory;
 use MaxMind::DB::Writer::Tree::File;
 use Net::Works::Network;

@@ -3,12 +3,15 @@ use warnings;
 
 use Test::More;
 
+use Test::Requires (
+    'MaxMind::DB::Reader' => 0.040000,
+);
+
 use MaxMind::DB::Writer::Tree::InMemory;
 use MaxMind::DB::Writer::Tree::File;
 
 use Encode ();
 use File::Temp qw( tempdir );
-use MaxMind::DB::Reader 0.040000;
 use Net::Works::Network;
 
 {
