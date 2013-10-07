@@ -367,6 +367,8 @@ sub _encode_array {
     my $array      = shift;
     my $value_type = shift;
 
+    die "No value type for array!" unless defined $value_type;
+
     $self->_write_encoded_data(
         $self->_control_bytes( $TypeNameToNum{array}, scalar @{$array} ) );
 
