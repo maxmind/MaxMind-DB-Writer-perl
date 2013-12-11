@@ -15,6 +15,7 @@ README
 _build
 blib*
 c/*.o
+config.log
 cover_db*
 lib/**/*.c
 lib/**/*.o
