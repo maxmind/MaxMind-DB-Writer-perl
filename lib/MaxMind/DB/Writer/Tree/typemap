@@ -1,0 +1,3 @@
+TYPEMAP
+MMDBW_tree_s *     T_OPAQUE
+uint8_t            T_UV
