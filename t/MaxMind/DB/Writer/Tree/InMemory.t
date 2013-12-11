@@ -323,11 +323,11 @@ sub _create_and_insert_duplicates {
         for ( 1 .. $split_count );
 
     for my $subnet (@duplicate_subnets) {
-        $tree->insert_subnet( $subnet, 'duplicate' );
+        $tree->insert_network( $subnet, 'duplicate' );
     }
 
     for my $subnet (@$distinct_subnets) {
-        $tree->insert_subnet( $subnet, $subnet->as_string );
+        $tree->insert_network( $subnet, $subnet->as_string );
     }
 
     return $tree;
@@ -411,7 +411,7 @@ sub _make_tree {
     for my $pair ( @{$pairs} ) {
         my ( $subnet, $data ) = @{$pair};
 
-        $tree->insert_subnet( $subnet, $data );
+        $tree->insert_network( $subnet, $data );
     }
 
     return $tree;

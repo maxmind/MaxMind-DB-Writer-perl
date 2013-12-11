@@ -32,12 +32,36 @@ has ip_version => (
     required => 1,
 );
 
+{
+    #<<<
+    my $size_type = subtype
+        as 'Int',
+        where { ( $_ % 4 == 0 ) && $_ >= 24 && $_ <= 128 },
+        message {
+            'The record size must be a number from 24-128 that is divisible by 4';
+        };
+    #>>>
+
+    has record_size => (
+        is       => 'ro',
+        isa      => $size_type,
+        required => 1,
+    );
+}
+
+has node_count => (
+    is       => 'ro',
+    init_arg => undef,
+    lazy     => 1,
+    builder  => '_build_node_count',
+);
+
 has _tree => (
     is        => 'ro',
     init_arg  => undef,
     lazy      => 1,
-    builder   => '_build_mmdb',
-    predicate => '_has_mmdb',
+    builder   => '_build_tree',
+    predicate => '_has_tree',
 );
 
 {
@@ -74,19 +98,24 @@ has _tree => (
 sub _build_tree {
     my $self = shift;
 
-    return $self->_new_tree( $self->ip_version() );
+    return $self->_new_tree( $self->ip_version(), $self->record_size() );
+}
+
+sub _build_node_count {
+    my $self = shift;
+
+    return $self->_node_count( $self->_tree() );
 }
 
 sub iterate {
-    my $self              = shift;
-    my $object            = shift;
-    my $starting_node_num = shift || $self->_root_node_num();
+    my $self   = shift;
+    my $object = shift;
 
     my $ip_integer = 0;
 
     my $iterator = $self->_make_iterator($object);
 
-    $iterator->($starting_node_num);
+    $iterator->();
 
     return;
 }
@@ -95,7 +124,7 @@ sub _make_iterator {
     my $self   = shift;
     my $object = shift;
 
-    my $max_netmask = $self->{_saw_ipv6} ? uint128(128) : 32;
+    my $max_netmask = $self->ip_version() == 6 ? uint128(128) : 32;
 
     my $iterator;
     $iterator = sub {
@@ -108,14 +137,6 @@ sub _make_iterator {
 
         my %records
             = map { $_ => $self->get_record( $node_num, $_ ) } @directions;
-
-        return
-            unless $object->process_node(
-            $node_num,
-            \%records,
-            $ip_num,
-            $netmask,
-            );
 
         for my $dir (@directions) {
             my $value = $records{$dir};
@@ -181,31 +202,6 @@ sub lookup_ip_address {
     return $processor->value();
 }
 
-sub node_num_for_subnet {
-    my $self   = shift;
-    my $subnet = shift;
-
-    my ( $node_num, $dir ) = $self->pointer_record_for_subnet($subnet);
-
-    return $self->record_pointer_value(
-        $self->get_record( $node_num, $dir ) );
-}
-
-sub pointer_record_for_subnet {
-    my $self   = shift;
-    my $subnet = shift;
-
-    require MaxMind::DB::Writer::Tree::Processor::RecordForSubnet;
-
-    my $processor
-        = MaxMind::DB::Writer::Tree::Processor::RecordForSubnet->new(
-        subnet => $subnet );
-
-    $self->iterate($processor);
-
-    return @{ $processor->record() };
-}
-
 sub write_svg_image {
     my $self = shift;
     my $file = shift;
@@ -221,25 +217,6 @@ sub write_svg_image {
     $processor->graph()->run( output_file => $file );
 
     return;
-}
-
-# This is really only useful for debugging problems with the tree's
-# self-reported node count.
-sub _real_node_count {
-    my $self = shift;
-
-    return $self->_node_count_starting_at(0);
-}
-
-sub _node_count_starting_at {
-    my $self          = shift;
-    my $starting_node = shift;
-
-    my $processor = MaxMind::DB::Writer::Tree::Processor::NodeCounter->new();
-
-    $self->iterate( $processor, $starting_node );
-
-    return $processor->node_count();
 }
 
 sub DEMOLISH {

@@ -21,13 +21,6 @@ with 'MaxMind::DB::Role::Debugs';
 
 use constant DEBUG => $ENV{MAXMIND_DB_WRITER_DEBUG};
 
-has _alias_ipv6_to_ipv4 => (
-    is       => 'ro',
-    isa      => 'Bool',
-    init_arg => 'alias_ipv6_to_ipv4',
-    default  => 0,
-);
-
 has _map_key_type_callback => (
     is        => 'ro',
     isa       => 'CodeRef',
@@ -49,20 +42,6 @@ has _root_data_type => (
     isa      => 'Str',              # XXX - should make sure it's valid type
     init_arg => 'root_data_type',
     default  => 'map',
-);
-
-has _node_num_map => (
-    is       => 'ro',
-    isa      => 'ArrayRef',
-    init_arg => undef,
-    default  => sub { [] },
-);
-
-has _real_node_num => (
-    is       => 'ro',
-    isa      => 'Int',
-    init_arg => undef,
-    default  => 0,
 );
 
 {
@@ -106,9 +85,6 @@ has _node_count => (
     init_arg => undef,
     lazy     => 1,
     default  => sub { $_[0]->_tree()->node_count() },
-    handles  => {
-        _increase_node_count => 'add',
-    },
 );
 
 has _node_size => (
@@ -187,10 +163,6 @@ sub write_tree {
     my $self   = shift;
     my $output = shift;
 
-    if ( $self->_alias_ipv6_to_ipv4() ) {
-        $self->_make_ipv6_aliases();
-    }
-
     $self->_tree()->iterate($self);
 
     $output->print(
@@ -205,46 +177,8 @@ sub write_tree {
     );
 }
 
-{
-    my $ipv4_subnet
-        = Net::Works::Network->new_from_string( string => '::0/96' );
-
-    my @ipv6_alias_subnets
-        = map { Net::Works::Network->new_from_string( string => $_ ) }
-        qw( ::ffff:0:0/96 2002::/16 );
-
-    sub _make_ipv6_aliases {
-        my $self = shift;
-
-        my $tree = $self->_tree();
-
-        my $ipv4_root_node_num = $tree->node_num_for_subnet($ipv4_subnet);
-
-        for my $subnet (@ipv6_alias_subnets) {
-            $tree->insert_subnet_as_alias(
-                $subnet,
-                $ipv4_root_node_num,
-            );
-        }
-    }
-}
-
 sub directions_for_node {
     return ( LEFT_RECORD, RIGHT_RECORD );
-}
-
-sub process_node {
-    my $self     = shift;
-    my $node_num = shift;
-
-    # When we're iterating over the whole tree, it's possible that a record
-    # will point to a node we've already processed, in which case we don't
-    # need to process it again.
-    return 0 if $self->{_seen_node}{$node_num};
-
-    $self->{_seen_node}{$node_num} = 1;
-
-    return 1;
 }
 
 sub process_pointer_record {
@@ -405,13 +339,6 @@ sub _encode_record {
     }
 
     substr( ${$buffer}, $offset, $write_size ) = $encoded;
-}
-
-sub _map_node_num {
-    my $self     = shift;
-    my $node_num = shift;
-
-    return $self->{_node_num_map}[$node_num] //= $self->{_real_node_num}++;
 }
 
 {
