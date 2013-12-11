@@ -1,4 +1,4 @@
-package MaxMind::DB::Writer::Tree::InMemory;
+package MaxMind::DB::Writer::Tree;
 
 use strict;
 use warnings;
@@ -20,9 +20,9 @@ use XSLoader;
 
 XSLoader::load(
     __PACKAGE__,
-    exists $MaxMind::DB::Writer::Tree::InMemory::{VERSION}
-        && ${ $MaxMind::DB::Writer::Tree::InMemory::{VERSION} }
-    ? ${ $MaxMind::DB::Writer::Tree::InMemory::{VERSION} }
+    exists $MaxMind::DB::Writer::Tree::{VERSION}
+        && ${ $MaxMind::DB::Writer::Tree::{VERSION} }
+    ? ${ $MaxMind::DB::Writer::Tree::{VERSION} }
     : '42'
 );
 

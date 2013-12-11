@@ -11,7 +11,7 @@ extern "C" {
 
 /* *INDENT-OFF* */
 
-MODULE = MaxMind::DB::Writer::Tree::InMemory    PACKAGE = MaxMind::DB::Writer::Tree::InMemory
+MODULE = MaxMind::DB::Writer::Tree    PACKAGE = MaxMind::DB::Writer::Tree
 
 #include <stdint.h>
 

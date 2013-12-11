@@ -44,24 +44,6 @@ has _root_data_type => (
     default  => 'map',
 );
 
-{
-    #<<<
-    my $size_type = subtype
-        as 'Int',
-        where { ( $_ % 4 == 0 ) && $_ >= 24 && $_ <= 128 },
-        message {
-            'The record size must be a numberfrom 24-128 that is divisble by 4';
-        };
-    #>>>
-
-    has _record_size => (
-        is       => 'ro',
-        isa      => $size_type,
-        init_arg => 'record_size',
-        required => 1,
-    );
-}
-
 # Will be set in BUILD so we can access it via $self->{...} later
 has _record_byte_size => (
     is       => 'rw',
