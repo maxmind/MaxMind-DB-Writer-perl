@@ -78,10 +78,7 @@ EOF
     }
 
     if ( $ac->check_lib( 'bsd', 'MD5Init' ) ) {
-        $mb->extra_compiler_flags(
-            @{ $mb->extra_compiler_flags },
-            '-lbsd'
-        );
+        $mb->extra_linker_flags( @{ $mb->extra_linker_flags }, '-lbsd' );
     }
 
     return;
