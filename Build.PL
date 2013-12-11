@@ -66,6 +66,17 @@ EOF
         exit 1;
     }
 
+    unless ( $ac->check_header('uthash.h') ) {
+        warn <<'EOF';
+
+  This code requires the uthash.h header. This is available from the
+  uthash-dev package on Debian systems and as uthash in Fedora.
+
+EOF
+
+        exit 1;
+    }
+
     if ( $ac->check_lib( 'bsd', 'MD5Init' ) ) {
         $mb->extra_compiler_flags(
             @{ $mb->extra_compiler_flags },
