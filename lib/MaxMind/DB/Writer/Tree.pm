@@ -125,8 +125,7 @@ has _serializer => (
                 . " tree.\n";
         }
 
-        use Digest::MD5 qw(md5_hex);
-        my $key = md5_hex($Encoder->encode($data));
+        my $key = $Encoder->encode($data);
 
         $self->_insert_network(
             $self->_tree(),

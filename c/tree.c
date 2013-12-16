@@ -392,8 +392,10 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
 
         SV *new_key = new_record->value.key;
         SV *other_key = other_record->value.key;
-        if (SvLEN(new_key) == SvLEN(other_key)
-            && 0 == strcmp(SvPV_nolen(new_key), SvPV_nolen(other_key))) {
+        if (SvCUR(new_key) == SvCUR(other_key)
+            && 0 ==
+            memcmp(SvPVbyte_nolen(new_key), SvPVbyte_nolen(other_key),
+                   SvCUR(new_key))) {
 
             MMDBW_network_s parent_network;
             parent_network.bytes = network->bytes;
