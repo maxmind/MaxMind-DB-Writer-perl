@@ -390,12 +390,15 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
     if (MMDBW_RECORD_TYPE_DATA == new_record->type
         && MMDBW_RECORD_TYPE_DATA == other_record->type) {
 
-        SV *new_key = new_record->value.key;
-        SV *other_key = other_record->value.key;
-        if (SvCUR(new_key) == SvCUR(other_key)
-            && 0 ==
-            memcmp(SvPVbyte_nolen(new_key), SvPVbyte_nolen(other_key),
-                   SvCUR(new_key))) {
+        char *new_key;
+        STRLEN new_key_len;
+        char *other_key;
+        STRLEN other_key_len;
+        new_key = SvPVbyte(new_record->value.key, new_key_len);
+        other_key = SvPVbyte(other_record->value.key, other_key_len);
+
+        if (new_key_len == other_key_len
+            && 0 == memcmp(new_key, other_key, new_key_len)) {
 
             MMDBW_network_s parent_network;
             parent_network.bytes = network->bytes;
