@@ -3,7 +3,7 @@ use warnings;
 
 use Test::More;
 
-use MaxMind::DB::Writer::Tree::InMemory;
+use MaxMind::DB::Writer::Tree;
 
 use List::AllUtils qw( all );
 use Net::Works::Address;
@@ -173,97 +173,6 @@ my $id = 0;
     );
 }
 
-{
-    package TreeIterator;
-
-    use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
-
-    sub new {
-        bless {}, shift;
-    }
-
-    sub directions_for_node {
-        return ( LEFT_RECORD, RIGHT_RECORD );
-    }
-
-    sub process_node {
-        my $self     = shift;
-        my $node_num = shift;
-
-        $self->{nodes}{$node_num}++;
-
-        return 1;
-    }
-
-    sub process_pointer_record {
-        shift->_saw_record(@_);
-        return 1;
-    }
-
-    sub process_empty_record {
-        shift->_saw_record(@_);
-        return 1;
-    }
-
-    sub process_value_record {
-        my $self     = shift;
-        my $node_num = shift;
-        my $dir      = shift;
-        my $key      = shift;
-        my $value    = shift;
-
-        $self->_saw_record( $node_num, $dir );
-
-        push @{ $self->{values} }, $value;
-
-        return 1;
-    }
-
-    sub _saw_record {
-        my $self     = shift;
-        my $node_num = shift;
-        my $dir      = shift;
-
-        $self->{records}{"$node_num-$dir"}++;
-
-        return;
-    }
-}
-
-{
-    my ( $insert, $expect ) = _ranges_to_data(
-        [
-            [ '1.1.1.1', '1.1.1.32' ],
-        ],
-        [
-            [ '1.1.1.1', '1.1.1.32' ],
-        ],
-    );
-
-    my $tree = _make_tree($insert);
-
-    my $iterator = TreeIterator->new();
-    $tree->iterate($iterator);
-
-    ok(
-        ( all { $_ == 1 } values %{ $iterator->{nodes} } ),
-        'each node was visited exactly once'
-    );
-
-    ok(
-        ( all { $_ == 1 } values %{ $iterator->{records} } ),
-        'each record was visited exactly once'
-    );
-
-    is_deeply(
-        [ sort { $a->{id} <=> $b->{id} } @{ $iterator->{values} } ],
-        [
-            sort { $a->{id} <=> $b->{id} } map { $_->[1] } @{$expect}
-        ],
-        'saw expected values for records'
-    );
-}
-
 # Tests merging of nodes
 {
     my @distinct_subnets
@@ -307,31 +216,6 @@ my $id = 0;
 }
 
 done_testing();
-
-sub _create_and_insert_duplicates {
-    my $split_count      = shift;
-    my $distinct_subnets = shift;
-
-    my @distinct = map { [ $_, $_->as_string ] } @$distinct_subnets;
-
-    my $tree = _make_tree( \@distinct );
-
-    my @duplicate_subnets
-        = ( Net::Works::Network->new_from_string( string => '0.0.0.0/1' ) );
-
-    @duplicate_subnets = map { $_->split } @duplicate_subnets
-        for ( 1 .. $split_count );
-
-    for my $subnet (@duplicate_subnets) {
-        $tree->insert_network( $subnet, 'duplicate' );
-    }
-
-    for my $subnet (@$distinct_subnets) {
-        $tree->insert_network( $subnet, $subnet->as_string );
-    }
-
-    return $tree;
-}
 
 sub _test_subnet_permutations {
     my $subnets = shift;
@@ -405,8 +289,12 @@ sub _test_tree {
 sub _make_tree {
     my $pairs = shift;
 
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new(
-        ip_version => $pairs->[0][0]->version() );
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version  => $pairs->[0][0]->version(),
+        record_size => 24,
+        description => { en => 'Test tree' },
+        languages   => ['en'],
+    );
 
     for my $pair ( @{$pairs} ) {
         my ( $subnet, $data ) = @{$pair};
@@ -502,4 +390,29 @@ sub _subnet_as_v6 {
         string  => $subnet_string,
         version => 6,
     );
+}
+
+sub _create_and_insert_duplicates {
+    my $split_count      = shift;
+    my $distinct_subnets = shift;
+
+    my @distinct = map { [ $_, $_->as_string ] } @$distinct_subnets;
+
+    my $tree = _make_tree( \@distinct );
+
+    my @duplicate_subnets
+        = ( Net::Works::Network->new_from_string( string => '0.0.0.0/1' ) );
+
+    @duplicate_subnets = map { $_->split } @duplicate_subnets
+        for ( 1 .. $split_count );
+
+    for my $subnet (@duplicate_subnets) {
+        $tree->insert_network( $subnet, 'duplicate' );
+    }
+
+    for my $subnet (@$distinct_subnets) {
+        $tree->insert_network( $subnet, $subnet->as_string );
+    }
+
+    return $tree;
 }

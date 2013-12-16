@@ -77,10 +77,6 @@ EOF
         exit 1;
     }
 
-    if ( $ac->check_lib( 'bsd', 'MD5Init' ) ) {
-        $mb->extra_linker_flags( @{ $mb->extra_linker_flags }, '-lbsd' );
-    }
-
     return;
 }
 

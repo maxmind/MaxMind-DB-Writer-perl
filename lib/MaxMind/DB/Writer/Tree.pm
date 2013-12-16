@@ -3,17 +3,23 @@ package MaxMind::DB::Writer::Tree;
 use strict;
 use warnings;
 
-use Carp qw( confess );
-use List::Util qw( min );
 use Math::Int128 0.06 qw( uint128 );
-use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
-use MaxMind::DB::Writer::Tree::Processor::NodeCounter;
+use Math::Round qw( round );
+use MaxMind::DB::Common qw(
+    DATA_SECTION_SEPARATOR
+    DATA_SECTION_SEPARATOR_SIZE
+    METADATA_MARKER
+    LEFT_RECORD
+    RIGHT_RECORD
+);
+use MaxMind::DB::Metadata;
+use MaxMind::DB::Writer::Serializer;
 use Net::Works 0.13;
 use Net::Works::Network;
-use Scalar::Util qw( blessed );
 use Sereal::Encoder;
 
 use Moose;
+use Moose::Util::TypeConstraints;
 use MooseX::StrictConstructor;
 
 use XSLoader;
@@ -64,6 +70,44 @@ has _tree => (
     predicate => '_has_tree',
 );
 
+# All records in the tree will point to a value of this type in the data
+# section.
+has _root_data_type => (
+    is       => 'ro',
+    isa      => 'Str',              # XXX - should make sure it's valid type
+    init_arg => 'root_data_type',
+    default  => 'map',
+);
+
+has _map_key_type_callback => (
+    is        => 'ro',
+    isa       => 'CodeRef',
+    init_arg  => 'map_key_type_callback',
+    predicate => '_has_map_key_type_callback',
+);
+
+has _languages => (
+    is       => 'ro',
+    isa      => 'ArrayRef[Str]',
+    init_arg => 'languages',
+    default  => sub { [] },
+);
+
+has _description => (
+    is       => 'ro',
+    isa      => 'HashRef[Str]',
+    init_arg => 'description',
+    required => 1,
+);
+
+has _serializer => (
+    is       => 'ro',
+    isa      => 'MaxMind::DB::Writer::Serializer',
+    init_arg => undef,
+    lazy     => 1,
+    builder  => '_build_serializer',
+);
+
 {
     my $Encoder = Sereal::Encoder->new( { sort_keys => 1 } );
 
@@ -81,7 +125,8 @@ has _tree => (
                 . " tree.\n";
         }
 
-        my $key = $Encoder->encode($data);
+        use Digest::MD5 qw(md5_hex);
+        my $key = md5_hex($Encoder->encode($data));
 
         $self->_insert_network(
             $self->_tree(),
@@ -101,122 +146,57 @@ sub _build_tree {
     return $self->_new_tree( $self->ip_version(), $self->record_size() );
 }
 
+sub write_tree {
+    my $self   = shift;
+    my $output = shift;
+
+    $self->_write_search_tree(
+        $self->_tree(),
+        $output,
+        $self->_root_data_type(),
+        $self->_serializer(),
+    );
+
+    $output->print(
+        DATA_SECTION_SEPARATOR,
+        ${ $self->_serializer()->buffer() },
+        METADATA_MARKER,
+        $self->_encoded_metadata(),
+    );
+}
+
 sub _build_node_count {
     my $self = shift;
 
     return $self->_node_count( $self->_tree() );
 }
 
-sub iterate {
-    my $self   = shift;
-    my $object = shift;
+sub _build_serializer {
+    my $self = shift;
 
-    my $ip_integer = 0;
-
-    my $iterator = $self->_make_iterator($object);
-
-    $iterator->();
-
-    return;
+    return MaxMind::DB::Writer::Serializer->new(
+        (
+            $self->_has_map_key_type_callback()
+            ? ( map_key_type_callback => $self->_map_key_type_callback() )
+            : ()
+        ),
+    );
 }
 
-sub _make_iterator {
-    my $self   = shift;
-    my $object = shift;
-
-    my $max_netmask = $self->ip_version() == 6 ? uint128(128) : 32;
-
-    my $iterator;
-    $iterator = sub {
-        no warnings 'recursion';
-        my $node_num = shift;
-        my $ip_num   = shift || 0;
-        my $netmask  = shift || 1;
-
-        my @directions = $object->directions_for_node($node_num);
-
-        my %records
-            = map { $_ => $self->get_record( $node_num, $_ ) } @directions;
-
-        for my $dir (@directions) {
-            my $value = $records{$dir};
-
-            my $next_ip_num
-                = $dir
-                ? $ip_num + ( 2**( $max_netmask - $netmask ) )
-                : $ip_num;
-
-            if ( my $pointer = $self->record_pointer_value($value) ) {
-                return
-                    unless $object->process_pointer_record(
-                    $node_num,
-                    $dir,
-                    $pointer,
-                    $ip_num,
-                    $netmask,
-                    $next_ip_num,
-                    $netmask + 1
-                    );
-
-                $iterator->( $pointer, $next_ip_num, $netmask + 1 );
-            }
-            elsif ( $self->record_is_empty($value) ) {
-                return
-                    unless $object->process_empty_record(
-                    $node_num,
-                    $dir,
-                    $ip_num,
-                    $netmask,
-                    );
-            }
-            else {
-                return
-                    unless $object->process_value_record(
-                    $node_num,
-                    $dir,
-                    $value,
-                    $self->{_data_index}{$value},
-                    $ip_num,
-                    $netmask,
-                    );
-            }
-        }
-    };
-
-    return $iterator;
-}
-
-# XXX - this method is only used for testing, but it's useful to have
+# This exists for the benefit of the tests.
 sub lookup_ip_address {
     my $self    = shift;
     my $address = shift;
 
-    require MaxMind::DB::Writer::Tree::Processor::LookupIPAddress;
-
-    my $processor
-        = MaxMind::DB::Writer::Tree::Processor::LookupIPAddress->new(
-        ip_address => $address );
-
-    $self->iterate($processor);
-
-    return $processor->value();
+    $self->_lookup_ip_address( $self->_tree(), $address->as_string() );
 }
 
-sub write_svg_image {
+# This is useful for diagnosing test failures
+sub _dump_data_hash {
     my $self = shift;
-    my $file = shift;
 
-    require MaxMind::DB::Writer::Tree::Processor::VisualizeTree;
-
-    my $processor
-        = MaxMind::DB::Writer::Tree::Processor::VisualizeTree->new(
-        ip_version => $self->{_saw_ipv6} ? 6 : 4 );
-
-    $self->iterate($processor);
-
-    $processor->graph()->run( output_file => $file );
-
-    return;
+    require Devel::Dwarn;
+    Devel::Dwarn::Dwarn( $self->_data( $self->_tree ) );
 }
 
 sub DEMOLISH {

@@ -11,6 +11,10 @@ extern "C" {
 
 /* *INDENT-OFF* */
 
+/* XXX - it'd be nice to find a way to get the tree from the XS code so we
+ * don't have to pass it in all over place - it'd also let us remove at least
+ * a few shim methods on the Perl code. */
+
 MODULE = MaxMind::DB::Writer::Tree    PACKAGE = MaxMind::DB::Writer::Tree
 
 #include <stdint.h>
@@ -37,6 +41,16 @@ _insert_network(self, tree, network, mask_length, key, data)
     CODE:
         insert_network(tree, network, mask_length, key, data);
 
+void
+_write_search_tree(self, tree, output, root_data_type, serializer)
+    MMDBW_tree_s *tree;
+    FILE *output;
+    SV *root_data_type;
+    SV *serializer;
+
+    CODE:
+        write_search_tree(tree, output, root_data_type, serializer);
+
 int64_t
 _node_count(self, tree)
     MMDBW_tree_s *tree;
@@ -48,9 +62,30 @@ _node_count(self, tree)
     OUTPUT:
         RETVAL
 
+SV *
+_lookup_ip_address(self, tree, address)
+    MMDBW_tree_s *tree;
+    char *address;
+
+    CODE:
+        RETVAL = lookup_ip_address(tree, address);
+
+    OUTPUT:
+        RETVAL
+
 void
 _free_tree(self, tree)
     MMDBW_tree_s *tree;
 
     CODE:
         free_tree(tree);
+
+HV *
+_data(self, tree)
+    MMDBW_tree_s *tree;
+
+    CODE:
+        RETVAL = tree->data_hash;
+
+    OUTPUT:
+        RETVAL
