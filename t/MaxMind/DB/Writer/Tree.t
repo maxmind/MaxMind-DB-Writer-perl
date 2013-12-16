@@ -189,10 +189,6 @@ my $id = 0;
             $tree->node_count, 2,
             'duplicates merged for split count of ' . $split_count
         );
-        is(
-            $tree->node_count, $tree->_real_node_count,
-            'node count matches real count for split count' . $split_count
-        );
 
         for my $ip ( '0.1.2.3', '13.1.0.0', '126.255.255.255' ) {
             my $address
@@ -207,10 +203,13 @@ my $id = 0;
         for my $subnet (@distinct_subnets) {
             my $first = $subnet->first;
             my $value = $subnet->as_string;
-            is(
-                $tree->lookup_ip_address($first), $value,
-                "$first is $value for split count of $split_count"
-            );
+
+            for my $address ($first, $first->next_ip()) {
+                is(
+                   $tree->lookup_ip_address($address), $value,
+                   "$address is $value for split count of $split_count"
+                  );
+            }
         }
     }
 }
