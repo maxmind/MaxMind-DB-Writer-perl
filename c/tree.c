@@ -373,11 +373,37 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
     MMDBW_node_s *node_to_set =
         find_node_for_network(tree, network, &current_bit, &make_next_node);
 
-    MMDBW_record_s *record_to_set;
+    MMDBW_record_s *record_to_set, *other_record;
     if (NETWORK_BIT_VALUE(network, current_bit)) {
         record_to_set = &(node_to_set->right_record);
+        other_record = &(node_to_set->left_record);
     } else {
         record_to_set = &(node_to_set->left_record);
+        other_record = &(node_to_set->right_record);
+    }
+
+    /* If the record we're about to insert is for the same data as the other
+     * record of this node we instead want to insert a single data record for
+     * the relevant parent node. We do this by inserting this new record for
+     * the parent network, which we can calculate quite easily by subtracting
+     * 1 from this network's mask length. */
+    if (MMDBW_RECORD_TYPE_DATA == new_record->type
+        && MMDBW_RECORD_TYPE_DATA == other_record->type) {
+
+        SV *new_key = new_record->value.key;
+        SV *other_key = other_record->value.key;
+        if (SvLEN(new_key) == SvLEN(other_key)
+            && 0 == strcmp(SvPV_nolen(new_key), SvPV_nolen(other_key))) {
+
+            MMDBW_network_s parent_network;
+            parent_network.bytes = network->bytes;
+            parent_network.mask_length = network->mask_length - 1;
+            parent_network.max_depth0 = network->max_depth0;
+            parent_network.family = network->family;
+            parent_network.gai_status = 0;
+
+            insert_record_for_network(tree, &parent_network, new_record);
+        }
     }
 
     record_to_set->type = new_record->type;
