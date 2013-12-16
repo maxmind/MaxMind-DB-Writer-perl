@@ -173,41 +173,41 @@ my $id = 0;
     );
 }
 
-# Tests merging of nodes
+# Tests handling of duplicate network inserts
 {
-    my @distinct_subnets
+    my @duplicate_subnets
         = Net::Works::Network->new_from_string( string => '128.0.0.0/1' )
         ->split;
 
-    for my $split_count ( 2 ... 8 ) {
+    for my $split_count ( 2 .. 8 ) {
         my $tree = _create_and_insert_duplicates(
             $split_count,
-            \@distinct_subnets
+            \@duplicate_subnets
         );
 
         is(
-            $tree->node_count, 2,
+            $tree->node_count, (2 ** $split_count) + 1,
             'duplicates merged for split count of ' . $split_count
         );
 
         for my $ip ( '0.1.2.3', '13.1.0.0', '126.255.255.255' ) {
             my $address
                 = Net::Works::Address->new_from_string( string => $ip );
-            is(
-                $tree->lookup_ip_address($address), 'duplicate',
-                $address->as_string
-                    . " is 'duplicate' for split count $split_count"
+            isnt(
+                $tree->lookup_ip_address($address),
+                'duplicate',
+                qq{$address value is not 'duplicate' for split count $split_count}
             );
         }
 
-        for my $subnet (@distinct_subnets) {
+        for my $subnet (@duplicate_subnets) {
             my $first = $subnet->first;
             my $value = $subnet->as_string;
 
             for my $address ($first, $first->next_ip()) {
                 is(
-                   $tree->lookup_ip_address($address), $value,
-                   "$address is $value for split count of $split_count"
+                   $tree->lookup_ip_address($address), 'duplicate',
+                   qq{$address value is 'duplicate' for split count of $split_count}
                   );
             }
         }
@@ -392,25 +392,23 @@ sub _subnet_as_v6 {
 }
 
 sub _create_and_insert_duplicates {
-    my $split_count      = shift;
-    my $distinct_subnets = shift;
+    my $split_count = shift;
+    my $subnets     = shift;
 
-    my @distinct = map { [ $_, $_->as_string ] } @$distinct_subnets;
+    my $tree = _make_tree( [ map { [ $_, $_->as_string() ] } @{$subnets} ] );
 
-    my $tree = _make_tree( \@distinct );
-
-    my @duplicate_subnets
+    my @split_subnets
         = ( Net::Works::Network->new_from_string( string => '0.0.0.0/1' ) );
 
-    @duplicate_subnets = map { $_->split } @duplicate_subnets
+    @split_subnets = map { $_->split } @split_subnets
         for ( 1 .. $split_count );
 
-    for my $subnet (@duplicate_subnets) {
-        $tree->insert_network( $subnet, 'duplicate' );
+    for my $subnet (@split_subnets) {
+        $tree->insert_network( $subnet, $subnet->as_string() );
     }
 
-    for my $subnet (@$distinct_subnets) {
-        $tree->insert_network( $subnet, $subnet->as_string );
+    for my $subnet ( @{$subnets} ) {
+        $tree->insert_network( $subnet, 'duplicate' );
     }
 
     return $tree;
