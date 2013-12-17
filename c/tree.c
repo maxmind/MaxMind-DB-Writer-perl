@@ -84,7 +84,7 @@ MMDBW_tree_s *new_tree(uint8_t ip_version, uint8_t record_size,
     tree->next_node = 0;
     tree->allocated_nodes = 0;
     tree->is_finalized = false;
-    tree->output_fd = NULL;
+    tree->output_io = NULL;
     tree->root_data_type = NULL;
     tree->serializer = NULL;
 
@@ -554,7 +554,7 @@ LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
     start_iteration(tree, &assign_node_number);
 }
 
-void write_search_tree(MMDBW_tree_s *tree, FILE *fd, SV *root_data_type,
+void write_search_tree(MMDBW_tree_s *tree, SV *output, SV *root_data_type,
                        SV *serializer)
 {
     finalize_tree(tree);
@@ -562,13 +562,13 @@ void write_search_tree(MMDBW_tree_s *tree, FILE *fd, SV *root_data_type,
     /* This is a gross way to get around the fact that with C function
      * pointers we can't easily pass different params to different
      * callbacks. */
-    tree->output_fd = fd;
+    tree->output_io = IoOFP(sv_2io(output));
     tree->root_data_type = root_data_type;
     tree->serializer = serializer;
 
     start_iteration(tree, &encode_node);
 
-    tree->output_fd = NULL;
+    tree->output_io = NULL;
     tree->root_data_type = NULL;
     tree->serializer = NULL;
 
@@ -584,18 +584,23 @@ LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node)
     uint8_t *right_bytes = (uint8_t *)&right;
 
     if (24 == tree->record_size) {
-        fprintf(tree->output_fd, "%c%c%c%c%c%c",
-                left_bytes[1], left_bytes[2], left_bytes[3],
-                right_bytes[1], right_bytes[2], right_bytes[3]);
+        PerlIO_printf(tree->output_io, "%c%c%c%c%c%c",
+                      left_bytes[1], left_bytes[2], left_bytes[3],
+                      right_bytes[1], right_bytes[2], right_bytes[3]);
     } else if (28 == tree->record_size) {
-        fprintf(tree->output_fd, "%c%c%c%c%c%c%c",
-                left_bytes[1], left_bytes[2], left_bytes[3],
-                (left_bytes[0] << 4) | (right_bytes[0] & 15),
-                right_bytes[1], right_bytes[2], right_bytes[3]);
+        PerlIO_printf(tree->output_io, "%c%c%c%c%c%c%c",
+                      left_bytes[1], left_bytes[2],
+                      left_bytes[3],
+                      (left_bytes[0] <<
+                       4) | (right_bytes[0] & 15),
+                      right_bytes[1], right_bytes[2],
+                      right_bytes[3]);
     } else {
-        fprintf(tree->output_fd, "%c%c%c%c%c%c%c%c",
-                left_bytes[0], left_bytes[1], left_bytes[2], left_bytes[3],
-                right_bytes[0], right_bytes[1], right_bytes[2], right_bytes[3]);
+        PerlIO_printf(tree->output_io, "%c%c%c%c%c%c%c%c",
+                      left_bytes[0], left_bytes[1],
+                      left_bytes[2], left_bytes[3],
+                      right_bytes[0], right_bytes[1],
+                      right_bytes[2], right_bytes[3]);
     }
 }
 

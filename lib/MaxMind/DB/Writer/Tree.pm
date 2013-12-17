@@ -86,6 +86,13 @@ has _map_key_type_callback => (
     predicate => '_has_map_key_type_callback',
 );
 
+has _database_type => (
+    is       => 'ro',
+    isa      => 'Str',
+    init_arg => 'database_type',
+    required => 1,
+);
+
 has _languages => (
     is       => 'ro',
     isa      => 'ArrayRef[Str]',
@@ -145,25 +152,6 @@ sub _build_tree {
     return $self->_new_tree( $self->ip_version(), $self->record_size() );
 }
 
-sub write_tree {
-    my $self   = shift;
-    my $output = shift;
-
-    $self->_write_search_tree(
-        $self->_tree(),
-        $output,
-        $self->_root_data_type(),
-        $self->_serializer(),
-    );
-
-    $output->print(
-        DATA_SECTION_SEPARATOR,
-        ${ $self->_serializer()->buffer() },
-        METADATA_MARKER,
-        $self->_encoded_metadata(),
-    );
-}
-
 sub _build_node_count {
     my $self = shift;
 
@@ -196,6 +184,67 @@ sub _dump_data_hash {
 
     require Devel::Dwarn;
     Devel::Dwarn::Dwarn( $self->_data( $self->_tree ) );
+}
+
+sub write_tree {
+    my $self   = shift;
+    my $output = shift;
+
+    $self->_write_search_tree(
+        $self->_tree(),
+        $output,
+        $self->_root_data_type(),
+        $self->_serializer(),
+    );
+
+    $output->print(
+        DATA_SECTION_SEPARATOR,
+        ${ $self->_serializer()->buffer() },
+        METADATA_MARKER,
+        $self->_encoded_metadata(),
+    );
+}
+
+{
+    my %key_types = (
+        binary_format_major_version => 'uint16',
+        binary_format_minor_version => 'uint16',
+        build_epoch                 => 'uint64',
+        database_type               => 'utf8_string',
+        description                 => 'map',
+        ip_version                  => 'uint16',
+        languages                   => [ 'array', 'utf8_string' ],
+        node_count                  => 'uint32',
+        record_size                 => 'uint32',
+    );
+
+    my $type_callback = sub {
+        return $key_types{ $_[0] } || 'utf8_string';
+    };
+
+    sub _encoded_metadata {
+        my $self = shift;
+
+        my $metadata = MaxMind::DB::Metadata->new(
+            binary_format_major_version => 2,
+            binary_format_minor_version => 0,
+            build_epoch                 => uint128( time() ),
+            database_type               => $self->_database_type(),
+            description                 => $self->_description(),
+            ip_version                  => $self->ip_version(),
+            languages                   => $self->_languages(),
+            node_count                  => $self->node_count(),
+            record_size                 => $self->record_size(),
+        );
+
+        my $serializer = MaxMind::DB::Writer::Serializer->new(
+            map_key_type_callback => $type_callback,
+        );
+
+        $serializer->store_data( 'map', $metadata->metadata_to_encode() );
+
+        return ${ $serializer->buffer() };
+    }
 }
 
 sub DEMOLISH {

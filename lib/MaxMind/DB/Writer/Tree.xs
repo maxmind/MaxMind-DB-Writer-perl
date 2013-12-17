@@ -44,7 +44,7 @@ _insert_network(self, tree, network, mask_length, key, data)
 void
 _write_search_tree(self, tree, output, root_data_type, serializer)
     MMDBW_tree_s *tree;
-    FILE *output;
+    SV *output;
     SV *root_data_type;
     SV *serializer;
 

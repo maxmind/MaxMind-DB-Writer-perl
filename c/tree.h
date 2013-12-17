@@ -36,7 +36,7 @@ typedef struct MMDBW_tree_s {
     uint32_t allocated_nodes;
     uint64_t node_count;
     bool is_finalized;
-    FILE *output_fd;
+    PerlIO *output_io;
     SV *root_data_type;
     SV *serializer;
 } MMDBW_tree_s;
@@ -60,7 +60,7 @@ typedef struct MMDBW_network_s {
     extern SV *lookup_ip_address(MMDBW_tree_s *tree, char *ipstr);
     extern MMDBW_node_s *new_node(MMDBW_tree_s *tree);
     extern void finalize_tree(MMDBW_tree_s *tree);
-    extern void write_search_tree(MMDBW_tree_s *tree, FILE *fd, SV *root_data_type,
+    extern void write_search_tree(MMDBW_tree_s *tree, SV *output, SV *root_data_type,
                                   SV *serializer);
     extern SV *data_for_key(MMDBW_tree_s *tree, SV *key);
     extern void free_tree(MMDBW_tree_s *tree);
