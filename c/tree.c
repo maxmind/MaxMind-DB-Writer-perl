@@ -645,7 +645,7 @@ LOCAL void start_iteration(MMDBW_tree_s *tree,
 {
     node_hash_s *seen_nodes = NULL;
 
-    iterate_tree(tree, tree->root_node, &seen_nodes, &assign_node_number);
+    iterate_tree(tree, tree->root_node, &seen_nodes, callback);
 
     node_hash_s *entry, *tmp;
     HASH_ITER(hh, seen_nodes, entry, tmp) {
