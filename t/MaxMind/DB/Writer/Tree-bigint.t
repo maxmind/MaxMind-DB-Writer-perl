@@ -4,18 +4,23 @@ use warnings;
 use Test::Fatal;
 use Test::More 0.88;
 
-use MaxMind::DB::Writer::Tree::InMemory;
+use MaxMind::DB::Writer::Tree;
 use Math::Int128 qw( uint128 );
 use Net::Works::Network;
 
 {
     my $int128 = uint128(2) << 120;
 
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 4 );
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version  => 4,
+        record_size => 24,
+        description => { en => 'Test tree' },
+        languages   => ['en'],
+    );
 
     is(
         exception {
-            $tree->insert_subnet(
+            $tree->insert_network(
                 Net::Works::Network->new_from_string(
                     string => '1.1.1.0/24'
                 ),
