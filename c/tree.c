@@ -382,11 +382,11 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         other_record = &(node_to_set->right_record);
     }
 
-    /* If the record we're about to insert is for the same data as the other
-     * record of this node we instead want to insert a single data record for
-     * the relevant parent node. We do this by inserting this new record for
-     * the parent network, which we can calculate quite easily by subtracting
-     * 1 from this network's mask length. */
+    /* If this record we're about to insert is a data record, and the other
+     * record in the node also has the same data, then we instead want to
+     * insert a single data record in this node's parent. We do this by
+     * inserting the new record for the parent network, which we can calculate
+     * quite easily by subtracting 1 from this network's mask length. */
     if (MMDBW_RECORD_TYPE_DATA == new_record->type
         && MMDBW_RECORD_TYPE_DATA == other_record->type) {
 
