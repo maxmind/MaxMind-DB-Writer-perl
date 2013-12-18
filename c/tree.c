@@ -620,7 +620,7 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
         EXTEND(SP, 3);
         PUSHs(tree->serializer);
         PUSHs(tree->root_data_type);
-        PUSHs(newSVsv(data_for_key(tree, record->value.key)));
+        PUSHs(sv_2mortal(newSVsv(data_for_key(tree, record->value.key))));
         PUTBACK;
 
         int count = call_method("store_data", G_SCALAR);
