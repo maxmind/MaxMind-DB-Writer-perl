@@ -3,10 +3,13 @@ use warnings;
 
 use Test::More;
 
+use MaxMind::DB::Common qw( DATA_SECTION_SEPARATOR );
 use MaxMind::DB::Metadata;
 use MaxMind::DB::Writer::Tree;
 
 use Net::Works::Network;
+
+_test_search_tree_output();
 
 for my $record_size ( 24, 28, 32 ) {
     _test_ipv4_networks($record_size);
@@ -14,6 +17,89 @@ for my $record_size ( 24, 28, 32 ) {
 }
 
 done_testing();
+
+sub _test_search_tree_output {
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version    => 4,
+        record_size   => 24,
+        database_type => 'Test',
+        languages     => [ 'en', 'zh' ],
+        description   => {
+            en => 'Test Database',
+            zh => 'Test Database Chinese',
+        },
+        map_key_type_callback => sub { 'utf8_string' },
+    );
+
+    my @subnets = map { Net::Works::Network->new_from_string( string => $_ ) }
+        qw( 0.0.0.0/2 128.0.0.0/2 );
+
+    for my $subnet (@subnets) {
+        $tree->insert_network(
+            $subnet,
+            { ip => $subnet->first()->as_string() }
+        );
+    }
+
+    my $node_count = 3;
+
+    is(
+        $tree->node_count(),
+        $node_count,
+        "tree has $node_count nodes"
+    );
+
+    my $buffer;
+    open my $fh, '>:raw', \$buffer;
+
+    $tree->write_tree($fh);
+
+    my $separator = DATA_SECTION_SEPARATOR;
+
+    my $search_tree_size = $node_count * 6;
+    like(
+        $buffer,
+        qr/^.{$search_tree_size}\Q$separator/,
+        "tree output starts with a search tree of $search_tree_size bytes"
+    );
+
+    my $one = substr( pack('N', 1 ), 1, 3);
+    my $two = substr( pack('N', 2 ), 1, 3);
+
+    like(
+        $buffer,
+        qr/\Q$one$two/,
+        'first node in search tree points to nodes 1 (L) and 2 (R)'
+    );
+
+    # The 3 node search tree is 18 bytes long.
+    my $data_section_size = length($buffer) - $search_tree_size;
+
+    my ( $node_1_left_record, $node_2_left_record )
+        = map { unpack( 'N', pack( 'xa3', unpack( 'a3', $_ ) ) ) }
+        $buffer =~ /^.{6}(.{3}).{3}(.{3})/;
+
+    cmp_ok(
+        $node_1_left_record, '>', 2,
+        'node 1 left record points to a value outside the search tree'
+    );
+
+    cmp_ok(
+        $node_1_left_record - $node_count, '<', $data_section_size,
+        'node 1 left record points to a value in the data section'
+    );
+
+    cmp_ok(
+        $node_2_left_record, '>', 2,
+        'node 2 left record points to a value outside the search tree'
+    );
+
+    cmp_ok(
+        $node_2_left_record - $node_count, '<', $data_section_size,
+        'node 2 left record points to a value in the data section'
+    );
+
+}
 
 sub _test_ipv4_networks {
     my $record_size = shift;
@@ -117,7 +203,6 @@ sub _write_tree {
             en => 'Test Database',
             zh => 'Test Database Chinese',
         },
-        %{$metadata},
         map_key_type_callback => sub { 'utf8_string' },
     );
 
