@@ -628,10 +628,15 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
         SPAGAIN;
 
         if (count != 1) {
-            croak("Expected 1 item returned from ->store_data() call");
+            croak("Expected 1 item back from ->store_data() call");
         }
 
-        uint32_t position = (uint32_t )SvUV(POPs);
+        SV *rval = POPs;
+        if (!(SvIOK(rval) || SvUOK(rval))) {
+            croak(
+                "The serializer's store_data() method returned an SV which is not SvIOK or SvUOK!");
+        }
+        uint32_t position = (uint32_t )SvUV(rval);
 
         PUTBACK;
         FREETMPS;
