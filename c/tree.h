@@ -60,8 +60,8 @@ typedef struct MMDBW_network_s {
     extern SV *lookup_ip_address(MMDBW_tree_s *tree, char *ipstr);
     extern MMDBW_node_s *new_node(MMDBW_tree_s *tree);
     extern void finalize_tree(MMDBW_tree_s *tree);
-    extern void write_search_tree(MMDBW_tree_s *tree, SV *output, SV *root_data_type,
-                                  SV *serializer);
+    extern void write_search_tree(MMDBW_tree_s *tree, SV *output, bool alias_ipv6,
+                                  SV *root_data_type, SV *serializer);
     extern SV *data_for_key(MMDBW_tree_s *tree, SV *key);
     extern void free_tree(MMDBW_tree_s *tree);
     extern char *record_type_name(int node_type);
