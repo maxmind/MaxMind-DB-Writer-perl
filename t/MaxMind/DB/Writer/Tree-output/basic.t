@@ -9,19 +9,20 @@ use MaxMind::DB::Writer::Tree;
 
 use Net::Works::Network;
 
-_test_search_tree_output();
-
 for my $record_size ( 24, 28, 32 ) {
+    _test_search_tree($record_size);
     _test_ipv4_networks($record_size);
     _test_ipv6_networks($record_size);
 }
 
 done_testing();
 
-sub _test_search_tree_output {
+sub _test_search_tree {
+    my $record_size = shift;
+
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version    => 4,
-        record_size   => 24,
+        record_size   => $record_size,
         database_type => 'Test',
         languages     => [ 'en', 'zh' ],
         description   => {
@@ -46,7 +47,7 @@ sub _test_search_tree_output {
     is(
         $tree->node_count(),
         $node_count,
-        "tree has $node_count nodes"
+        "tree has $node_count nodes - $record_size-bit record"
     );
 
     my $buffer;
@@ -56,49 +57,83 @@ sub _test_search_tree_output {
 
     my $separator = DATA_SECTION_SEPARATOR;
 
-    my $search_tree_size = $node_count * 6;
+    my $search_tree_size = $node_count * ( $record_size / 4 );
     like(
         $buffer,
         qr/^.{$search_tree_size}\Q$separator/,
-        "tree output starts with a search tree of $search_tree_size bytes"
+        "tree output starts with a search tree of $search_tree_size bytes - $record_size-bit record"
     );
 
-    my $one = substr( pack('N', 1 ), 1, 3);
-    my $two = substr( pack('N', 2 ), 1, 3);
+    my $number_encoder
+        = __PACKAGE__->can( q{_} . $record_size . '_bit_number' );
+
+    my $one = $number_encoder->(1);
+    my $two = $number_encoder->(2);
 
     like(
         $buffer,
         qr/\Q$one$two/,
-        'first node in search tree points to nodes 1 (L) and 2 (R)'
+        "first node in search tree points to nodes 1 (L) and 2 (R) - $record_size-bit record"
     );
 
-    # The 3 node search tree is 18 bytes long.
     my $data_section_size = length($buffer) - $search_tree_size;
 
-    my ( $node_1_left_record, $node_2_left_record )
-        = map { unpack( 'N', pack( 'xa3', unpack( 'a3', $_ ) ) ) }
-        $buffer =~ /^.{6}(.{3}).{3}(.{3})/;
+    my %left_record;
+    if ( $record_size == 24 ) {
+        ( $left_record{1}, $left_record{2} )
+            = map { unpack( N => pack( xa3 => unpack( a3 => $_ ) ) ) }
+            $buffer =~ /^.{6}(.{3}).{3}(.{3})/;
+    }
+    elsif ( $record_size == 28 ) {
+        my @nodes = $buffer =~ /^.{7}(.{7})(.{7})/;
+
+        for my $num ( 1, 2 ) {
+            my $node = $nodes[ $num - 1 ];
+
+            my ( $left, $middle, $right ) = unpack( a3Ca3 => $node );
+
+            $left_record{$num} = unpack(
+                N => pack( 'Ca*', ( $middle & 0xf0 ) >> 4, $left ) );
+        }
+    }
+    else {
+        ( $left_record{1}, $left_record{2} )
+            = map { unpack( N => $_ ) } $buffer =~ /^.{8}(.{4}).{4}(.{4})/;
+    }
 
     cmp_ok(
-        $node_1_left_record, '>', 2,
-        'node 1 left record points to a value outside the search tree'
+        $left_record{1}, '>', 2,
+        "node 1 left record points to a value outside the search tree - $record_size-bit record"
     );
 
     cmp_ok(
-        $node_1_left_record - $node_count, '<', $data_section_size,
-        'node 1 left record points to a value in the data section'
+        $left_record{1} - $node_count, '<', $data_section_size,
+        "node 1 left record points to a value in the data section - $record_size-bit record"
     );
 
     cmp_ok(
-        $node_2_left_record, '>', 2,
-        'node 2 left record points to a value outside the search tree'
+        $left_record{2}, '>', 2,
+        "node 2 left record points to a value outside the search tree - $record_size-bit record"
     );
 
     cmp_ok(
-        $node_2_left_record - $node_count, '<', $data_section_size,
-        'node 2 left record points to a value in the data section'
+        $left_record{2} - $node_count, '<', $data_section_size,
+        "node 2 left record points to a value in the data section - $record_size-bit record"
     );
+}
 
+sub _24_bit_number {
+    return substr( pack( 'N', $_[0] ), 1, 3 );
+}
+
+sub _28_bit_number {
+    return
+        pack( N => ( ( $_[0] & 0b11111111_11111111_11111111 ) << 8 )
+            | ( ( $_[0] >> 20 ) & 0b11110000 ) );
+}
+
+sub _32_bit_number {
+    return pack( 'N', $_[0] );
 }
 
 sub _test_ipv4_networks {
