@@ -605,7 +605,7 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                                       MMDBW_record_s *record)
 {
     if (MMDBW_RECORD_TYPE_EMPTY == record->type) {
-        return 0;
+        return tree->node_count;
     } else if (MMDBW_RECORD_TYPE_NODE == record->type) {
         return record->value.node->number;
     } else {
