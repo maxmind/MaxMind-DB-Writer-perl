@@ -289,10 +289,11 @@ sub _make_tree {
     my $pairs = shift;
 
     my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version  => $pairs->[0][0]->version(),
-        record_size => 24,
-        description => { en => 'Test tree' },
-        languages   => ['en'],
+        ip_version    => $pairs->[0][0]->version(),
+        record_size   => 24,
+        database_type => 'Test',
+        languages     => ['en'],
+        description   => { en => 'Test tree' },
     );
 
     for my $pair ( @{$pairs} ) {

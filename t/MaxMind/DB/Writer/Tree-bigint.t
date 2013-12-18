@@ -14,8 +14,9 @@ use Net::Works::Network;
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version  => 4,
         record_size => 24,
-        description => { en => 'Test tree' },
-        languages   => ['en'],
+        database_type => 'Test',
+        languages     => ['en'],
+        description   => { en => 'Test tree' },
     );
 
     is(

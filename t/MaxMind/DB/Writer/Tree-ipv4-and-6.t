@@ -15,8 +15,9 @@ my $ipv6_subnet = Net::Works::Network->new_from_string( string => '::2/128' );
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version  => 4,
         record_size => 24,
-        description => { en => 'Test tree' },
-        languages   => ['en'],
+        database_type => 'Test',
+        languages     => ['en'],
+        description   => { en => 'Test tree' },
     );
 
     $tree->insert_network( $ipv4_subnet, 'foo' );
@@ -31,8 +32,9 @@ my $ipv6_subnet = Net::Works::Network->new_from_string( string => '::2/128' );
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version  => 6,
         record_size => 24,
-        description => { en => 'Test tree' },
-        languages   => ['en'],
+        database_type => 'Test',
+        languages     => ['en'],
+        description   => { en => 'Test tree' },
     );
 
     $tree->insert_network( $ipv6_subnet, 'foo' );
