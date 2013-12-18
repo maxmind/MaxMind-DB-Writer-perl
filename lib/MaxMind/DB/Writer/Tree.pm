@@ -5,7 +5,7 @@ use warnings;
 
 use Math::Int128 0.06 qw( uint128 );
 use Math::Round qw( round );
-use MaxMind::DB::Common qw(
+use MaxMind::DB::Common 0.031003 qw(
     DATA_SECTION_SEPARATOR
     DATA_SECTION_SEPARATOR_SIZE
     METADATA_MARKER
