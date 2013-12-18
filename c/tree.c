@@ -577,8 +577,8 @@ void write_search_tree(MMDBW_tree_s *tree, SV *output, SV *root_data_type,
 
 LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node)
 {
-    uint32_t left = record_value_as_number(tree, &(node->left_record));
-    uint32_t right = record_value_as_number(tree, &(node->right_record));
+    uint32_t left = htonl(record_value_as_number(tree, &(node->left_record)));
+    uint32_t right = htonl(record_value_as_number(tree, &(node->right_record)));
 
     uint8_t *left_bytes = (uint8_t *)&left;
     uint8_t *right_bytes = (uint8_t *)&right;
