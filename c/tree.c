@@ -401,6 +401,7 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
             parent_network.gai_status = 0;
 
             insert_record_for_network(tree, &parent_network, new_record);
+            return;
         }
     }
 
