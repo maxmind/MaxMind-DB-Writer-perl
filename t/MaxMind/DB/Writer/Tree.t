@@ -214,6 +214,110 @@ my $id = 0;
     }
 }
 
+{
+    package TreeIterator;
+
+    sub new {
+        bless {}, shift;
+    }
+
+    sub process_node_record {
+        my $self            = shift;
+        my $node_num        = shift;
+        my $dir             = shift;
+        my $current_ip_num  = shift;
+        my $current_netmask = shift;
+        my $next_ip_num     = shift;
+        my $next_netmask    = shift;
+        my $next_node_num   = shift;
+
+        $self->_saw_record( $node_num, $dir );
+
+        return;
+    }
+
+    sub process_empty_record {
+        my $self            = shift;
+        my $node_num        = shift;
+        my $dir             = shift;
+        my $current_ip_num  = shift;
+        my $current_netmask = shift;
+        my $next_ip_num     = shift;
+        my $next_netmask    = shift;
+
+        $self->_saw_record( $node_num, $dir );
+
+        return;
+    }
+
+    sub process_data_record {
+        my $self            = shift;
+        my $node_num        = shift;
+        my $dir             = shift;
+        my $current_ip_num  = shift;
+        my $current_netmask = shift;
+        my $next_ip_num     = shift;
+        my $next_netmask    = shift;
+        my $value           = shift;
+
+        $self->_saw_record( $node_num, $dir );
+
+        push @{ $self->{values} }, $value;
+
+        return;
+    }
+
+    sub _saw_record {
+        my $self     = shift;
+        my $node_num = shift;
+        my $dir      = shift;
+
+        $self->{records}{"$node_num-$dir"}++;
+
+        return;
+    }
+}
+
+{
+    my ( $insert, $expect ) = _ranges_to_data(
+        [
+            [ '1.1.1.1', '1.1.1.32' ],
+        ],
+        [
+            [ '1.1.1.1', '1.1.1.32' ],
+        ],
+    );
+
+    my $tree = _make_tree($insert);
+
+    my $iterator = TreeIterator->new();
+    $tree->iterate($iterator);
+
+    ok(
+        ( all { $_ == 1 } values %{ $iterator->{nodes} } ),
+        'each node was visited exactly once'
+    );
+
+    ok(
+        ( all { $_ == 1 } values %{ $iterator->{records} } ),
+        'each record was visited exactly once'
+    );
+
+    is(
+        scalar values %{ $iterator->{records} },
+        $tree->node_count() * 2,
+        'saw every record for every node in the tree'
+    );
+
+    is_deeply(
+        [ sort { $a->{id} <=> $b->{id} } @{ $iterator->{values} } ],
+        [
+            sort { $a->{id} <=> $b->{id} } map { $_->[1] } @{$expect}
+        ],
+        'saw expected values for records'
+    );
+}
+
 done_testing();
 
 sub _test_subnet_permutations {
