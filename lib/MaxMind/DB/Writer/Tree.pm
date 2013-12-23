@@ -107,6 +107,13 @@ has _description => (
     required => 1,
 );
 
+has _alias_ipv6_to_ipv4 => (
+    is       => 'ro',
+    isa      => 'Bool',
+    default  => 0,
+    init_arg => 'alias_ipv6_to_ipv4',
+);
+
 has _serializer => (
     is       => 'ro',
     isa      => 'MaxMind::DB::Writer::Serializer',
@@ -178,12 +185,25 @@ sub lookup_ip_address {
     $self->_lookup_ip_address( $self->_tree(), $address->as_string() );
 }
 
+# This exists for the benefit of the tests as well.
+sub _create_ipv4_aliases {
+    my $self = shift;
+    $self->__create_ipv4_aliases( $self->_tree() );
+}
+
 # This is useful for diagnosing test failures
 sub _dump_data_hash {
     my $self = shift;
 
     require Devel::Dwarn;
     Devel::Dwarn::Dwarn( $self->_data( $self->_tree ) );
+}
+
+sub iterate {
+    my $self     = shift;
+    my $receiver = shift;
+
+    $self->_iterate( $self->_tree(), $receiver );
 }
 
 sub write_tree {
@@ -193,6 +213,7 @@ sub write_tree {
     $self->_write_search_tree(
         $self->_tree(),
         $output,
+        $self->_alias_ipv6_to_ipv4(),
         $self->_root_data_type(),
         $self->_serializer(),
     );
@@ -215,7 +236,7 @@ sub write_tree {
         ip_version                  => 'uint16',
         languages                   => [ 'array', 'utf8_string' ],
         node_count                  => 'uint32',
-        record_size                 => 'uint32',
+        record_size                 => 'uint16',
     );
 
     my $type_callback = sub {

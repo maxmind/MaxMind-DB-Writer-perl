@@ -22,60 +22,22 @@ has graph => (
     default  => sub { GraphViz2->new( global => { directed => 1 } ) },
 );
 
-has _seen_nodes => (
-    is       => 'ro',
-    traits   => ['Hash'],
-    init_arg => undef,
-    default  => sub { {} },
-    handles  => {
-        _seen_node => 'get',
-        _saw_node  => 'set',
-    },
-);
-
-has _labels => (
-    is       => 'ro',
-    isa      => 'HashRef[Str]',
-    init_arg => undef,
-    default  => sub { {} },
-);
-
-sub directions_for_node {
-    my $self = shift;
-
-    return ( LEFT_RECORD, RIGHT_RECORD );
-}
-
-sub process_node {
-    my $self     = shift;
-    my $node_num = shift;
-    shift;
-    my $ip_num  = shift;
-    my $netmask = shift;
-
-    return 0 if $self->_seen_node($node_num);
-
-    $self->_saw_node( $node_num, 1 );
-
-    return 1;
-}
-
-sub process_pointer_record {
-    my $self             = shift;
-    my $node_num         = shift;
-    my $dir              = shift;
-    my $pointer_node_num = shift;
-    my $current_ip_num   = shift;
-    my $current_netmask  = shift;
-    my $pointer_ip_num   = shift;
-    my $pointer_netmask  = shift;
+sub process_node_record {
+    my $self            = shift;
+    my $node_num        = shift;
+    my $dir             = shift;
+    my $current_ip_num  = shift;
+    my $current_netmask = shift;
+    my $next_ip_num     = shift;
+    my $next_netmask    = shift;
+    my $next_node_num   = shift;
 
     $self->graph()->add_edge(
         from => $self->_label_for_node(
             $node_num, $current_ip_num, $current_netmask
         ),
         to => $self->_label_for_node(
-            $pointer_node_num, $pointer_ip_num, $pointer_netmask
+            $next_node_num, $next_ip_num, $next_netmask
         ),
         label => ( $dir ? 'RIGHT' : 'LEFT' ),
     );
@@ -84,25 +46,23 @@ sub process_pointer_record {
 }
 
 sub process_empty_record {
-    my $self     = shift;
-    my $node_num = shift;
-    my $dir      = shift;
-
-    return 1;
+    return;
 }
 
-sub process_value_record {
-    my $self     = shift;
-    my $node_num = shift;
-    my $dir      = shift;
-    shift;
-    my $value   = shift;
-    my $ip_num  = shift;
-    my $netmask = shift;
+sub process_data_record {
+    my $self            = shift;
+    my $node_num        = shift;
+    my $dir             = shift;
+    my $current_ip_num  = shift;
+    my $current_netmask = shift;
+    my $next_ip_num     = shift;
+    my $next_netmask    = shift;
+    my $value           = shift;
 
     $self->graph()->add_edge(
-        from => $self->_label_for_node( $node_num, $ip_num, $netmask ),
-        to   => quotemeta( Dumper($value) ),
+        from => $self->_label_for_node( $node_num, $current_ip_num, $current_netmask ),
+        to => $self->_network( $next_ip_num, $next_netmask ) . ' = '
+            . quotemeta( Dumper($value) ),
         label => ( $dir ? 'RIGHT' : 'LEFT' ),
     );
 
@@ -115,18 +75,15 @@ sub _label_for_node {
     my $ip_num   = shift;
     my $netmask  = shift;
 
-    my $labels = $self->_labels();
+    my $network = $self->_network( $ip_num, $netmask );
 
-    my $subnet = $self->_subnet( $ip_num, $netmask );
-
-    return $labels->{$node_num} //=
-          "DB $node_num - "
-        . $subnet->as_string() . ' ('
-        . $subnet->first()->as_string . ' - '
-        . $subnet->last()->as_string() . ')';
+    return "Node $node_num - "
+        . $network->as_string() . ' ('
+        . $network->first()->as_string . ' - '
+        . $network->last()->as_string() . ')';
 }
 
-sub _subnet {
+sub _network {
     my $self    = shift;
     my $ip_num  = shift;
     my $netmask = shift;
@@ -134,6 +91,7 @@ sub _subnet {
     return Net::Works::Network->new_from_integer(
         integer     => $ip_num,
         mask_length => $netmask,
+        version     => $self->ip_version(),
     );
 }
 

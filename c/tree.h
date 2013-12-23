@@ -4,6 +4,9 @@
 #include "ppport.h"
 #include <stdbool.h>
 #include <stdint.h>
+#define MATH_INT64_NATIVE_IF_AVAILABLE
+#include "perl_math_int64.h"
+#include "perl_math_int128.h"
 
 #define MMDBW_RECORD_TYPE_EMPTY (0)
 #define MMDBW_RECORD_TYPE_DATA (1)
@@ -18,9 +21,7 @@ typedef struct MMDBW_record_s {
 } MMDBW_record_s;
 
 typedef struct MMDBW_node_s {
-    /* Making this signed limits us to ((2**64)/2)-1 nodes per tree, but
-     * hopefully that will be enough. */
-    int64_t number;
+    uint64_t number;
     MMDBW_record_s left_record;
     MMDBW_record_s right_record;
 } MMDBW_node_s;
@@ -39,6 +40,7 @@ typedef struct MMDBW_tree_s {
     PerlIO *output_io;
     SV *root_data_type;
     SV *serializer;
+    SV *iteration_receiver;
 } MMDBW_tree_s;
 
 typedef struct MMDBW_network_s {
@@ -62,9 +64,14 @@ typedef struct MMDBW_network_s {
     extern void finalize_tree(MMDBW_tree_s *tree);
     extern void write_search_tree(MMDBW_tree_s *tree, SV *output, bool alias_ipv6,
                                   SV *root_data_type, SV *serializer);
+    extern void start_iteration(MMDBW_tree_s *tree,
+                                void(callback) (MMDBW_tree_s * tree,
+                                                MMDBW_node_s * node,
+                                                uint128_t network,
+                                                uint8_t depth));
     extern SV *data_for_key(MMDBW_tree_s *tree, SV *key);
     extern void free_tree(MMDBW_tree_s *tree);
-    extern char *record_type_name(int node_type);
+    extern char *record_type_name(int record_type);
     extern void warn_hex(uint8_t digest[16], char *where);
     extern char *md5_as_hex(uint8_t digest[16]);
     /* --prototypes end - don't remove this comment-- */
