@@ -7,9 +7,9 @@ use Test::More;
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
 
-my $ipv4_subnet
+my $ipv4_network
     = Net::Works::Network->new_from_string( string => '1.1.1.0/24' );
-my $ipv6_subnet = Net::Works::Network->new_from_string( string => '::2/128' );
+my $ipv6_network = Net::Works::Network->new_from_string( string => '::2/128' );
 
 {
     my $tree = MaxMind::DB::Writer::Tree->new(
@@ -20,11 +20,11 @@ my $ipv6_subnet = Net::Works::Network->new_from_string( string => '::2/128' );
         description   => { en => 'Test tree' },
     );
 
-    $tree->insert_network( $ipv4_subnet, 'foo' );
+    $tree->insert_network( $ipv4_network, 'foo' );
     like(
-        exception { $tree->insert_network( $ipv6_subnet, 'foo' ) },
-        qr{\QYou cannot insert an IPv6 subnet (::2/128) into an IPv4 tree.},
-        q{Cannot insert an IPv6 subnet after we've already inserted an IPv4 subnet}
+        exception { $tree->insert_network( $ipv6_network, 'foo' ) },
+        qr{\QYou cannot insert an IPv6 network (::2/128) into an IPv4 tree.},
+        q{Cannot insert an IPv6 network after we've already inserted an IPv4 network}
     );
 }
 
@@ -37,11 +37,11 @@ my $ipv6_subnet = Net::Works::Network->new_from_string( string => '::2/128' );
         description   => { en => 'Test tree' },
     );
 
-    $tree->insert_network( $ipv6_subnet, 'foo' );
+    $tree->insert_network( $ipv6_network, 'foo' );
     like(
-        exception { $tree->insert_network( $ipv4_subnet, 'foo' ) },
-        qr{\QYou cannot insert an IPv4 subnet (1.1.1.0/24) into an IPv6 tree.},
-        q{Cannot insert an IPv4 subnet after we've already inserted an IPv6 subnet}
+        exception { $tree->insert_network( $ipv4_network, 'foo' ) },
+        qr{\QYou cannot insert an IPv4 network (1.1.1.0/24) into an IPv6 tree.},
+        q{Cannot insert an IPv4 network after we've already inserted an IPv6 network}
     );
 }
 
