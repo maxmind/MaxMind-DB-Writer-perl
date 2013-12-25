@@ -9,8 +9,7 @@ use Test::Requires (
 
 use File::Temp qw( tempdir );
 use MaxMind::DB::Metadata;
-use MaxMind::DB::Writer::Tree::InMemory;
-use MaxMind::DB::Writer::Tree::File;
+use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
 
 my $tempdir = tempdir( CLEANUP => 1 );
@@ -67,18 +66,8 @@ sub _write_tree {
     my $metadata    = shift;
     my $file        = shift;
 
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new(
-        ip_version => $metadata->{ip_version} );
-
-    for my $subnet ( @{$subnets} ) {
-        $tree->insert_subnet(
-            $subnet,
-            { ip => $subnet->first()->as_string() }
-        );
-    }
-
-    my $writer = MaxMind::DB::Writer::Tree::File->new(
-        tree          => $tree,
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version    => $metadata->{ip_version},
         record_size   => $record_size,
         database_type => 'Test',
         languages     => [ 'en', 'zh' ],
@@ -90,9 +79,16 @@ sub _write_tree {
         map_key_type_callback => sub { 'utf8_string' },
     );
 
+    for my $subnet ( @{$subnets} ) {
+        $tree->insert_network(
+            $subnet,
+            { ip => $subnet->first()->as_string() }
+        );
+    }
+
     open my $fh, '>:raw', $file;
 
-    $writer->write_tree($fh);
+    $tree->write_tree($fh);
 
     return;
 }
