@@ -5,6 +5,7 @@ use warnings;
 
 use Data::Dumper::Concise;
 use GraphViz2;
+use Net::Works::Network 0.16;
 
 use Moose;
 
