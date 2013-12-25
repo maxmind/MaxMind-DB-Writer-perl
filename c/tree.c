@@ -695,13 +695,21 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
 
     uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
     if (MMDBW_RECORD_TYPE_NODE == node->left_record.type) {
-        iterate_tree(tree, node->left_record.value.node, seen_nodes,
-                     network, depth + 1, callback);
+        iterate_tree(tree,
+                     node->left_record.value.node,
+                     seen_nodes,
+                     network,
+                     depth + 1,
+                     callback);
     }
 
     if (MMDBW_RECORD_TYPE_NODE == node->right_record.type) {
-        iterate_tree(tree, node->right_record.value.node, seen_nodes,
-                     network | (1 << (max_depth0 - depth)), depth + 1, callback);
+        iterate_tree(tree,
+                     node->right_record.value.node,
+                     seen_nodes,
+                     FLIP_NETWORK_BIT(network, max_depth0, depth),
+                     depth + 1,
+                     callback);
     }
 }
 

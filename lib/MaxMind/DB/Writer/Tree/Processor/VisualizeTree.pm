@@ -5,7 +5,6 @@ use warnings;
 
 use Data::Dumper::Concise;
 use GraphViz2;
-use MaxMind::DB::Common qw( LEFT_RECORD RIGHT_RECORD );
 
 use Moose;
 
@@ -20,6 +19,12 @@ has graph => (
     isa      => 'GraphViz2',
     init_arg => undef,
     default  => sub { GraphViz2->new( global => { directed => 1 } ) },
+);
+
+has _labels => (
+    is       => 'ro',
+    init_arg => undef,
+    default  => sub { {} },
 );
 
 sub process_node_record {
@@ -77,7 +82,8 @@ sub _label_for_node {
 
     my $network = $self->_network( $ip_num, $netmask );
 
-    return "Node $node_num - "
+    return $self->_labels()->{$node_num} //=
+          "Node $node_num - "
         . $network->as_string() . ' ('
         . $network->first()->as_string . ' - '
         . $network->last()->as_string() . ')';

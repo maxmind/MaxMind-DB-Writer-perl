@@ -12,6 +12,9 @@
 #define MMDBW_RECORD_TYPE_DATA (1)
 #define MMDBW_RECORD_TYPE_NODE (2)
 
+#define FLIP_NETWORK_BIT(network, max_depth0, depth) \
+    ((network) | ((uint128_t)1 << ((max_depth0) - (depth))))
+
 typedef struct MMDBW_record_s {
     int type;
     union {

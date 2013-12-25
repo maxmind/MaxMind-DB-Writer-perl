@@ -66,6 +66,7 @@ char *method_for_record_type(int record_type)
            : "process_data_record";
 }
 
+
 void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
                       uint128_t network, uint8_t depth)
 {
@@ -86,7 +87,7 @@ void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
                           &(node->right_record),
                           network,
                           depth,
-                          network | (1 << (max_depth0 - depth)),
+                          FLIP_NETWORK_BIT(network, max_depth0, depth),
                           depth + 1,
                           true);
     return;
