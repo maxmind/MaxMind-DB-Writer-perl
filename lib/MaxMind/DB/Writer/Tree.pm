@@ -14,8 +14,7 @@ use MaxMind::DB::Common 0.031003 qw(
 );
 use MaxMind::DB::Metadata;
 use MaxMind::DB::Writer::Serializer;
-use Net::Works 0.13;
-use Net::Works::Network;
+use Net::Works 0.16;
 use Sereal::Encoder;
 
 use Moose;
