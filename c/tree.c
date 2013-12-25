@@ -349,8 +349,9 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
     if (MMDBW_RECORD_TYPE_NODE != ipv4_root_node_parent->left_record.type) {
         return;
     }
-    
-    MMDBW_node_s *ipv4_root_node = ipv4_root_node_parent->left_record.value.node;
+
+    MMDBW_node_s *ipv4_root_node =
+        ipv4_root_node_parent->left_record.value.node;
     for (int i = 0; i <= 1; i++) {
         MMDBW_network_s alias_network =
             resolve_network(tree, ipv4_aliases[i].ipstr,
