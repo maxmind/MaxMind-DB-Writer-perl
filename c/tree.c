@@ -109,7 +109,7 @@ int insert_network(MMDBW_tree_s *tree, char *ipstr, uint8_t mask_length,
 
     /* Since we're storing the key in a C struct, we need to make sure Perl
      * doesn't free it while we're still using it. Similarly, simply calling
-     * hv_store_ent() doesn't incremenet the ref count for the data SV. */
+     * hv_store_ent() doesn't increment the ref count for the data SV. */
     SvREFCNT_inc(key);
     SvREFCNT_inc(data);
     hv_store_ent(tree->data_hash, key, data, 0);
