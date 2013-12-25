@@ -3,29 +3,19 @@ use warnings;
 
 use Test::More;
 
-use Test::Requires (
-    'MaxMind::DB::Reader' => 0.040000,
-);
-
 use MaxMind::DB::Writer::Tree;
 
 use File::Temp qw( tempdir );
+use Net::Works::Address;
 use Net::Works::Network;
 
 my $tempdir = tempdir( CLEANUP => 1 );
 
 {
-    my $filename = _write_tree();
-
-    my $reader = MaxMind::DB::Reader->new( file => $filename );
-
     my %tests = (
-        '1.1.1.1'          => { subnet => '::1.1.1.1/128' },
         '::1.1.1.1'        => { subnet => '::1.1.1.1/128' },
-        '1.1.1.2'          => { subnet => '::1.1.1.2/127' },
         '::1.1.1.2'        => { subnet => '::1.1.1.2/127' },
-        '1.1.1.3'          => { subnet => '::1.1.1.2/127' },
-        '255.255.255.2'    => { subnet => '::255.255.255.0/120' },
+        '::255.255.255.2'  => { subnet => '::255.255.255.0/120' },
         '::fffe:0:0'       => { subnet => '::fffe:0:0/96' },
         '::fffe:9:a'       => { subnet => '::fffe:0:0/96' },
         '::ffff:ff02'      => { subnet => '::255.255.255.0/120' },
@@ -42,9 +32,15 @@ my $tempdir = tempdir( CLEANUP => 1 );
         '2004::9:a'        => { subnet => '2004::/96' },
     );
 
+    my $tree = _write_tree();
+
     for my $address ( sort keys %tests ) {
         is_deeply(
-            $reader->record_for_address($address),
+            $tree->lookup_ip_address(
+                Net::Works::Address->new_from_string(
+                    string => $address, version => 6
+                )
+            ),
             $tests{$address},
             "got expected data for $address"
         );
@@ -87,10 +83,7 @@ sub _write_tree {
         );
     }
 
-    my $filename = $tempdir . "/Test-ipv6-alias.mmdb";
-    open my $fh, '>', $filename;
+    $tree->_create_ipv4_aliases();
 
-    $tree->write_tree($fh);
-
-    return $filename;
+    return $tree;
 }
