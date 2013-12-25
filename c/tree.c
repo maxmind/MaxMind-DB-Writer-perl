@@ -58,8 +58,6 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                                         uint8_t depth));
 LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               uint128_t UNUSED(network), uint8_t UNUSED(depth));
-LOCAL void key_refcnt_dec(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                          uint128_t UNUSED(network), uint8_t UNUSED(depth));
 LOCAL void *checked_malloc(size_t size);
 /* --prototypes end - don't remove this comment-- */
 /* *INDENT-ON* */
@@ -738,24 +736,26 @@ SV *data_for_key(MMDBW_tree_s *tree, SV *key)
 
 void free_tree(MMDBW_tree_s *tree)
 {
-    start_iteration(tree, &key_refcnt_dec);
+    for (int i = 0; i < tree->next_node; i++) {
+        MMDBW_node_s *node = (MMDBW_node_s *)tree->node_pool +
+                             (i * sizeof(MMDBW_node_s));
+
+        if (MMDBW_RECORD_TYPE_DATA == node->left_record.type) {
+            if (SvOK(node->left_record.value.key)) {
+                SvREFCNT_dec(node->left_record.value.key);
+            }
+        }
+
+        if (MMDBW_RECORD_TYPE_DATA == node->right_record.type) {
+            if (SvOK(node->left_record.value.key)) {
+                SvREFCNT_dec(node->right_record.value.key);
+            }
+        }
+    }
+
     SvREFCNT_dec((SV *)tree->data_hash);
     free(tree->node_pool);
     free(tree);
-}
-
-LOCAL void key_refcnt_dec(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                          uint128_t UNUSED(network), uint8_t UNUSED(depth))
-{
-    if (MMDBW_RECORD_TYPE_DATA == node->left_record.type) {
-        SvREFCNT_dec(node->left_record.value.key);
-    }
-
-    if (MMDBW_RECORD_TYPE_DATA == node->right_record.type) {
-        SvREFCNT_dec(node->right_record.value.key);
-    }
-
-    return;
 }
 
 char *record_type_name(int record_type)
