@@ -28,9 +28,14 @@ ok(
 my $serializer = MaxMind::DB::Writer::Serializer->new();
 $serializer->store_data( utf8_string => $input );
 
-open my $fh, '<:raw', $serializer->buffer();
+my $buffer = $serializer->buffer();
+open my $fh, '<:raw', $buffer;
 
-my $decoder = MaxMind::DB::Reader::Decoder->new(data_source => $fh);
+my $decoder = MaxMind::DB::Reader::Decoder->new(
+    data_source       => $fh,
+    _data_source_size => bytes::length( ${$buffer} ),
+);
+
 my $output = $decoder->decode(0);
 
 ok(
