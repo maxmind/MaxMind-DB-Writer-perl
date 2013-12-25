@@ -336,7 +336,7 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
     MMDBW_network_s ipv4_root_network = resolve_network(tree, "::0.0.0.0", 96);
 
     int current_bit;
-    MMDBW_node_s *ipv4_root_node =
+    MMDBW_node_s *ipv4_root_node_parent =
         find_node_for_network(tree, &ipv4_root_network, &current_bit,
                               &return_null);
     /* If the current_bit is not 32 then we found some node further up the
@@ -346,6 +346,11 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
         return;
     }
 
+    if (MMDBW_RECORD_TYPE_NODE != ipv4_root_node_parent->left_record.type) {
+        return;
+    }
+    
+    MMDBW_node_s *ipv4_root_node = ipv4_root_node_parent->left_record.value.node;
     for (int i = 0; i <= 1; i++) {
         MMDBW_network_s alias_network =
             resolve_network(tree, ipv4_aliases[i].ipstr,
