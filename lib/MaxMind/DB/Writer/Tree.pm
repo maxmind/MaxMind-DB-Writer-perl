@@ -126,14 +126,14 @@ has _serializer => (
 
     sub insert_network {
         my $self   = shift;
-        my $subnet = shift;
+        my $network = shift;
         my $data   = shift;
 
-        if ( $subnet->version() != $self->ip_version() ) {
-            my $description = $subnet->as_string();
+        if ( $network->version() != $self->ip_version() ) {
+            my $description = $network->as_string();
             die 'You cannot insert an IPv'
-                . $subnet->version()
-                . " subnet ($description) into an IPv"
+                . $network->version()
+                . " network ($description) into an IPv"
                 . $self->ip_version()
                 . " tree.\n";
         }
@@ -142,8 +142,8 @@ has _serializer => (
 
         $self->_insert_network(
             $self->_tree(),
-            $subnet->first()->as_string(),
-            $subnet->mask_length(),
+            $network->first()->as_string(),
+            $network->mask_length(),
             $key,
             $data,
         );
