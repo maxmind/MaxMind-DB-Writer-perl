@@ -36,6 +36,7 @@ sub _regen_prototypes {
     ( my $prototypes_start_re = $prototypes_start ) =~ s/ \n /\n */g;
     ( my $prototypes_end_re   = $prototypes_end ) =~ s/\n/\n */g;
 
+    my $prototypes_marker = '/* __PROTOTYPES__ */';
     for my $content ( $c_code, $h_code ) {
         $content =~ s{
                     [ ]*
@@ -50,11 +51,10 @@ sub _regen_prototypes {
                     [ ]*
                     \Q$indent_on\E
                     \n
-            }{__PROTOTYPES__}sx;
+            }{$prototypes_marker}sx;
     }
 
     my @prototypes = parse_prototypes($c_code);
-
     if ($h_file) {
         my $external_prototypes = join q{}, map {
             my $p = 'extern ' . $_->{prototype};
@@ -64,14 +64,14 @@ sub _regen_prototypes {
             }
             grep { $_->{external} } @prototypes;
         $h_code
-            =~ s/__PROTOTYPES__/    $indent_off\n    $prototypes_start\n$external_prototypes    $prototypes_end\n    $indent_on\n/;
+            =~ s/\Q$prototypes_marker/    $indent_off\n    $prototypes_start\n$external_prototypes    $prototypes_end\n    $indent_on\n/;
         $h_code =~ s{\n *(/\* \*INDENT)}{\n    $1}g;
     }
 
     my $internal_prototypes = join q{},
         map { $_->{prototype} . ";\n" } grep { !$_->{external} } @prototypes;
     $c_code
-        =~ s/__PROTOTYPES__/$indent_off\n$prototypes_start\n$internal_prototypes$prototypes_end\n$indent_on\n/;
+        =~ s/\Q$prototypes_marker/$indent_off\n$prototypes_start\n$internal_prototypes$prototypes_end\n$indent_on\n/;
 
     write_file( $c_file, $c_code ) if $c_code ne $orig_c_code;
     write_file( $h_file, $h_code ) if $h_file && $h_code ne $orig_h_code;
