@@ -112,7 +112,7 @@ _new_tree(self, ip_version, record_size)
     uint8_t record_size;
 
     CODE:
-        RETVAL = new_tree(ip_version, record_size, 0);
+        RETVAL = new_tree(ip_version, record_size);
 
     OUTPUT:
         RETVAL
