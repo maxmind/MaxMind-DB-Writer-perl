@@ -52,9 +52,13 @@ sub _check_c_prereqs {
         extra_link_flags   => \@lib_dirs,
     );
 
-    unless ( $ac->check_type('unsigned __int128')
-        || $ac->check_type('unsigned int __attribute__ ((__mode__ (TI)))') ) {
-
+    if ( $ac->check_type('unsigned int __attribute__ ((__mode__ (TI)))') ) {
+        $mb->extra_compiler_flags(
+            @{ $mb->extra_compiler_flags || [] },
+            '-DMMDBW_UINT128_USING_MODE',
+        );
+    }
+    elsif ( !$ac->check_type('unsigned __int128') ) {
         warn <<'EOF';
 
   It looks like your compiler doesn't support the "unsigned __int128" or
