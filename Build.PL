@@ -52,7 +52,10 @@ sub _check_c_prereqs {
         extra_link_flags   => \@lib_dirs,
     );
 
-    if ( $ac->check_type('unsigned int __attribute__ ((__mode__ (TI)))') ) {
+    if ($ac->check_type('unsigned __int128')) {
+        1;
+    }
+    elsif ( $ac->check_type('unsigned int __attribute__ ((__mode__ (TI)))') ) {
         $mb->extra_compiler_flags(
             @{ $mb->extra_compiler_flags || [] },
             '-DMMDBW_UINT128_USING_MODE',
