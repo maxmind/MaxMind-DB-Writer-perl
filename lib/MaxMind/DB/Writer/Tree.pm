@@ -2,6 +2,7 @@ package MaxMind::DB::Writer::Tree;
 
 use strict;
 use warnings;
+use namespace::autoclean;
 
 use Math::Int128 0.06 qw( uint128 );
 use MaxMind::DB::Common 0.031003 qw(
@@ -14,11 +15,12 @@ use MaxMind::DB::Common 0.031003 qw(
 use MaxMind::DB::Metadata;
 use MaxMind::DB::Writer::Serializer;
 use Net::Works 0.16;
-use Sereal::Encoder;
 
 use Moose;
 use Moose::Util::TypeConstraints;
 use MooseX::StrictConstructor;
+
+with 'MaxMind::DB::Writer::Role::KeyMaker';
 
 use XSLoader;
 
@@ -120,35 +122,29 @@ has _serializer => (
     builder  => '_build_serializer',
 );
 
-{
-    my $Encoder = Sereal::Encoder->new( { sort_keys => 1 } );
+sub insert_network {
+    my $self    = shift;
+    my $network = shift;
+    my $data    = shift;
 
-    sub insert_network {
-        my $self   = shift;
-        my $network = shift;
-        my $data   = shift;
-
-        if ( $network->version() != $self->ip_version() ) {
-            my $description = $network->as_string();
-            die 'You cannot insert an IPv'
-                . $network->version()
-                . " network ($description) into an IPv"
-                . $self->ip_version()
-                . " tree.\n";
-        }
-
-        my $key = $Encoder->encode($data);
-
-        $self->_insert_network(
-            $self->_tree(),
-            $network->first()->as_string(),
-            $network->mask_length(),
-            $key,
-            $data,
-        );
-
-        return;
+    if ( $network->version() != $self->ip_version() ) {
+        my $description = $network->as_string();
+        die 'You cannot insert an IPv'
+            . $network->version()
+            . " network ($description) into an IPv"
+            . $self->ip_version()
+            . " tree.\n";
     }
+
+    $self->_insert_network(
+        $self->_tree(),
+        $network->first()->as_string(),
+        $network->mask_length(),
+        $self->_key_for_data($data),
+        $data,
+    );
+
+    return;
 }
 
 sub _build_tree {

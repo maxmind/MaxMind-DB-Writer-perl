@@ -10,12 +10,11 @@ use Data::IEEE754 qw( pack_double_be pack_float_be );
 use Encode qw( encode is_utf8 FB_CROAK );
 use Math::Int128 qw( uint128_to_net );
 use MaxMind::DB::Common 0.031000 qw( %TypeNameToNum );
-use Sereal::Encoder;
 
 use Moose;
 use MooseX::StrictConstructor;
 
-with 'MaxMind::DB::Role::Debugs';
+with 'MaxMind::DB::Role::Debugs', 'MaxMind::DB::Writer::Role::KeyMaker';
 
 use constant DEBUG  => $ENV{MAXMIND_DB_SERIALIZER_DEBUG};
 use constant VERIFY => $ENV{MAXMIND_DB_SERIALIZER_VERIFY};
@@ -82,10 +81,11 @@ has _decoder => (
 my $MinimumCacheableSize = 4;
 
 sub store_data {
-    my $self        = shift;
-    my $type        = shift;
-    my $data        = shift;
-    my $member_type = shift;
+    my $self         = shift;
+    my $type         = shift;
+    my $data         = shift;
+    my $member_type  = shift;
+    my $key_for_data = shift;
 
     confess 'Cannot store an undef as data'
         unless defined $data;
@@ -96,7 +96,7 @@ sub store_data {
     return $self->_store_data( $type, $data, $member_type )
         unless $self->_should_cache_value( $type, $data );
 
-    my $key_for_data = $self->_key_for_data($data);
+    $key_for_data //= $self->_key_for_data($data);
 
     $self->_debug_string( 'Cache key', $key_for_data )
         if DEBUG;
@@ -188,22 +188,6 @@ sub _should_cache_value {
         ) if DEBUG;
 
         return bytes::length($data) >= $MinimumCacheableSize;
-    }
-}
-
-{
-    my $Encoder = Sereal::Encoder->new( { sort_keys => 1 } );
-
-    sub _key_for_data {
-        my $self = shift;
-        my $data = shift;
-
-        if ( ref $data ) {
-            return $Encoder->encode($data);
-        }
-        else {
-            return $data;
-        }
     }
 }
 

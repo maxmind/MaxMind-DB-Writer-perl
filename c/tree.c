@@ -634,10 +634,12 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
         SAVETMPS;
 
         PUSHMARK(SP);
-        EXTEND(SP, 3);
+        EXTEND(SP, 5);
         PUSHs(tree->serializer);
         PUSHs(tree->root_data_type);
         PUSHs(sv_2mortal(newSVsv(data_for_key(tree, record->value.key))));
+        PUSHs(&PL_sv_undef);
+        PUSHs(sv_2mortal(newSVsv(record->value.key)));
         PUTBACK;
 
         int count = call_method("store_data", G_SCALAR);
