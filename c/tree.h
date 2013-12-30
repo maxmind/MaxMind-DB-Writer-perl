@@ -51,7 +51,6 @@ typedef struct MMDBW_network_s {
     uint8_t mask_length;
     uint8_t max_depth0;
     int family;
-    int gai_status;
 } MMDBW_network_s;
 
     /* *INDENT-OFF* */
