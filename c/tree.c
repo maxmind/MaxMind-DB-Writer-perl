@@ -105,10 +105,8 @@ int insert_network(MMDBW_tree_s *tree, char *ipstr, uint8_t mask_length,
         return -1;
     }
 
-    /* Since we're storing the key in a C struct, we need to make sure Perl
-     * doesn't free it while we're still using it. Similarly, simply calling
-     * hv_store_ent() doesn't increment the ref count for the data SV. */
-    SvREFCNT_inc(key);
+    /* Simply calling hv_store_ent() doesn't increment the ref count for the
+     * data SV. */
     SvREFCNT_inc(data);
     hv_store_ent(tree->data_hash, key, data, 0);
     MMDBW_record_s new_record = {
@@ -415,9 +413,14 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         }
     }
 
+    if (MMDBW_RECORD_TYPE_DATA == record_to_set->type) {
+        SvREFCNT_dec(record_to_set->value.key);
+    }
+
     record_to_set->type = new_record->type;
     if (MMDBW_RECORD_TYPE_DATA == new_record->type) {
         record_to_set->value.key = new_record->value.key;
+        SvREFCNT_inc(record_to_set->value.key);
     } else if (MMDBW_RECORD_TYPE_NODE == new_record->type) {
         record_to_set->value.node = new_record->value.node;
     }
@@ -467,27 +470,30 @@ LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
          (*current_bit)--) {
 
         int next_is_right = NETWORK_BIT_VALUE(network, *current_bit);
-        MMDBW_record_s record =
+        MMDBW_record_s *record =
             next_is_right
-            ? node->right_record
-            : node->left_record;
+            ? &(node->right_record)
+            : &(node->left_record);
 
         MMDBW_node_s *next_node;
-        if (MMDBW_RECORD_TYPE_NODE == record.type) {
-            next_node = record.value.node;
+        if (MMDBW_RECORD_TYPE_NODE == record->type) {
+            next_node = record->value.node;
         } else {
-            next_node = if_not_node(tree, &record);
+            next_node = if_not_node(tree, record);
             if (NULL == next_node) {
                 return node;
             }
-        }
+            if (MMDBW_RECORD_TYPE_DATA == record->type) {
+                SvREFCNT_dec(record->value.key);
+            }
 
-        if (next_is_right) {
-            node->right_record.type = MMDBW_RECORD_TYPE_NODE;
-            node->right_record.value.node = next_node;
-        } else {
-            node->left_record.type = MMDBW_RECORD_TYPE_NODE;
-            node->left_record.value.node = next_node;
+            if (next_is_right) {
+                record->type = MMDBW_RECORD_TYPE_NODE;
+                record->value.node = next_node;
+            } else {
+                record->type = MMDBW_RECORD_TYPE_NODE;
+                record->value.node = next_node;
+            }
         }
 
         node = next_node;
@@ -507,10 +513,12 @@ LOCAL MMDBW_node_s *make_next_node(MMDBW_tree_s *tree, MMDBW_record_s *record)
     MMDBW_node_s *next_node;
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
         next_node = new_node(tree);
-        next_node->right_record.type = MMDBW_RECORD_TYPE_DATA;
-        next_node->right_record.value.key = record->value.key;
         next_node->left_record.type = MMDBW_RECORD_TYPE_DATA;
         next_node->left_record.value.key = record->value.key;
+        SvREFCNT_inc(record->value.key);
+        next_node->right_record.type = MMDBW_RECORD_TYPE_DATA;
+        next_node->right_record.value.key = record->value.key;
+        SvREFCNT_inc(record->value.key);
     } else {
         next_node = new_node(tree);
     }
@@ -736,20 +744,18 @@ SV *data_for_key(MMDBW_tree_s *tree, SV *key)
 
 void free_tree(MMDBW_tree_s *tree)
 {
-    for (int i = 0; i < tree->next_node; i++) {
+    finalize_tree(tree);
+
+    for (uint32_t i = 0; i < tree->next_node; i++) {
         MMDBW_node_s *node = (MMDBW_node_s *)tree->node_pool +
                              (i * sizeof(MMDBW_node_s));
 
         if (MMDBW_RECORD_TYPE_DATA == node->left_record.type) {
-            if (SvOK(node->left_record.value.key)) {
-                SvREFCNT_dec(node->left_record.value.key);
-            }
+            SvREFCNT_dec(node->left_record.value.key);
         }
 
         if (MMDBW_RECORD_TYPE_DATA == node->right_record.type) {
-            if (SvOK(node->left_record.value.key)) {
-                SvREFCNT_dec(node->right_record.value.key);
-            }
+            SvREFCNT_dec(node->right_record.value.key);
         }
     }
 
