@@ -45,7 +45,7 @@ typedef struct MMDBW_tree_s {
     HV *data_hash;
     MMDBW_node_s *root_node;
     MMDBW_node_s *last_node;
-    uint64_t node_count;
+    uint32_t node_count;
     bool is_finalized;
     PerlIO *output_io;
     SV *root_data_type;

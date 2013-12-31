@@ -175,7 +175,7 @@ _write_search_tree(self, output, alias_ipv6, root_data_type, serializer)
     CODE:
         write_search_tree(tree_from_self(self), output, alias_ipv6, root_data_type, serializer);
 
-uint64_t
+uint32_t
 _build_node_count(self)
     SV * self;
 
