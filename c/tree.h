@@ -1,7 +1,6 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
-#include "ppport.h"
 #include <stdbool.h>
 #include <stdint.h>
 #define MATH_INT64_NATIVE_IF_AVAILABLE
