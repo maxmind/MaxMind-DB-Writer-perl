@@ -1,4 +1,4 @@
 TYPEMAP
 MMDBW_tree_s *     T_OPAQUE
 uint8_t            T_UV
-int64_t            T_UV
+uint64_t           T_UV

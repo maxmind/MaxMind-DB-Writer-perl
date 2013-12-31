@@ -139,8 +139,8 @@ _write_search_tree(self, tree, output, alias_ipv6, root_data_type, serializer)
     CODE:
         write_search_tree(tree, output, alias_ipv6, root_data_type, serializer);
 
-int64_t
-_node_count(self, tree)
+uint64_t
+_build_node_count(self)
     MMDBW_tree_s *tree;
 
     CODE:
