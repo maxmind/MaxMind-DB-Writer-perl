@@ -9,6 +9,42 @@ extern "C" {
 }
 #endif
 
+int call_int_method(SV *self, char *method)
+{
+    dSP;
+
+    ENTER;
+    SAVETMPS;
+    PUSHMARK(SP);
+    EXTEND(SP, 1);
+    PUSHs(self);
+    PUTBACK;
+
+    int count = call_method(method, G_SCALAR);
+
+    SPAGAIN;
+
+    if (count != 1) {
+        croak("Expected one item back from ->%s() call", method);
+    }
+
+    int value = POPi;
+
+    PUTBACK;
+    FREETMPS;
+    LEAVE;
+
+    return value;
+}
+
+MMDBW_tree_s *tree_from_self(SV *self)
+{
+    /* This is a bit wrong since we're looking in the $self hash
+       rather than calling a method. I couldn't get method calling
+       to work. */
+    return *(MMDBW_tree_s **)SvPV_nolen(*(hv_fetchs((HV *)SvRV(self), "_tree", 0)));
+}
+
 void call_iteration_method(MMDBW_tree_s *tree, char *method,
                            uint64_t node_number, MMDBW_record_s *record,
                            uint128_t network, uint8_t depth,
@@ -107,43 +143,44 @@ BOOT:
     PERL_MATH_INT128_LOAD_OR_CROAK;
 
 MMDBW_tree_s *
-_new_tree(self, ip_version, record_size)
-    uint8_t ip_version;
-    uint8_t record_size;
+_build_tree(self)
+    SV *self;
 
     CODE:
-        RETVAL = new_tree(ip_version, record_size);
+        RETVAL = new_tree((uint8_t)call_int_method(self, "ip_version"),
+                          (uint8_t)call_int_method(self, "record_size"));
 
     OUTPUT:
         RETVAL
 
 void
-_insert_network(self, tree, network, mask_length, key, data)
-    MMDBW_tree_s *tree;
+_insert_network(self, network, mask_length, key, data)
+    SV *self;
     char *network;
     uint8_t mask_length;
     SV *key;
     SV *data;
 
     CODE:
-        insert_network(tree, network, mask_length, key, data);
+        insert_network(tree_from_self(self), network, mask_length, key, data);
 
 void
-_write_search_tree(self, tree, output, alias_ipv6, root_data_type, serializer)
-    MMDBW_tree_s *tree;
+_write_search_tree(self, output, alias_ipv6, root_data_type, serializer)
+    SV *self;
     SV *output;
     bool alias_ipv6;
     SV *root_data_type;
     SV *serializer;
 
     CODE:
-        write_search_tree(tree, output, alias_ipv6, root_data_type, serializer);
+        write_search_tree(tree_from_self(self), output, alias_ipv6, root_data_type, serializer);
 
 uint64_t
 _build_node_count(self)
-    MMDBW_tree_s *tree;
+    SV * self;
 
     CODE:
+        MMDBW_tree_s *tree = tree_from_self(self);
         finalize_tree(tree);
         RETVAL = tree->node_count;
 
@@ -151,46 +188,48 @@ _build_node_count(self)
         RETVAL
 
 void
-_iterate(self, tree, object)
-    MMDBW_tree_s *tree;
+iterate(self, object)
+    SV *self;
     SV *object;
 
     CODE:
+        MMDBW_tree_s *tree = tree_from_self(self);
         finalize_tree(tree);
         tree->iteration_receiver = object;
         start_iteration(tree, &call_perl_object);
         tree->iteration_receiver = NULL;
 
 void
-__create_ipv4_aliases(self, tree)
-    MMDBW_tree_s *tree;
+_create_ipv4_aliases(self)
+    SV *self;
 
     CODE:
-        alias_ipv4_networks(tree);
+        alias_ipv4_networks(tree_from_self(self));
 
 SV *
-_lookup_ip_address(self, tree, address)
-    MMDBW_tree_s *tree;
+lookup_ip_address(self, address)
+    SV *self;
     char *address;
 
     CODE:
-        RETVAL = lookup_ip_address(tree, address);
+        RETVAL = lookup_ip_address(tree_from_self(self), address);
 
     OUTPUT:
         RETVAL
 
 void
-_free_tree(self, tree)
-    MMDBW_tree_s *tree;
+_free_tree(self)
+    SV *self;
 
     CODE:
-        free_tree(tree);
+        free_tree(tree_from_self(self));
 
 HV *
-_data(self, tree)
-    MMDBW_tree_s *tree;
+_data(self)
+    SV *self;
 
     CODE:
+        MMDBW_tree_s *tree = tree_from_self(self);
         RETVAL = tree->data_hash;
 
     OUTPUT:

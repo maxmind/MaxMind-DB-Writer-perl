@@ -120,6 +120,11 @@ has _serializer => (
     builder  => '_build_serializer',
 );
 
+# The XS code expects $self->{_tree} to be populated.
+sub BUILD {
+    $_[0]->_tree();
+}
+
 sub insert_network {
     my $self    = shift;
     my $network = shift;
@@ -135,7 +140,6 @@ sub insert_network {
     }
 
     $self->_insert_network(
-        $self->_tree(),
         $network->first()->as_string(),
         $network->mask_length(),
         $self->_key_for_data($data),
@@ -143,18 +147,6 @@ sub insert_network {
     );
 
     return;
-}
-
-sub _build_tree {
-    my $self = shift;
-
-    return $self->_new_tree( $self->ip_version(), $self->record_size() );
-}
-
-sub _build_node_count {
-    my $self = shift;
-
-    return $self->_node_count( $self->_tree() );
 }
 
 sub _build_serializer {
@@ -169,33 +161,12 @@ sub _build_serializer {
     );
 }
 
-# This exists for the benefit of the tests.
-sub lookup_ip_address {
-    my $self    = shift;
-    my $address = shift;
-
-    $self->_lookup_ip_address( $self->_tree(), $address->as_string() );
-}
-
-# This exists for the benefit of the tests as well.
-sub _create_ipv4_aliases {
-    my $self = shift;
-    $self->__create_ipv4_aliases( $self->_tree() );
-}
-
 # This is useful for diagnosing test failures
 sub _dump_data_hash {
     my $self = shift;
 
     require Devel::Dwarn;
-    Devel::Dwarn::Dwarn( $self->_data( $self->_tree ) );
-}
-
-sub iterate {
-    my $self     = shift;
-    my $receiver = shift;
-
-    $self->_iterate( $self->_tree(), $receiver );
+    Devel::Dwarn::Dwarn( $self->_data() );
 }
 
 sub write_tree {
@@ -203,7 +174,6 @@ sub write_tree {
     my $output = shift;
 
     $self->_write_search_tree(
-        $self->_tree(),
         $output,
         $self->_alias_ipv6_to_ipv4(),
         $self->_root_data_type(),
@@ -263,7 +233,7 @@ sub write_tree {
 sub DEMOLISH {
     my $self = shift;
 
-    $self->_free_tree( $self->_tree() )
+    $self->_free_tree()
         if $self->_has_tree();
 
     return;
