@@ -303,6 +303,10 @@ static struct network ipv4_aliases[] = {
         .mask_length = 96
     },
     {
+        .ipstr = "2001::",
+        .mask_length = 32
+    },
+    {
         .ipstr = "2002::",
         .mask_length = 16
     }
@@ -333,7 +337,7 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
 
     MMDBW_node_s *ipv4_root_node =
         ipv4_root_node_parent->left_record.value.node;
-    for (int i = 0; i <= 1; i++) {
+    for (int i = 0; i <= 2; i++) {
         MMDBW_network_s alias_network =
             resolve_network(tree, ipv4_aliases[i].ipstr,
                             ipv4_aliases[i].mask_length);
