@@ -3,11 +3,61 @@ use warnings;
 
 use lib 't/lib';
 
+use Test::Fatal;
 use Test::MaxMind::DB::Writer qw( make_tree_from_pairs ranges_to_data );
 use Test::More;
 
 use List::Util qw( all );
 use MaxMind::DB::Writer::Tree;
+
+my ( $insert, $expect ) = ranges_to_data(
+    [
+        [ '1.1.1.1', '1.1.1.32' ],
+    ],
+    [
+        [ '1.1.1.1', '1.1.1.32' ],
+    ],
+);
+
+my $tree = make_tree_from_pairs($insert);
+
+{
+    like(
+        exception { $tree->iterate( [] ) },
+        qr/\QThe argument passed to iterate (ARRAY(\E.+\Q)) is not an object or class name/,
+        'calling iterate() with a non object reference fails'
+    );
+
+    {
+        package Foo;
+    }
+    like(
+        exception { $tree->iterate( bless {}, 'Foo' ) },
+        qr/\QThe object or class passed to iterate must implement at least one method of process_empty_record, process_node_record, or process_data_record/,
+        'calling iterate() with a method-less object fails'
+    );
+    like(
+        exception { $tree->iterate('Foo') },
+        qr/\QThe object or class passed to iterate must implement at least one method of process_empty_record, process_node_record, or process_data_record/,
+        'calling iterate() with a method-less class fails'
+    );
+
+    {
+        package Bar;
+        sub process_empty_record { }
+    }
+    is(
+        exception { $tree->iterate(  bless {}, 'Bar' ) },
+       undef,
+        'calling iterate() with a object with process_empty_record method succeeds'
+    );
+
+    is(
+        exception { $tree->iterate('Bar') },
+        undef,
+        'calling iterate() with a class with process_empty_record method succeeds'
+    );
+}
 
 {
     package TreeIterator;
@@ -74,17 +124,6 @@ use MaxMind::DB::Writer::Tree;
 }
 
 {
-    my ( $insert, $expect ) = ranges_to_data(
-        [
-            [ '1.1.1.1', '1.1.1.32' ],
-        ],
-        [
-            [ '1.1.1.1', '1.1.1.32' ],
-        ],
-    );
-
-    my $tree = make_tree_from_pairs($insert);
-
     my $iterator = TreeIterator->new();
     $tree->iterate($iterator);
 

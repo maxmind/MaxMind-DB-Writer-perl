@@ -9,6 +9,13 @@ extern "C" {
 }
 #endif
 
+typedef struct perl_iterator_args_s {
+    SV *empty_method;
+    SV *node_method;
+    SV *data_method;
+    SV *receiver;
+} perl_iterator_args_s;
+
 int call_int_method(SV *self, char *method)
 {
     dSP;
@@ -46,10 +53,12 @@ MMDBW_tree_s *tree_from_self(SV *self)
            SvPV_nolen(*( hv_fetchs((HV *)SvRV(self), "_tree", 0)));
 }
 
-void call_iteration_method(MMDBW_tree_s *tree, char *method,
-                           uint64_t node_number, MMDBW_record_s *record,
-                           uint128_t network, uint8_t depth,
-                           uint128_t next_network, uint8_t next_depth,
+void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
+                           SV *method,
+                           uint64_t node_number,
+                           MMDBW_record_s *record,
+                           mmdbw_uint128_t network, uint8_t depth,
+                           mmdbw_uint128_t next_network, uint8_t next_depth,
                            bool is_right)
 {
     dSP;
@@ -64,7 +73,7 @@ void call_iteration_method(MMDBW_tree_s *tree, char *method,
 
     PUSHMARK(SP);
     EXTEND(SP, stack_size);
-    PUSHs((SV *)tree->iteration_args);
+    PUSHs((SV *)args->receiver);
     PUSHs(sv_2mortal(newSVu64(node_number)));
     PUSHs(sv_2mortal(newSViv((int)is_right)));
     PUSHs(sv_2mortal(newSVu128(network)));
@@ -79,7 +88,7 @@ void call_iteration_method(MMDBW_tree_s *tree, char *method,
     }
     PUTBACK;
 
-    int count = call_method(method, G_VOID);
+    int count = call_sv(method, G_VOID);
 
     SPAGAIN;
 
@@ -94,40 +103,65 @@ void call_iteration_method(MMDBW_tree_s *tree, char *method,
     return;
 }
 
-char *method_for_record_type(int record_type)
+SV *method_for_record_type(perl_iterator_args_s *args, int record_type)
 {
     return MMDBW_RECORD_TYPE_EMPTY == record_type
-           ? "process_empty_record"
+           ? args->empty_method
            : MMDBW_RECORD_TYPE_NODE == record_type
-           ? "process_node_record"
-           : "process_data_record";
+           ? args->node_method
+           : args->data_method;
 }
 
-
 void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                      uint128_t network, uint8_t depth)
+                      mmdbw_uint128_t network,
+                      uint8_t depth)
 {
-    call_iteration_method(tree,
-                          method_for_record_type(node->left_record.type),
-                          node->number,
-                          &(node->left_record),
-                          network,
-                          depth,
-                          network,
-                          depth + 1,
-                          false);
+    perl_iterator_args_s *args = (perl_iterator_args_s *)tree->iteration_args;
+    SV *left_method = method_for_record_type(args, node->left_record.type);
 
-    uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
-    call_iteration_method(tree,
-                          method_for_record_type(node->right_record.type),
-                          node->number,
-                          &(node->right_record),
-                          network,
-                          depth,
-                          FLIP_NETWORK_BIT(network, max_depth0, depth),
-                          depth + 1,
-                          true);
+    if (NULL != left_method) {
+        call_iteration_method(tree,
+                              args,
+                              left_method,
+                              node->number,
+                              &(node->left_record),
+                              network,
+                              depth,
+                              network,
+                              depth + 1,
+                              false);
+    }
+
+    SV *right_method = method_for_record_type(args, node->right_record.type);
+    if (NULL != right_method) {
+        uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
+        call_iteration_method(tree,
+                              args,
+                              right_method,
+                              node->number,
+                              &(node->right_record),
+                              network,
+                              depth,
+                              FLIP_NETWORK_BIT(network, max_depth0, depth),
+                              depth + 1,
+                              true);
+    }
     return;
+}
+
+/* It'd be nice to return the CV instead but there's no exposed API for
+ * calling a CV directly. */
+SV *maybe_method(HV *package, const char *method)
+{
+    GV *gv = gv_fetchmeth_pv_autoload(package, method, -1, 0);
+    if (NULL != gv) {
+        CV *cv = GvCV(gv);
+        if (NULL != cv) {
+            return newRV_noinc((SV *)cv);
+        }
+    }
+
+    return NULL;
 }
 
 /* *INDENT-OFF* */
@@ -197,7 +231,33 @@ iterate(self, object)
     CODE:
         MMDBW_tree_s *tree = tree_from_self(self);
         finalize_tree(tree);
-        tree->iteration_args = (void *)object;
+        HV *package;
+        /* It's a blessed object */
+        if (sv_isobject(object)) {
+            package = SvSTASH(SvRV(object));
+        /* It's a package name */
+        } else if (SvPOK(object) && !SvROK(object)) {
+            package = gv_stashsv(object, 0);
+        } else {
+            croak("The argument passed to iterate (%s) is not an object or class name", SvPV_nolen(object));
+        }
+
+        perl_iterator_args_s args = {
+            .empty_method = maybe_method(package, "process_empty_record"),
+            .node_method = maybe_method(package, "process_node_record"),
+            .data_method = maybe_method(package, "process_data_record"),
+            .receiver = object
+        };
+        if (!(NULL != args.empty_method
+              || NULL != args.node_method
+              || NULL != args.data_method)) {
+
+            croak("The object or class passed to iterate must implement "
+                  "at least one method of process_empty_record, "
+                  "process_node_record, or process_data_record");
+        }
+
+        tree->iteration_args = (void *)&args;
         start_iteration(tree, &call_perl_object);
         tree->iteration_args = NULL;
 
