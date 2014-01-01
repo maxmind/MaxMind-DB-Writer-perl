@@ -197,7 +197,7 @@ my $id = 0;
                 = Net::Works::Address->new_from_string( string => $ip );
             is(
                 $tree->lookup_ip_address($address), 'duplicate',
-               qq{$address data value is 'duplicate' for split count $split_count}
+                qq{$address data value is 'duplicate' for split count $split_count}
             );
         }
 
@@ -318,6 +318,106 @@ my $id = 0;
     );
 }
 
+{
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/24' ) =>
+                { foo => 42 },
+        ],
+        (
+            map { [ $_ => { bar => 84 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.1' => '1.0.0.15'
+                )
+        ),
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
+                { foo => 42 }
+        ],
+        (
+            map { [ $_ => { foo => 42, bar => 84 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.1' => '1.0.0.15'
+                )
+        ),
+        (
+            map { [ $_ => { foo => 42 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.16' => '1.0.0.255'
+                )
+        )
+    );
+
+    _test_tree(
+        \@pairs,
+        \@expect,
+        'data hashes for records are merged on collision - larger net first',
+        { merge_record_collisions => 1 },
+    );
+}
+
+{
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/24' ) =>
+                { foo => 42 },
+        ],
+        (
+            map { [ $_ => { bar => 84 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.1' => '1.0.0.15'
+                )
+        ),
+        (
+            map { [ $_ => { baz => 168 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.9' => '1.0.0.13'
+                )
+        ),
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
+                { foo => 42 }
+        ],
+        (
+            map { [ $_ => { foo => 42, bar => 84 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.1' => '1.0.0.8'
+                )
+        ),
+        (
+            map { [ $_ => { foo => 42, bar => 84, baz => 168 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.9' => '1.0.0.13'
+                )
+        ),
+        (
+            map { [ $_ => { foo => 42, bar => 84 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.14' => '1.0.0.15'
+                )
+        ),
+        (
+            map { [ $_ => { foo => 42 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.16' => '1.0.0.255'
+                )
+        )
+    );
+
+    _test_tree(
+        \@pairs,
+        \@expect,
+        'data hashes for records are merged on repeated collision - larger net first',
+        { merge_record_collisions => 1 },
+    );
+}
+
 done_testing();
 
 sub _test_subnet_permutations {
@@ -370,8 +470,9 @@ sub _test_tree {
     my $insert_pairs = shift;
     my $expect_pairs = shift;
     my $desc         = shift;
+    my $args         = shift;
 
-    my $tree = _make_tree($insert_pairs);
+    my $tree = _make_tree( $insert_pairs, $args );
 
     _test_expected_data( $tree, $expect_pairs, $desc );
 
@@ -391,6 +492,7 @@ sub _test_tree {
 
 sub _make_tree {
     my $pairs = shift;
+    my $args  = shift;
 
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version    => $pairs->[0][0]->version(),
@@ -398,6 +500,7 @@ sub _make_tree {
         database_type => 'Test',
         languages     => ['en'],
         description   => { en => 'Test tree' },
+        %{ $args || {} },
     );
 
     for my $pair ( @{$pairs} ) {

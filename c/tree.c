@@ -36,6 +36,7 @@ LOCAL bool tree_has_network(MMDBW_tree_s *tree, MMDBW_network_s *network);
 LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                                      MMDBW_network_s *network,
                                      MMDBW_record_s *new_record);
+LOCAL void merge_hash(HV *from, HV *to);
 LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                           MMDBW_network_s *network,
                                           int *current_bit,
@@ -68,7 +69,8 @@ LOCAL void *checked_malloc(size_t size);
 /* --prototypes end - don't remove this comment-- */
 /* *INDENT-ON* */
 
-MMDBW_tree_s *new_tree(uint8_t ip_version, uint8_t record_size)
+MMDBW_tree_s *new_tree(uint8_t ip_version, uint8_t record_size,
+                       bool merge_record_collisions)
 {
     MMDBW_tree_s *tree = checked_malloc(sizeof(MMDBW_tree_s));
 
@@ -76,6 +78,7 @@ MMDBW_tree_s *new_tree(uint8_t ip_version, uint8_t record_size)
     tree->ip_version = ip_version;
     /* XXX - check for 24, 28, or 32 */
     tree->record_size = record_size;
+    tree->merge_record_collisions = merge_record_collisions;
     tree->data_hash = newHV();
     tree->last_node = NULL;
     tree->is_finalized = false;
@@ -442,7 +445,18 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         }
     }
 
-    if (MMDBW_RECORD_TYPE_DATA == record_to_set->type) {
+    if (MMDBW_RECORD_TYPE_DATA == record_to_set->type
+        && MMDBW_RECORD_TYPE_DATA == new_record->type) {
+        if (tree->merge_record_collisions) {
+            SV *merged = merge_hashes_for_keys(tree,
+                                               record_to_set->value.key,
+                                               new_record->value.key,
+                                               network);
+            SV *new_key = key_for_data(merged);
+            store_data_in_tree(tree, new_key, merged);
+            new_record->value.key = new_key;
+        }
+
         SvREFCNT_dec(record_to_set->value.key);
     }
 
@@ -452,6 +466,55 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         SvREFCNT_inc(record_to_set->value.key);
     } else if (MMDBW_RECORD_TYPE_NODE == new_record->type) {
         record_to_set->value.node = new_record->value.node;
+    }
+
+    return;
+}
+
+SV *merge_hashes_for_keys(MMDBW_tree_s *tree, SV *key_from, SV *key_into,
+                          MMDBW_network_s *network)
+{
+    SV *data_from = data_for_key(tree, key_from);
+    SV *data_into = data_for_key(tree, key_into);
+
+    if (!(SvROK(data_from) && SvROK(data_into)
+          && SvTYPE(SvRV(data_from)) == SVt_PVHV
+          && SvTYPE(SvRV(data_into)) == SVt_PVHV)) {
+        croak(
+            "Cannot merge data records unless both records are hashes - inserting %s",
+            network->as_string);
+    }
+
+    HV *hash_from = (HV *)SvRV(data_from);
+    HV *hash_into = (HV *)SvRV(data_into);
+    HV *hash_new = newHV();
+
+    merge_hash(hash_into, hash_new);
+    merge_hash(hash_from, hash_new);
+
+    SV *merged_ref = newRV_inc((SV *)hash_new);
+    /* We aren't keeping the original HV * around so we decrement its ref
+     * count. */
+    SvREFCNT_dec(hash_new);
+
+    return merged_ref;
+}
+
+LOCAL void merge_hash(HV *from, HV *to)
+{
+    (void)hv_iterinit(from);
+    HE *he;
+    while (NULL != (he = hv_iternext(from))) {
+        STRLEN key_length;
+        char *key = HePV(he, key_length);
+        U32 hash = HeHASH(he);
+        if (hv_exists(to, key, key_length)) {
+            continue;
+        }
+
+        SV *value = HeVAL(he);
+        SvREFCNT_inc(value);
+        hv_store(to, key, key_length, value, hash);
     }
 
     return;

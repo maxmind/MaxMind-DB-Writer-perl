@@ -149,7 +149,8 @@ _build_tree(self)
 
     CODE:
         RETVAL = new_tree((uint8_t)call_int_method(self, "ip_version"),
-                          (uint8_t)call_int_method(self, "record_size"));
+                          (uint8_t)call_int_method(self, "record_size"),
+                          (bool)call_int_method(self, "merge_record_collisions"));
 
     OUTPUT:
         RETVAL

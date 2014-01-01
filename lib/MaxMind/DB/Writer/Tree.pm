@@ -52,6 +52,12 @@ has ip_version => (
     );
 }
 
+has merge_record_collisions => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0,
+);
+
 has node_count => (
     is       => 'ro',
     init_arg => undef,
