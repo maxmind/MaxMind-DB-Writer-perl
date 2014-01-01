@@ -83,6 +83,7 @@ typedef struct MMDBW_network_s {
     extern SV *data_for_key(MMDBW_tree_s *tree, SV *key);
     extern void free_tree(MMDBW_tree_s *tree);
     extern char *record_type_name(int record_type);
+    extern void dwarn(SV *thing);
     extern void warn_hex(uint8_t digest[16], char *where);
     extern char *md5_as_hex(uint8_t digest[16]);
     /* --prototypes end - don't remove this comment-- */

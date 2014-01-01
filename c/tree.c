@@ -71,7 +71,6 @@ LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               mmdbw_uint128_t UNUSED(network), uint8_t UNUSED(
                                   depth));
 LOCAL SV *key_for_data(SV *data);
-LOCAL void dwarn(SV *thing);
 LOCAL void *checked_malloc(size_t size);
 /* --prototypes end - don't remove this comment-- */
 /* *INDENT-ON* */
@@ -903,7 +902,7 @@ char *record_type_name(int record_type)
 }
 
 static SV *module;
-LOCAL void dwarn(SV *thing)
+void dwarn(SV *thing)
 {
     if (NULL == module) {
         module = newSVpv("Devel::Dwarn", 0);
