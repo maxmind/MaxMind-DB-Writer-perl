@@ -10,11 +10,12 @@ use Data::IEEE754 qw( pack_double_be pack_float_be );
 use Encode qw( encode is_utf8 FB_CROAK );
 use Math::Int128 qw( uint128_to_net );
 use MaxMind::DB::Common 0.031000 qw( %TypeNameToNum );
+use MaxMind::DB::Writer::Util qw( key_for_data );
 
 use Moose;
 use MooseX::StrictConstructor;
 
-with 'MaxMind::DB::Role::Debugs', 'MaxMind::DB::Writer::Role::KeyMaker';
+with 'MaxMind::DB::Role::Debugs';
 
 use constant DEBUG  => $ENV{MAXMIND_DB_SERIALIZER_DEBUG};
 use constant VERIFY => $ENV{MAXMIND_DB_SERIALIZER_VERIFY};
@@ -96,7 +97,7 @@ sub store_data {
     return $self->_store_data( $type, $data, $member_type )
         unless $self->_should_cache_value( $type, $data );
 
-    $key_for_data //= $self->_key_for_data($data);
+    $key_for_data //= key_for_data($data);
 
     $self->_debug_string( 'Cache key', $key_for_data )
         if DEBUG;

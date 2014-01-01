@@ -42,7 +42,8 @@ MMDBW_tree_s *tree_from_self(SV *self)
     /* This is a bit wrong since we're looking in the $self hash
        rather than calling a method. I couldn't get method calling
        to work. */
-    return *(MMDBW_tree_s **)SvPV_nolen(*(hv_fetchs((HV *)SvRV(self), "_tree", 0)));
+    return *(MMDBW_tree_s **)
+           SvPV_nolen(*( hv_fetchs((HV *)SvRV(self), "_tree", 0)));
 }
 
 void call_iteration_method(MMDBW_tree_s *tree, char *method,

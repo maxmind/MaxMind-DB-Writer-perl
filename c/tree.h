@@ -58,6 +58,8 @@ typedef struct MMDBW_network_s {
     uint8_t mask_length;
     uint8_t max_depth0;
     int family;
+    const char *address_string;
+    const char *as_string;
 } MMDBW_network_s;
 
     /* *INDENT-OFF* */

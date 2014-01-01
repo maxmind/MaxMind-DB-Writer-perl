@@ -12,13 +12,12 @@ use MaxMind::DB::Common 0.031003 qw(
 );
 use MaxMind::DB::Metadata;
 use MaxMind::DB::Writer::Serializer;
+use MaxMind::DB::Writer::Util qw( key_for_data );
 use Net::Works 0.16;
 
 use Moose;
 use Moose::Util::TypeConstraints;
 use MooseX::StrictConstructor;
-
-with 'MaxMind::DB::Writer::Role::KeyMaker';
 
 use XSLoader;
 
@@ -142,7 +141,7 @@ sub insert_network {
     $self->_insert_network(
         $network->first()->as_string(),
         $network->mask_length(),
-        $self->_key_for_data($data),
+        key_for_data($data),
         $data,
     );
 
