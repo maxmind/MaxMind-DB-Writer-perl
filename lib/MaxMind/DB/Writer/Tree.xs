@@ -153,7 +153,7 @@ void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
  * calling a CV directly. */
 SV *maybe_method(HV *package, const char *method)
 {
-    GV *gv = gv_fetchmeth_pv_autoload(package, method, -1, 0);
+    GV *gv = gv_fetchmethod_autoload(package, method, 1);
     if (NULL != gv) {
         CV *cv = GvCV(gv);
         if (NULL != cv) {
