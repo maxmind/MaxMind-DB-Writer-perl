@@ -64,7 +64,7 @@ void call_iteration_method(MMDBW_tree_s *tree, char *method,
 
     PUSHMARK(SP);
     EXTEND(SP, stack_size);
-    PUSHs(tree->iteration_receiver);
+    PUSHs((SV *)tree->iteration_args);
     PUSHs(sv_2mortal(newSVu64(node_number)));
     PUSHs(sv_2mortal(newSViv((int)is_right)));
     PUSHs(sv_2mortal(newSVu128(network)));
@@ -197,9 +197,9 @@ iterate(self, object)
     CODE:
         MMDBW_tree_s *tree = tree_from_self(self);
         finalize_tree(tree);
-        tree->iteration_receiver = object;
+        tree->iteration_args = (void *)object;
         start_iteration(tree, &call_perl_object);
-        tree->iteration_receiver = NULL;
+        tree->iteration_args = NULL;
 
 void
 _create_ipv4_aliases(self)

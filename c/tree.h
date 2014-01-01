@@ -48,10 +48,7 @@ typedef struct MMDBW_tree_s {
     MMDBW_node_s *last_node;
     uint32_t node_count;
     bool is_finalized;
-    PerlIO *output_io;
-    SV *root_data_type;
-    SV *serializer;
-    SV *iteration_receiver;
+    void *iteration_args;
 } MMDBW_tree_s;
 
 typedef struct MMDBW_network_s {
