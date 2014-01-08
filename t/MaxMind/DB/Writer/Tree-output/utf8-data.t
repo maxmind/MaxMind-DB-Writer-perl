@@ -7,8 +7,7 @@ use Test::Requires (
     'MaxMind::DB::Reader' => 0.040000,
 );
 
-use MaxMind::DB::Writer::Tree::InMemory;
-use MaxMind::DB::Writer::Tree::File;
+use MaxMind::DB::Writer::Tree;
 
 use Encode ();
 use File::Temp qw( tempdir );
@@ -54,23 +53,8 @@ my $utf8_string = "\x{4eba}";
 done_testing();
 
 sub _write_tree {
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 4 );
-
-    my $subnet = Net::Works::Network->new_from_string(
-        string  => '1.2.3.0/24',
-        version => 4,
-    );
-
-    $tree->insert_subnet(
-        $subnet,
-        {
-            subnet => $subnet->as_string(),
-            string => $utf8_string,
-        },
-    );
-
-    my $writer = MaxMind::DB::Writer::Tree::File->new(
-        tree          => $tree,
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version    => 4,
         record_size   => 24,
         database_type => 'Test',
         languages     => [ 'en', 'zh' ],
@@ -78,14 +62,26 @@ sub _write_tree {
             en => 'Test Database',
             zh => 'Test Database Chinese',
         },
-        ip_version            => 4,
         map_key_type_callback => sub { 'utf8_string' },
+    );
+
+    my $subnet = Net::Works::Network->new_from_string(
+        string  => '1.2.3.0/24',
+        version => 4,
+    );
+
+    $tree->insert_network(
+        $subnet,
+        {
+            subnet => $subnet->as_string(),
+            string => $utf8_string,
+        },
     );
 
     my $filename = $tempdir . "/Test-utf8-string.mmdb";
     open my $fh, '>', $filename;
 
-    $writer->write_tree($fh);
+    $tree->write_tree($fh);
 
     return $filename;
 }

@@ -28,9 +28,13 @@ my $last_short_string = 'another short string';
 $serializer->store_data( utf8_string => $last_short_string );
 my $large_pointer = $serializer->store_data( utf8_string => $last_short_string );
 
-open my $fh, '<:raw', $serializer->buffer();
+my $buffer = $serializer->buffer();
+open my $fh, '<:raw', $buffer;
 
-my $decoder = MaxMind::DB::Reader::Decoder->new( data_source => $fh );
+my $decoder = MaxMind::DB::Reader::Decoder->new(
+    data_source       => $fh,
+    _data_source_size => bytes::length( ${$buffer} ),
+);
 
 {
     is(

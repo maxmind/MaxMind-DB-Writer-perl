@@ -7,8 +7,7 @@ use Test::Requires (
     'MaxMind::DB::Reader' => 0.040000,
 );
 
-use MaxMind::DB::Writer::Tree::InMemory;
-use MaxMind::DB::Writer::Tree::File;
+use MaxMind::DB::Writer::Tree;
 
 use File::Temp qw( tempdir );
 use Net::Works::Network;
@@ -16,7 +15,7 @@ use Net::Works::Network;
 my $tempdir = tempdir( CLEANUP => 1 );
 
 {
-    my ( $tree, $filename ) = _write_tree();
+    my $filename = _write_tree();
 
     my $reader = MaxMind::DB::Reader->new( file => $filename );
 
@@ -55,7 +54,18 @@ my $tempdir = tempdir( CLEANUP => 1 );
 done_testing();
 
 sub _write_tree {
-    my $tree = MaxMind::DB::Writer::Tree::InMemory->new( ip_version => 6 );
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version    => 6,
+        record_size   => 24,
+        database_type => 'Test',
+        languages     => [ 'en', 'zh' ],
+        description   => {
+            en => 'Test Database',
+            zh => 'Test Database Chinese',
+        },
+        alias_ipv6_to_ipv4    => 1,
+        map_key_type_callback => sub { 'utf8_string' },
+    );
 
     # Note: we don't want all of the alias nodes (::ffff:0.0.0.0 and 2002::)
     # to have adjacent nodes with data, as we want to make sure that the
@@ -71,30 +81,16 @@ sub _write_tree {
     );
 
     for my $net (@subnets) {
-        $tree->insert_subnet(
+        $tree->insert_network(
             $net,
             { subnet => $net->as_string() },
         );
     }
 
-    my $writer = MaxMind::DB::Writer::Tree::File->new(
-        tree          => $tree,
-        record_size   => 24,
-        database_type => 'Test',
-        languages     => [ 'en', 'zh' ],
-        description   => {
-            en => 'Test Database',
-            zh => 'Test Database Chinese',
-        },
-        ip_version            => 6,
-        alias_ipv6_to_ipv4    => 1,
-        map_key_type_callback => sub { 'utf8_string' },
-    );
-
     my $filename = $tempdir . "/Test-ipv6-alias.mmdb";
     open my $fh, '>', $filename;
 
-    $writer->write_tree($fh);
+    $tree->write_tree($fh);
 
-    return ( $tree, $filename );
+    return $filename;
 }
