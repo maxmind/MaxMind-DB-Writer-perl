@@ -606,17 +606,14 @@ LOCAL MMDBW_node_s *return_null(
 
 LOCAL MMDBW_node_s *make_next_node(MMDBW_tree_s *tree, MMDBW_record_s *record)
 {
-    MMDBW_node_s *next_node;
+    MMDBW_node_s *next_node = new_node(tree);
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
-        next_node = new_node(tree);
         next_node->left_record.type = MMDBW_RECORD_TYPE_DATA;
         next_node->left_record.value.key = record->value.key;
         SvREFCNT_inc(record->value.key);
         next_node->right_record.type = MMDBW_RECORD_TYPE_DATA;
         next_node->right_record.value.key = record->value.key;
         SvREFCNT_inc(record->value.key);
-    } else {
-        next_node = new_node(tree);
     }
 
     return next_node;
