@@ -1,0 +1,18 @@
+NAME
+    MaxMind::DB::Writer - Create MaxMind DB files
+
+VERSION
+    version 0.050001
+
+AUTHORS
+    *   Dave Rolsky <autarch@urth.org>
+
+    *   Olaf Alders <olaf@wundercounter.com>
+
+COPYRIGHT AND LICENSE
+    This software is Copyright (c) 2014 by MaxMind, Inc..
+
+    This is free software, licensed under:
+
+      The Artistic License 2.0 (GPL Compatible)
+
