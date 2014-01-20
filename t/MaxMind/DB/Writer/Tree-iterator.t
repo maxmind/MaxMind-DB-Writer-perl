@@ -19,11 +19,11 @@ my ( $insert, $expect ) = ranges_to_data(
     ],
 );
 
-my $tree = make_tree_from_pairs($insert);
+my $basic_tree = make_tree_from_pairs($insert);
 
 {
     like(
-        exception { $tree->iterate( [] ) },
+        exception { $basic_tree->iterate( [] ) },
         qr/\QThe argument passed to iterate (ARRAY(\E.+\Q)) is not an object or class name/,
         'calling iterate() with a non object reference fails'
     );
@@ -32,12 +32,12 @@ my $tree = make_tree_from_pairs($insert);
         package Foo;
     }
     like(
-        exception { $tree->iterate( bless {}, 'Foo' ) },
+        exception { $basic_tree->iterate( bless {}, 'Foo' ) },
         qr/\QThe object or class passed to iterate must implement at least one method of process_empty_record, process_node_record, or process_data_record/,
         'calling iterate() with a method-less object fails'
     );
     like(
-        exception { $tree->iterate('Foo') },
+        exception { $basic_tree->iterate('Foo') },
         qr/\QThe object or class passed to iterate must implement at least one method of process_empty_record, process_node_record, or process_data_record/,
         'calling iterate() with a method-less class fails'
     );
@@ -47,13 +47,13 @@ my $tree = make_tree_from_pairs($insert);
         sub process_empty_record { }
     }
     is(
-        exception { $tree->iterate(  bless {}, 'Bar' ) },
-       undef,
+        exception { $basic_tree->iterate( bless {}, 'Bar' ) },
+        undef,
         'calling iterate() with an object with only a process_empty_record method succeeds'
     );
 
     is(
-        exception { $tree->iterate('Bar') },
+        exception { $basic_tree->iterate('Bar') },
         undef,
         'calling iterate() with a class with process_empty_record method succeeds'
     );
@@ -63,7 +63,10 @@ my $tree = make_tree_from_pairs($insert);
     package TreeIterator;
 
     sub new {
-        bless {}, shift;
+        my $class      = shift;
+        my $ip_version = shift;
+
+        return bless { ip_version => $ip_version }, $class;
     }
 
     sub process_node_record {
@@ -75,6 +78,8 @@ my $tree = make_tree_from_pairs($insert);
         my $next_ip_num     = shift;
         my $next_netmask    = shift;
         my $next_node_num   = shift;
+
+        $self->_saw_network( $current_ip_num, $current_netmask, 'node' );
 
         $self->_saw_record( $node_num, $dir );
 
@@ -89,6 +94,8 @@ my $tree = make_tree_from_pairs($insert);
         my $current_netmask = shift;
         my $next_ip_num     = shift;
         my $next_netmask    = shift;
+
+        $self->_saw_network( $current_ip_num, $current_netmask, 'empty' );
 
         $self->_saw_record( $node_num, $dir );
 
@@ -105,11 +112,28 @@ my $tree = make_tree_from_pairs($insert);
         my $next_netmask    = shift;
         my $value           = shift;
 
+        $self->_saw_network( $current_ip_num, $current_netmask, 'data' );
+
         $self->_saw_record( $node_num, $dir );
 
         push @{ $self->{values} }, $value;
 
         return;
+    }
+
+    sub _saw_network {
+        my $self    = shift;
+        my $ip_num  = shift;
+        my $netmask = shift;
+        my $type    = shift;
+
+        my $network = Net::Works::Network->new_from_integer(
+            integer     => $ip_num,
+            mask_length => $netmask,
+            version     => $self->{ip_version},
+        );
+
+        $self->{networks}{ $network->as_string() }++;
     }
 
     sub _saw_record {
@@ -124,24 +148,10 @@ my $tree = make_tree_from_pairs($insert);
 }
 
 {
-    my $iterator = TreeIterator->new();
-    $tree->iterate($iterator);
+    my $iterator = TreeIterator->new(4);
+    $basic_tree->iterate($iterator);
 
-    ok(
-        ( all { $_ == 1 } values %{ $iterator->{nodes} } ),
-        'each node was visited exactly once'
-    );
-
-    ok(
-        ( all { $_ == 1 } values %{ $iterator->{records} } ),
-        'each record was visited exactly once'
-    );
-
-    is(
-        scalar values %{ $iterator->{records} },
-        $tree->node_count() * 2,
-        'saw every record for every node in the tree'
-    );
+    _test_iterator_sanity( $iterator, $basic_tree, 'basic tree' );
 
     is_deeply(
         [ sort { $a->{id} <=> $b->{id} } @{ $iterator->{values} } ],
@@ -152,4 +162,54 @@ my $tree = make_tree_from_pairs($insert);
     );
 }
 
+{
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version         => 6,
+        record_size        => 24,
+        database_type      => 'Test',
+        languages          => ['en'],
+        description        => { en => 'Test tree' },
+        alias_ipv6_to_ipv4 => 1,
+    );
+
+    $tree->insert_network(
+        Net::Works::Network->new_from_string( string => '::1.0.0.0/120' ),
+        { foo => 42 },
+    );
+
+    $tree->_create_ipv4_aliases();
+
+    my $iterator = TreeIterator->new(6);
+    $tree->iterate($iterator);
+
+    _test_iterator_sanity( $iterator, $tree, 'aliased tree' );
+}
+
 done_testing();
+
+sub _test_iterator_sanity {
+    my $iterator = shift;
+    my $tree     = shift;
+    my $desc     = shift;
+
+    ok(
+        ( all { $_ == 1 } values %{ $iterator->{nodes} } ),
+        "each node was visited exactly once - $desc"
+    );
+
+    ok(
+        ( all { $_ == 1 } values %{ $iterator->{records} } ),
+        "each record was visited exactly once - $desc"
+    );
+
+    ok(
+        ( all { $_ == 2 } values %{ $iterator->{networks} } ),
+        "each network was visited exactly twice (two records per node) - $desc"
+    );
+
+    is(
+        scalar values %{ $iterator->{records} },
+        $tree->node_count() * 2,
+        "saw every record for every node in the tree - $desc"
+    );
+}
