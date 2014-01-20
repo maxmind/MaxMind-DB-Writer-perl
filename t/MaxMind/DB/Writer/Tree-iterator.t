@@ -49,7 +49,7 @@ my $tree = make_tree_from_pairs($insert);
     is(
         exception { $tree->iterate(  bless {}, 'Bar' ) },
        undef,
-        'calling iterate() with a object with process_empty_record method succeeds'
+        'calling iterate() with an object with only a process_empty_record method succeeds'
     );
 
     is(
