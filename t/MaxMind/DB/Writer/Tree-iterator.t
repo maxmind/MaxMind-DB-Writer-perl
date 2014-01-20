@@ -70,16 +70,16 @@ my $basic_tree = make_tree_from_pairs($insert);
     }
 
     sub process_node_record {
-        my $self            = shift;
-        my $node_num        = shift;
-        my $dir             = shift;
-        my $current_ip_num  = shift;
-        my $current_netmask = shift;
-        my $next_ip_num     = shift;
-        my $next_netmask    = shift;
-        my $next_node_num   = shift;
+        my $self               = shift;
+        my $node_num           = shift;
+        my $dir                = shift;
+        my $node_ip_num        = shift;
+        my $node_mask_length   = shift;
+        my $record_ip_num      = shift;
+        my $record_mask_length = shift;
+        my $record_node_num    = shift;
 
-        $self->_saw_network( $current_ip_num, $current_netmask, 'node' );
+        $self->_saw_network( $node_ip_num, $node_mask_length, 'node' );
 
         $self->_saw_record( $node_num, $dir );
 
@@ -87,15 +87,15 @@ my $basic_tree = make_tree_from_pairs($insert);
     }
 
     sub process_empty_record {
-        my $self            = shift;
-        my $node_num        = shift;
-        my $dir             = shift;
-        my $current_ip_num  = shift;
-        my $current_netmask = shift;
-        my $next_ip_num     = shift;
-        my $next_netmask    = shift;
+        my $self               = shift;
+        my $node_num           = shift;
+        my $dir                = shift;
+        my $node_ip_num        = shift;
+        my $node_mask_length   = shift;
+        my $record_ip_num      = shift;
+        my $record_mask_length = shift;
 
-        $self->_saw_network( $current_ip_num, $current_netmask, 'empty' );
+        $self->_saw_network( $node_ip_num, $node_mask_length, 'empty' );
 
         $self->_saw_record( $node_num, $dir );
 
@@ -103,16 +103,16 @@ my $basic_tree = make_tree_from_pairs($insert);
     }
 
     sub process_data_record {
-        my $self            = shift;
-        my $node_num        = shift;
-        my $dir             = shift;
-        my $current_ip_num  = shift;
-        my $current_netmask = shift;
-        my $next_ip_num     = shift;
-        my $next_netmask    = shift;
-        my $value           = shift;
+        my $self               = shift;
+        my $node_num           = shift;
+        my $dir                = shift;
+        my $node_ip_num        = shift;
+        my $node_mask_length   = shift;
+        my $record_ip_num      = shift;
+        my $record_mask_length = shift;
+        my $value              = shift;
 
-        $self->_saw_network( $current_ip_num, $current_netmask, 'data' );
+        $self->_saw_network( $node_ip_num, $node_mask_length, 'data' );
 
         $self->_saw_record( $node_num, $dir );
 
@@ -122,14 +122,14 @@ my $basic_tree = make_tree_from_pairs($insert);
     }
 
     sub _saw_network {
-        my $self    = shift;
-        my $ip_num  = shift;
-        my $netmask = shift;
-        my $type    = shift;
+        my $self        = shift;
+        my $ip_num      = shift;
+        my $mask_length = shift;
+        my $type        = shift;
 
         my $network = Net::Works::Network->new_from_integer(
             integer     => $ip_num,
-            mask_length => $netmask,
+            mask_length => $mask_length,
             version     => $self->{ip_version},
         );
 

@@ -29,21 +29,21 @@ has _labels => (
 );
 
 sub process_node_record {
-    my $self            = shift;
-    my $node_num        = shift;
-    my $dir             = shift;
-    my $current_ip_num  = shift;
-    my $current_netmask = shift;
-    my $next_ip_num     = shift;
-    my $next_netmask    = shift;
-    my $next_node_num   = shift;
+    my $self               = shift;
+    my $node_num           = shift;
+    my $dir                = shift;
+    my $node_ip_num        = shift;
+    my $node_mask_length   = shift;
+    my $record_ip_num      = shift;
+    my $record_mask_length = shift;
+    my $record_node_num    = shift;
 
     $self->graph()->add_edge(
         from => $self->_label_for_node(
-            $node_num, $current_ip_num, $current_netmask
+            $node_num, $node_ip_num, $node_mask_length
         ),
         to => $self->_label_for_node(
-            $next_node_num, $next_ip_num, $next_netmask
+            $record_node_num, $record_ip_num, $record_mask_length
         ),
         label => ( $dir ? 'RIGHT' : 'LEFT' ),
     );
@@ -56,18 +56,20 @@ sub process_empty_record {
 }
 
 sub process_data_record {
-    my $self            = shift;
-    my $node_num        = shift;
-    my $dir             = shift;
-    my $current_ip_num  = shift;
-    my $current_netmask = shift;
-    my $next_ip_num     = shift;
-    my $next_netmask    = shift;
-    my $value           = shift;
+    my $self               = shift;
+    my $node_num           = shift;
+    my $dir                = shift;
+    my $node_ip_num        = shift;
+    my $node_mask_length   = shift;
+    my $record_ip_num      = shift;
+    my $record_mask_length = shift;
+    my $value              = shift;
 
     $self->graph()->add_edge(
-        from => $self->_label_for_node( $node_num, $current_ip_num, $current_netmask ),
-        to => $self->_network( $next_ip_num, $next_netmask ) . ' = '
+        from => $self->_label_for_node(
+            $node_num, $node_ip_num, $node_mask_length
+        ),
+        to => $self->_network( $record_ip_num, $record_mask_length ) . ' = '
             . quotemeta( Dumper($value) ),
         label => ( $dir ? 'RIGHT' : 'LEFT' ),
     );
@@ -76,12 +78,12 @@ sub process_data_record {
 }
 
 sub _label_for_node {
-    my $self     = shift;
-    my $node_num = shift;
-    my $ip_num   = shift;
-    my $netmask  = shift;
+    my $self        = shift;
+    my $node_num    = shift;
+    my $ip_num      = shift;
+    my $mask_length = shift;
 
-    my $network = $self->_network( $ip_num, $netmask );
+    my $network = $self->_network( $ip_num, $mask_length );
 
     return $self->_labels()->{$node_num} //=
           "Node $node_num - "
@@ -91,13 +93,13 @@ sub _label_for_node {
 }
 
 sub _network {
-    my $self    = shift;
-    my $ip_num  = shift;
-    my $netmask = shift;
+    my $self        = shift;
+    my $ip_num      = shift;
+    my $mask_length = shift;
 
     return Net::Works::Network->new_from_integer(
         integer     => $ip_num,
-        mask_length => $netmask,
+        mask_length => $mask_length,
         version     => $self->ip_version(),
     );
 }

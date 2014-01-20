@@ -57,8 +57,10 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
                            SV *method,
                            uint64_t node_number,
                            MMDBW_record_s *record,
-                           mmdbw_uint128_t network, uint8_t depth,
-                           mmdbw_uint128_t next_network, uint8_t next_depth,
+                           mmdbw_uint128_t node_ip_num,
+                           uint8_t node_mask_length,
+                           mmdbw_uint128_t record_ip_num,
+                           uint8_t record_mask_length,
                            bool is_right)
 {
     dSP;
@@ -76,10 +78,10 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     PUSHs((SV *)args->receiver);
     PUSHs(sv_2mortal(newSVu64(node_number)));
     PUSHs(sv_2mortal(newSViv((int)is_right)));
-    PUSHs(sv_2mortal(newSVu128(network)));
-    PUSHs(sv_2mortal(newSViv(depth)));
-    PUSHs(sv_2mortal(newSVu128(next_network)));
-    PUSHs(sv_2mortal(newSViv(next_depth)));
+    PUSHs(sv_2mortal(newSVu128(node_ip_num)));
+    PUSHs(sv_2mortal(newSViv(node_mask_length)));
+    PUSHs(sv_2mortal(newSVu128(record_ip_num)));
+    PUSHs(sv_2mortal(newSViv(record_mask_length)));
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
         PUSHs(sv_2mortal(newSVsv(
                              data_for_key(tree, record->value.key))));
@@ -113,8 +115,7 @@ SV *method_for_record_type(perl_iterator_args_s *args, int record_type)
 }
 
 void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                      mmdbw_uint128_t network,
-                      uint8_t depth)
+                      mmdbw_uint128_t node_ip_num, uint8_t node_mask_length)
 {
     perl_iterator_args_s *args = (perl_iterator_args_s *)tree->iteration_args;
     SV *left_method = method_for_record_type(args, node->left_record.type);
@@ -125,10 +126,10 @@ void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               left_method,
                               node->number,
                               &(node->left_record),
-                              network,
-                              depth,
-                              network,
-                              depth + 1,
+                              node_ip_num,
+                              node_mask_length,
+                              node_ip_num,
+                              node_mask_length + 1,
                               false);
     }
 
@@ -140,10 +141,11 @@ void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               right_method,
                               node->number,
                               &(node->right_record),
-                              network,
-                              depth,
-                              FLIP_NETWORK_BIT(network, max_depth0, depth),
-                              depth + 1,
+                              node_ip_num,
+                              node_mask_length,
+                              FLIP_NETWORK_BIT(node_ip_num, max_depth0,
+                                               node_mask_length),
+                              node_mask_length + 1,
                               true);
     }
     return;
