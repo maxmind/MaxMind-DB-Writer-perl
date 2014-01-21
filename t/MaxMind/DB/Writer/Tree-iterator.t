@@ -116,7 +116,11 @@ my $basic_tree = make_tree_from_pairs($insert);
 
         $self->_saw_record( $node_num, $dir );
 
-        push @{ $self->{values} }, $value;
+        push @{ $self->{data_records} },
+            [
+            $self->_nw_network( $record_ip_num, $record_mask_length ),
+            $value,
+            ];
 
         return;
     }
@@ -127,11 +131,7 @@ my $basic_tree = make_tree_from_pairs($insert);
         my $mask_length = shift;
         my $type        = shift;
 
-        my $network = Net::Works::Network->new_from_integer(
-            integer     => $ip_num,
-            mask_length => $mask_length,
-            version     => $self->{ip_version},
-        );
+        my $network = $self->_nw_network( $ip_num, $mask_length );
 
         $self->{networks}{ $network->as_string() }++;
     }
@@ -145,6 +145,18 @@ my $basic_tree = make_tree_from_pairs($insert);
 
         return;
     }
+
+    sub _nw_network {
+        my $self        = shift;
+        my $ip_num      = shift;
+        my $mask_length = shift;
+
+        return Net::Works::Network->new_from_integer(
+            integer     => $ip_num,
+            mask_length => $mask_length,
+            version     => $self->{ip_version},
+        );
+    }
 }
 
 {
@@ -154,27 +166,39 @@ my $basic_tree = make_tree_from_pairs($insert);
     _test_iterator_sanity( $iterator, $basic_tree, 'basic tree' );
 
     is_deeply(
-        [ sort { $a->{id} <=> $b->{id} } @{ $iterator->{values} } ],
         [
-            sort { $a->{id} <=> $b->{id} } map { $_->[1] } @{$expect}
+            sort { $a->{id} <=> $b->{id} }
+            map  { $_->[1] } @{ $iterator->{data_records} }
         ],
-        'saw expected values for records'
+        [ sort { $a->{id} <=> $b->{id} } map { $_->[1] } @{$expect} ],
+        'saw expected data records - basic tree'
+    );
+
+    my @data_record_networks = qw(
+        1.1.1.1/32
+        1.1.1.2/31
+        1.1.1.4/30
+        1.1.1.8/29
+        1.1.1.16/28
+        1.1.1.32/32
+    );
+
+    is_deeply(
+        [ sort map { "$_->[0]" } @{ $iterator->{data_records} } ],
+        [ sort @data_record_networks ],
+        'saw the expected networks for data records - basic tree'
     );
 }
 
 {
-    my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version         => 6,
-        record_size        => 24,
-        database_type      => 'Test',
-        languages          => ['en'],
-        description        => { en => 'Test tree' },
-        alias_ipv6_to_ipv4 => 1,
-    );
-
-    $tree->insert_network(
-        Net::Works::Network->new_from_string( string => '::1.0.0.0/120' ),
-        { foo => 42 },
+    my $tree = make_tree_from_pairs(
+        [
+            map {
+                [ Net::Works::Network->new_from_string( string => $_ ) =>
+                        { foo => 42 } ]
+            } qw( ::1.0.0.0/120 2003::/96 abcd::1000/116 )
+        ],
+        { alias_ipv6_to_ipv4 => 1 },
     );
 
     $tree->_create_ipv4_aliases();
@@ -183,6 +207,18 @@ my $basic_tree = make_tree_from_pairs($insert);
     $tree->iterate($iterator);
 
     _test_iterator_sanity( $iterator, $tree, 'aliased tree' );
+
+    my @data_record_networks = qw(
+        ::1.0.0.0/120
+        2003::/96
+        abcd::1000/116
+    );
+
+    is_deeply(
+        [ sort map { "$_->[0]" } @{ $iterator->{data_records} } ],
+        [ sort @data_record_networks ],
+        'saw the expected networks for data records - aliased tree'
+    );
 }
 
 done_testing();
