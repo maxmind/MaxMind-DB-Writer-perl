@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Data::Dumper::Concise;
+use Digest::MD5 qw( md5_hex );
 use GraphViz2;
 use Net::Works::Network 0.16;
 
@@ -13,6 +14,12 @@ has ip_version => (
     is       => 'ro',
     isa      => 'Int',
     required => 1,
+);
+
+has show_full_data_record => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0,
 );
 
 has graph => (
@@ -70,7 +77,7 @@ sub process_data_record {
             $node_num, $node_ip_num, $node_mask_length
         ),
         to => $self->_network( $record_ip_num, $record_mask_length ) . ' = '
-            . quotemeta( Dumper($value) ),
+            . $self->_data_record_representation($value),
         label => ( $dir ? 'RIGHT' : 'LEFT' ),
     );
 
@@ -90,6 +97,18 @@ sub _label_for_node {
         . $network->as_string() . ' ('
         . $network->first()->as_string . ' - '
         . $network->last()->as_string() . ')';
+}
+
+sub _data_record_representation {
+    my $self  = shift;
+    my $value = shift;
+
+    if ( $self->show_full_data_record() ) {
+        return quotemeta( Dumper($value) );
+    }
+    else {
+        return md5_hex( Dumper($value) );
+    }
 }
 
 sub _network {
