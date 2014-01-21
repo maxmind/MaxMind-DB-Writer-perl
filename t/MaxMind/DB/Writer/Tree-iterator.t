@@ -9,8 +9,6 @@ use Test::MaxMind::DB::Writer
 use Test::MaxMind::DB::Writer::Iterator;
 use Test::More;
 
-use List::Util qw( all );
-
 my ( $insert, $expect ) = ranges_to_data(
     [
         [ '1.1.1.1', '1.1.1.32' ],
