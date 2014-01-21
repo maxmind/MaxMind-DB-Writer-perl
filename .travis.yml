@@ -10,7 +10,7 @@ before_install:
    - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=j10:c HARNESS_TIMER=1 SKIP_POD_LINKCHECK=1
 
 install:
-   - cpanm --quiet --notest --skip-satisfied Dist::Zilla~5 Dist::Zilla::Plugin::PodWeaver Dist::Zilla::PluginBundle::ROKR Pod::Coverage::Moose Pod::Weaver::Section::Contributors Test::NoTabs Test::Spelling
+   - cpanm --quiet --notest --skip-satisfied Dist::Zilla~5 Dist::Zilla::Plugin::PodWeaver Dist::Zilla::PluginBundle::ROKR Pod::Coverage::Moose Pod::Weaver::Section::Contributors Test::NoTabs Test::Spelling JSON
    - git clone --branch=master git://github.com/maxmind/MaxMind-DB-Common-perl.git common
    - cd common
    - "dzil authordeps --missing | xargs -n 5 -P 10 cpanm --quiet --notest"
