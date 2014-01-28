@@ -91,6 +91,8 @@ sub store_data {
     confess 'Cannot store an undef as data'
         unless defined $data;
 
+    $self->_debug_newline()
+        if DEBUG;
     $self->_debug_string( 'Storing type', $type )
         if DEBUG;
 
