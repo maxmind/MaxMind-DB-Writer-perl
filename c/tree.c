@@ -793,6 +793,8 @@ void start_iteration(MMDBW_tree_s *tree,
 
     iterate_tree(tree, tree->root_node, seen_nodes, network, depth, callback);
 
+    SvREFCNT_dec((SV *)seen_nodes);
+
     return;
 }
 
