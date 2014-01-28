@@ -26,6 +26,7 @@ typedef struct encode_args_s {
     PerlIO *output_io;
     SV *root_data_type;
     SV *serializer;
+    HV *data_pointer_cache;
 } encode_args_s;
 
 /* *INDENT-OFF* */
@@ -665,14 +666,19 @@ void write_search_tree(MMDBW_tree_s *tree, SV *output, bool alias_ipv6,
      * pointers we can't easily pass different params to different
      * callbacks. */
     encode_args_s args = {
-        .output_io      = IoOFP(sv_2io(output)),
-        .root_data_type = root_data_type,
-        .serializer     = serializer,
+        .output_io          = IoOFP(sv_2io(output)),
+        .root_data_type     = root_data_type,
+        .serializer         = serializer,
+        .data_pointer_cache = newHV()
     };
 
     tree->iteration_args = (void *)&args;
 
     start_iteration(tree, &encode_node);
+
+    /* When the hash is _freed_, Perl decrements the ref count for each value
+     * so we don't need to mess with them. */
+    SvREFCNT_dec((SV *)args.data_pointer_cache);
 
     return;
 }
@@ -720,6 +726,13 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
     } else if (MMDBW_RECORD_TYPE_NODE == record->type) {
         return record->value.node->number;
     } else {
+        HE *cache_record =
+            hv_fetch_ent(args->data_pointer_cache, record->value.key,
+                         0, 0);
+        if (cache_record) {
+            return SvIV(HeVAL(cache_record));
+        }
+
         dSP;
         ENTER;
         SAVETMPS;
@@ -752,7 +765,15 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
         FREETMPS;
         LEAVE;
 
-        return position + tree->node_count + DATA_SECTION_SEPARATOR_SIZE;
+        uint32_t data_pointer = position + tree->node_count +
+                                DATA_SECTION_SEPARATOR_SIZE;
+
+        /* We will decrement the ref count for these values after we're done
+         * iterating through the tree */
+        SV *value = newSViv(data_pointer);
+        hv_store_ent(args->data_pointer_cache, record->value.key, value, 0);
+
+        return data_pointer;
     }
 }
 
