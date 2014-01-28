@@ -23,7 +23,7 @@ use constant VERIFY => $ENV{MAXMIND_DB_SERIALIZER_VERIFY};
 if (VERIFY) {
     require MaxMind::DB::Reader::Decoder;
     require Test::Deep::NoTest;
-    Test::Deep::NoTest->import(qw( cmp_details deep_diag));
+    Test::Deep::NoTest->import(qw( cmp_details deep_diag ));
 }
 
 binmode STDERR, ':utf8'
