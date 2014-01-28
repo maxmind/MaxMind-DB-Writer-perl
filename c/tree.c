@@ -819,7 +819,7 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
 
     callback(tree, node, network, depth);
 
-    (void)hv_store(seen_nodes, key, strlen(key), newSViv(1), 0);
+    (void)hv_store(seen_nodes, key, strlen(key), &PL_sv_undef, 0);
 
     uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
     if (MMDBW_RECORD_TYPE_NODE == node->left_record.type) {
