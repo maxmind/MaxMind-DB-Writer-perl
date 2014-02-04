@@ -1,0 +1,67 @@
+use strict;
+use warnings;
+use autodie;
+
+use v5.16;
+
+use Math::Int128 qw( uint128 );
+use MaxMind::DB::Writer::Tree;
+use Memory::Stats;
+use Net::Works::Network;
+use Number::Format qw( format_bytes );
+
+my $ipv6_offset = uint128('0xA000_0000_0000_0000_0000_0000_0000_0000');
+
+my $loops = 50000;
+
+sub main {
+    my $stats = Memory::Stats->new();
+    $stats->start();
+
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version            => 6,
+        database_type         => 'Test',
+        description           => { en => 'Test' },
+        languages             => ['en'],
+        map_key_type_callback => sub { 'utf8_string' },
+        record_size           => 24,
+        alias_ipv6_to_ipv4    => 1,
+    );
+
+    for my $int ( 1 .. $loops ) {
+        my $ipv4 = Net::Works::Network->new_from_integer(
+            integer     => $int,
+            mask_length => 128,
+            version     => 6,
+        );
+
+        $tree->insert_network(
+            $ipv4 => {
+                ipv4_key1 => $int,
+                ipv4_key2 => { nested => "Foo $int ipv4" },
+            },
+        );
+
+        my $ipv6 = Net::Works::Network->new_from_integer(
+            integer     => $int + $ipv6_offset,
+            mask_length => 128,
+        );
+
+        $tree->insert_network(
+            $ipv6 => {
+                ipv6_key1 => $int,
+                ipv6_key2 => { nested => "Foo $int ipv6" },
+            },
+        );
+    }
+
+    open my $fh, '>', '/dev/null';
+    $tree->write_tree($fh);
+    close $fh;
+
+    $stats->stop();
+
+    say 'Memory used: ', format_bytes( $stats->get_memory_usage() );
+}
+
+main();
