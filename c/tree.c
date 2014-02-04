@@ -61,7 +61,6 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                                       encode_args_s *args);
 LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
-                        HV *seen_nodes,
                         mmdbw_uint128_t network,
                         uint8_t depth,
                         void(callback) (MMDBW_tree_s * tree,
@@ -389,10 +388,10 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
         MMDBW_node_s *last_node_for_alias = find_node_for_network(
             tree, &alias_network, &current_bit, &make_next_node);
         if (NETWORK_BIT_VALUE(&alias_network, current_bit)) {
-            last_node_for_alias->right_record.type = MMDBW_RECORD_TYPE_NODE;
+            last_node_for_alias->right_record.type = MMDBW_RECORD_TYPE_ALIAS;
             last_node_for_alias->right_record.value.node = ipv4_root_node;
         } else {
-            last_node_for_alias->left_record.type = MMDBW_RECORD_TYPE_NODE;
+            last_node_for_alias->left_record.type = MMDBW_RECORD_TYPE_ALIAS;
             last_node_for_alias->left_record.value.node = ipv4_root_node;
         }
     }
@@ -469,7 +468,8 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
     if (MMDBW_RECORD_TYPE_DATA == new_record->type) {
         record_to_set->value.key = new_record->value.key;
         SvREFCNT_inc(record_to_set->value.key);
-    } else if (MMDBW_RECORD_TYPE_NODE == new_record->type) {
+    } else if (MMDBW_RECORD_TYPE_NODE == new_record->type ||
+               MMDBW_RECORD_TYPE_ALIAS == new_record->type) {
         record_to_set->value.node = new_record->value.node;
     }
 
@@ -541,9 +541,10 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, char *ipstr)
         record_for_address = node_for_address->left_record;
     }
 
-    if (MMDBW_RECORD_TYPE_NODE == record_for_address.type) {
+    if (MMDBW_RECORD_TYPE_NODE == record_for_address.type ||
+        MMDBW_RECORD_TYPE_ALIAS == record_for_address.type) {
         croak(
-            "WTF - found a node record for an address lookup - %s - current_bit = %i",
+            "WTF - found a node or alias record for an address lookup - %s - current_bit = %i",
             ipstr, current_bit);
         return &PL_sv_undef;
     } else if (MMDBW_RECORD_TYPE_EMPTY == record_for_address.type) {
@@ -573,7 +574,8 @@ LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
             : &(node->left_record);
 
         MMDBW_node_s *next_node;
-        if (MMDBW_RECORD_TYPE_NODE == record->type) {
+        if (MMDBW_RECORD_TYPE_NODE == record->type ||
+            MMDBW_RECORD_TYPE_ALIAS == record->type) {
             next_node = record->value.node;
         } else {
             next_node = if_not_node(tree, record);
@@ -723,7 +725,8 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
 {
     if (MMDBW_RECORD_TYPE_EMPTY == record->type) {
         return tree->node_count;
-    } else if (MMDBW_RECORD_TYPE_NODE == record->type) {
+    } else if (MMDBW_RECORD_TYPE_NODE == record->type ||
+               MMDBW_RECORD_TYPE_ALIAS == record->type) {
         return record->value.node->number;
     } else {
         HE *cache_record =
@@ -786,21 +789,16 @@ void start_iteration(MMDBW_tree_s *tree,
                                      mmdbw_uint128_t network,
                                      uint8_t depth))
 {
-    HV *seen_nodes = newHV();
-
     mmdbw_uint128_t network = 0;
     uint8_t depth = 0;
 
-    iterate_tree(tree, tree->root_node, seen_nodes, network, depth, callback);
-
-    SvREFCNT_dec((SV *)seen_nodes);
+    iterate_tree(tree, tree->root_node, network, depth, callback);
 
     return;
 }
 
 LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
-                        HV *seen_nodes,
                         mmdbw_uint128_t network,
                         uint8_t depth,
                         void(callback) (MMDBW_tree_s * tree,
@@ -813,19 +811,12 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
     char key[256];
     sprintf(key, "%p", node);
 
-    if (hv_exists(seen_nodes, key, strlen(key))) {
-        return;
-    }
-
     callback(tree, node, network, depth);
-
-    (void)hv_store(seen_nodes, key, strlen(key), &PL_sv_undef, 0);
 
     uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
     if (MMDBW_RECORD_TYPE_NODE == node->left_record.type) {
         iterate_tree(tree,
                      node->left_record.value.node,
-                     seen_nodes,
                      network,
                      depth + 1,
                      callback);
@@ -834,7 +825,6 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
     if (MMDBW_RECORD_TYPE_NODE == node->right_record.type) {
         iterate_tree(tree,
                      node->right_record.value.node,
-                     seen_nodes,
                      FLIP_NETWORK_BIT(network, max_depth0, depth),
                      depth + 1,
                      callback);
@@ -918,6 +908,8 @@ char *record_type_name(int record_type)
            ? "empty"
            : MMDBW_RECORD_TYPE_NODE == record_type
            ? "node"
+           : MMDBW_RECORD_TYPE_ALIAS == record_type
+           ? "alias"
            : "data";
 }
 
