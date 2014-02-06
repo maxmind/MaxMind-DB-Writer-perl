@@ -1,0 +1,537 @@
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_bytes_from_utf8
+   fun:Perl_pad_add_name_pvn
+   fun:Perl_allocmy
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_bytes_from_utf8
+   fun:Perl_pad_add_name_pvn
+   fun:Perl_allocmy
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:Perl_gv_fetchpvn_flags
+   fun:Perl_gv_fetchsv
+   fun:Perl_ck_rvconst
+   fun:Perl_newUNOP
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_entereval
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:perl_parse
+   fun:main
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_bytes_from_utf8
+   fun:Perl_pad_findmy_pvn
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:Perl_gv_fetchpvn_flags
+   fun:S_intuit_method
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:calloc
+   fun:Perl_newSVOP
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:perl_parse
+   fun:main
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:calloc
+   fun:Perl_newSVOP
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:S_curse
+   fun:Perl_sv_clear
+   fun:Perl_sv_free2
+   fun:Perl_free_tmps
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:calloc
+   fun:Perl_newSVOP
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:Perl_gv_fetchpvn_flags
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:perl_parse
+   fun:main
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:Perl_gv_fetchpvn_flags
+   fun:Perl_get_cvn_flags
+   fun:Perl_pp_entersub
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:perl_parse
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:mop_get_package_symbols
+   fun:mop_get_all_package_symbols
+   fun:XS_Class__MOP__Mixin__HasMethods__method_map
+   fun:Perl_pp_entersub
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:vmg_call_sv.constprop.4
+   fun:vmg_svt_free
+   fun:S_mg_free_struct
+   fun:Perl_mg_free
+   fun:Perl_sv_clear
+   fun:Perl_sv_free2
+   fun:Perl_leave_scope
+   fun:Perl_block_end
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+}
+
+{
+   Moose leak?
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:mop_get_package_symbols
+   fun:mop_get_all_package_symbols
+   fun:XS_Class__MOP__Mixin__HasMethods__method_map
+   fun:Perl_pp_entersub
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:vmg_call_sv.constprop.4
+   fun:vmg_svt_free
+   fun:S_mg_free_struct
+   fun:Perl_mg_free
+   fun:Perl_sv_clear
+   fun:Perl_sv_free2
+   fun:Perl_leave_scope
+   fun:Perl_block_end
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:Perl_gv_fetchpvn_flags
+   fun:Perl_gv_fetchsv
+   fun:Perl_ck_rvconst
+   fun:Perl_newUNOP
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:Perl_gv_fetchpvn_flags
+   fun:Perl_gv_fetchsv
+   fun:Perl_ck_rvconst
+   fun:Perl_newUNOP
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+}
+
+{
+   perl require leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:Perl_gv_fetchpvn_flags
+   fun:Perl_gv_fetchsv
+   fun:Perl_ck_rvconst
+   fun:Perl_newUNOP
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:Perl_gv_fetchpvn_flags
+   fun:Perl_gv_fetchsv
+   fun:Perl_ck_rvconst
+   fun:Perl_newUNOP
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:perl_parse
+   fun:main
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:Perl_gv_fetchpvn_flags
+   fun:Perl_gv_fetchsv
+   fun:Perl_ck_rvconst
+   fun:Perl_newUNOP
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+}
+
+{
+   Moose mop.c memory leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_savepv
+   fun:Perl_newXS_len_flags
+   fun:Perl_newCONSTSUB_flags
+   fun:Perl_gv_init_pvn
+   fun:mop_get_package_symbols
+   fun:mop_get_all_package_symbols
+   fun:XS_Class__MOP__Mixin__HasMethods__method_map
+   fun:Perl_pp_entersub
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+}
+
+{
+   gaih_inet Condition jump on unitialised value(s)
+   Memcheck:Cond
+   fun:gaih_inet
+   fun:getaddrinfo
+   fun:resolve_network
+   fun:insert_network
+   fun:XS_MaxMind__DB__Writer__Tree__insert_network
+   fun:Perl_pp_entersub
+   fun:Perl_runops_standard
+   fun:perl_run
+   fun:main
+}
+
+{
+   gaih_inet Condition jump on unitialised value(s)
+   Memcheck:Cond
+   fun:gaih_inet
+   fun:getaddrinfo
+   fun:resolve_network
+   fun:alias_ipv4_networks
+   fun:write_search_tree
+   fun:XS_MaxMind__DB__Writer__Tree__write_search_tree
+   fun:Perl_pp_entersub
+   fun:Perl_runops_standard
+   fun:perl_run
+   fun:main
+}
