@@ -12,7 +12,7 @@ use Number::Format qw( format_bytes );
 
 my $ipv6_offset = uint128('0xA000_0000_0000_0000_0000_0000_0000_0000');
 
-my $loops = 20000;
+my $loops = shift || 10_000;
 
 sub main {
     my $stats = Memory::Stats->new();
