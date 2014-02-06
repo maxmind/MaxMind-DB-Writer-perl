@@ -12,7 +12,7 @@ use Number::Format qw( format_bytes );
 
 my $ipv6_offset = uint128('0xA000_0000_0000_0000_0000_0000_0000_0000');
 
-my $loops = 50000;
+my $loops = 20000;
 
 sub main {
     my $stats = Memory::Stats->new();
@@ -55,13 +55,21 @@ sub main {
         );
     }
 
+    my $used;
+    $stats->stop();
+    say 'Memory used before write: ',
+        format_bytes( $used = $stats->get_memory_usage() );
+
+    $stats->start();
+
     open my $fh, '>', '/dev/null';
     $tree->write_tree($fh);
     close $fh;
 
     $stats->stop();
 
-    say 'Memory used: ', format_bytes( $stats->get_memory_usage() );
+    say 'Memory used after write: ',
+        format_bytes( $used + $stats->get_memory_usage() );
 }
 
 main();
