@@ -4,6 +4,8 @@ use autodie;
 
 use v5.16;
 
+use Getopt::Long;
+use JSON::XS;
 use Math::Int128 qw( uint128 );
 use MaxMind::DB::Writer::Tree;
 use Memory::Stats;
@@ -12,9 +14,14 @@ use Number::Format qw( format_bytes );
 
 my $ipv6_offset = uint128('0xA000_0000_0000_0000_0000_0000_0000_0000');
 
-my $loops = shift || 10_000;
-
 sub main {
+    my $inserts = 10_000;
+    my $source;
+    GetOptions(
+        'inserts:i' => \$inserts,
+        'source:s'  => \$source,
+    );
+
     my $stats = Memory::Stats->new();
     $stats->start();
 
@@ -28,31 +35,11 @@ sub main {
         alias_ipv6_to_ipv4    => 1,
     );
 
-    for my $int ( 1 .. $loops ) {
-        my $ipv4 = Net::Works::Network->new_from_integer(
-            integer     => $int,
-            mask_length => 128,
-            version     => 6,
-        );
-
-        $tree->insert_network(
-            $ipv4 => {
-                ipv4_key1 => $int,
-                ipv4_key2 => { nested => "Foo $int ipv4" },
-            },
-        );
-
-        my $ipv6 = Net::Works::Network->new_from_integer(
-            integer     => $int + $ipv6_offset,
-            mask_length => 128,
-        );
-
-        $tree->insert_network(
-            $ipv6 => {
-                ipv6_key1 => $int,
-                ipv6_key2 => { nested => "Foo $int ipv6" },
-            },
-        );
+    if ($source) {
+        _insert_data_from_json( $tree, $inserts, $source );
+    }
+    else {
+        _insert_generated_data( $tree, $inserts );
     }
 
     my $used;
@@ -70,6 +57,62 @@ sub main {
 
     say 'Memory used after write: ',
         format_bytes( $used + $stats->get_memory_usage() );
+}
+
+sub _insert_data_from_json {
+    my $tree    = shift;
+    my $inserts = shift;
+    my $source  = shift;
+
+    open my $fh, '<', $source;
+
+    my $json = JSON::XS->new()->utf8();
+
+    while (<$fh>) {
+        last if $. > $inserts;
+
+        my ( $network, $record ) = @{ $json->decode($_) };
+
+        $tree->insert_network(
+            Net::Works::Network->new_from_string( string => $network ),
+            $record
+        );
+    }
+}
+
+sub _insert_generated_data {
+    my $tree    = shift;
+    my $inserts = shift;
+
+    for my $int ( 1 .. $inserts ) {
+        my $ipv4 = Net::Works::Network->new_from_integer(
+            integer     => $int,
+            mask_length => 128,
+            version     => 6,
+        );
+
+        my %records;
+        for my $i ( 1 .. 5 ) {
+            $records{ipv4}{ 'thing' . $i } = {
+                'ipv4_key1-' . $i => $int,
+                'ipv4_key2-' . $i => { nested => "Foo $int-$i ipv4" },
+            };
+
+            $records{ipv6}{ 'thing' . $i } = {
+                'ipv6_key1-' . $i => $int,
+                'ipv6_key2-' . $i => { nested => "Foo $int-$i ipv6" },
+            };
+        }
+
+        $tree->insert_network( $ipv4 => $records{ipv4} );
+
+        my $ipv6 = Net::Works::Network->new_from_integer(
+            integer     => $int + $ipv6_offset,
+            mask_length => 128,
+        );
+
+        $tree->insert_network( $ipv6 => $records{ipv6} );
+    }
 }
 
 main();
