@@ -394,7 +394,11 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
             last_node_for_alias->left_record.type = MMDBW_RECORD_TYPE_ALIAS;
             last_node_for_alias->left_record.value.node = ipv4_root_node;
         }
+
+        free_network(&alias_network);
     }
+
+    free_network(&ipv4_root_network);
 }
 
 LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
