@@ -3,6 +3,7 @@
 #include "XSUB.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <uthash.h>
 #define MATH_INT64_NATIVE_IF_AVAILABLE
 #include "perl_math_int64.h"
 #include "perl_math_int128.h"
@@ -24,7 +25,7 @@ typedef unsigned __int128 mmdbw_uint128_t;
 typedef struct MMDBW_record_s {
     uint8_t type;
     union {
-        SV *key;
+        char *key;
         struct MMDBW_node_s *node;
     } value;
 } MMDBW_record_s;
@@ -40,11 +41,17 @@ typedef struct MMDBW_node_s {
     struct MMDBW_node_s *next_node;
 } MMDBW_node_s;
 
+typedef struct MMDBW_data_hash_s {
+    SV *data_sv;
+    char *key;
+    UT_hash_handle hh;
+} MMDBW_data_hash_s;
+
 typedef struct MMDBW_tree_s {
     uint8_t ip_version;
     uint8_t record_size;
     bool merge_record_collisions;
-    HV *data_hash;
+    MMDBW_data_hash_s *data_table;
     MMDBW_node_s *root_node;
     MMDBW_node_s *last_node;
     uint32_t node_count;
@@ -69,7 +76,7 @@ typedef struct MMDBW_network_s {
                               SV *key, SV *data);
     extern void delete_reserved_networks(MMDBW_tree_s *tree);
     extern void alias_ipv4_networks(MMDBW_tree_s *tree);
-    extern SV *merge_hashes_for_keys(MMDBW_tree_s *tree, SV *key_from, SV *key_into,
+    extern SV *merge_hashes_for_keys(MMDBW_tree_s *tree, char *key_from, char *key_into,
                                      MMDBW_network_s *network);
     extern SV *lookup_ip_address(MMDBW_tree_s *tree, char *ipstr);
     extern MMDBW_node_s *new_node(MMDBW_tree_s *tree);
@@ -81,7 +88,7 @@ typedef struct MMDBW_network_s {
                                                 MMDBW_node_s * node,
                                                 mmdbw_uint128_t network,
                                                 uint8_t depth));
-    extern SV *data_for_key(MMDBW_tree_s *tree, SV *key);
+    extern SV *data_for_key(MMDBW_tree_s *tree, char *key);
     extern void free_tree(MMDBW_tree_s *tree);
     extern char *record_type_name(int record_type);
     extern void dwarn(SV *thing);

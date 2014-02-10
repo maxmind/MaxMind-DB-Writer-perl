@@ -289,14 +289,3 @@ _free_tree(self)
 
     CODE:
         free_tree(tree_from_self(self));
-
-HV *
-_data(self)
-    SV *self;
-
-    CODE:
-        MMDBW_tree_s *tree = tree_from_self(self);
-        RETVAL = tree->data_hash;
-
-    OUTPUT:
-        RETVAL
