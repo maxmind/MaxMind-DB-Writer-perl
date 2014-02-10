@@ -306,6 +306,74 @@
 }
 
 {
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_bytes_from_utf8
+   fun:Perl_pad_add_name_pvn
+   fun:Perl_allocmy
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:perl_parse
+   fun:main
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_bytes_from_utf8
+   fun:Perl_pad_add_name_pvn
+   fun:Perl_allocmy
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:perl_parse
+   fun:main
+}
+
+{
+   perl core parse leak
+   Memcheck:Leak
+   fun:malloc
+   fun:Perl_safesysmalloc
+   fun:Perl_bytes_from_utf8
+   fun:Perl_pad_findmy_pvn
+   fun:Perl_yylex
+   fun:Perl_yyparse
+   fun:S_doeval
+   fun:Perl_pp_require
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:Perl_call_list
+   fun:S_process_special_blocks
+   fun:Perl_newATTRSUB_flags
+   fun:Perl_utilize
+   fun:Perl_yyparse
+   fun:perl_parse
+   fun:main
+}
+
+{
    Moose leak?
    Memcheck:Leak
    fun:malloc
