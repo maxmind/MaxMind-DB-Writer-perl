@@ -22,7 +22,7 @@ typedef unsigned __int128 mmdbw_uint128_t;
 #endif
 
 typedef struct MMDBW_record_s {
-    int type;
+    uint8_t type;
     union {
         SV *key;
         struct MMDBW_node_s *node;
@@ -34,7 +34,7 @@ typedef struct MMDBW_record_s {
  * no longer reachable in the tree, but we still need to free them and
  * decrement the ref counts for any SVs they refer to. */
 typedef struct MMDBW_node_s {
-    uint64_t number;
+    uint32_t number;
     MMDBW_record_s left_record;
     MMDBW_record_s right_record;
     struct MMDBW_node_s *next_node;
