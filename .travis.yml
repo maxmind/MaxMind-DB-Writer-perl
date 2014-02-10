@@ -7,6 +7,8 @@ perl:
    - 5.14
 
 before_install:
+   - sudo apt-get update -qq
+   - sudo apt-get install -qq uthash-dev
    - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=j10:c HARNESS_TIMER=1 SKIP_POD_LINKCHECK=1
 
 install:
