@@ -22,6 +22,8 @@
  * fetch it every time we need it. */
 #define DATA_SECTION_SEPARATOR_SIZE 16
 
+#define SHA1_KEY_LENGTH 27
+
 typedef struct encode_args_s {
     PerlIO *output_io;
     SV *root_data_type;
@@ -129,11 +131,10 @@ LOCAL void insert_resolved_network(MMDBW_tree_s *tree, MMDBW_network_s *network,
 
 LOCAL char *store_data_in_tree(MMDBW_tree_s *tree, SV *key_sv, SV *data_sv)
 {
-    STRLEN key_length;
-    char *key = SvPVbyte(key_sv, key_length);
+    char *key = SvPVbyte_nolen(key_sv);
 
     MMDBW_data_hash_s *data = NULL;
-    HASH_FIND(hh, tree->data_table, key, key_length, data);
+    HASH_FIND(hh, tree->data_table, key, SHA1_KEY_LENGTH, data);
 
     if (NULL == data) {
         data = checked_malloc(sizeof(MMDBW_data_hash_s));
@@ -141,10 +142,10 @@ LOCAL char *store_data_in_tree(MMDBW_tree_s *tree, SV *key_sv, SV *data_sv)
         SvREFCNT_inc(data_sv);
         data->data_sv = data_sv;
 
-        data->key = checked_malloc(key_length + 1);
+        data->key = checked_malloc(SHA1_KEY_LENGTH + 1);
         strcpy(data->key, key);
 
-        HASH_ADD_KEYPTR(hh, tree->data_table, data->key, key_length, data);
+        HASH_ADD_KEYPTR(hh, tree->data_table, data->key, SHA1_KEY_LENGTH, data);
     }
 
     return data->key;
@@ -738,10 +739,9 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                MMDBW_RECORD_TYPE_ALIAS == record->type) {
         return record->value.node->number;
     } else {
-        STRLEN key_length = strlen(record->value.key);
         SV **cache_record =
             hv_fetch(args->data_pointer_cache, record->value.key,
-                     key_length, 0);
+                     SHA1_KEY_LENGTH, 0);
         if (cache_record) {
             return SvIV(*cache_record);
         }
@@ -782,8 +782,8 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                                 DATA_SECTION_SEPARATOR_SIZE;
 
         SV *value = newSViv(data_pointer);
-        hv_store(args->data_pointer_cache, record->value.key, key_length, value,
-                 0);
+        hv_store(args->data_pointer_cache, record->value.key, SHA1_KEY_LENGTH,
+                 value, 0);
 
         return data_pointer;
     }
