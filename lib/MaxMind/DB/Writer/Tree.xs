@@ -55,13 +55,13 @@ MMDBW_tree_s *tree_from_self(SV *self)
 
 void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
                            SV *method,
-                           uint64_t node_number,
+                           const uint64_t node_number,
                            MMDBW_record_s *record,
-                           mmdbw_uint128_t node_ip_num,
-                           uint8_t node_mask_length,
-                           mmdbw_uint128_t record_ip_num,
-                           uint8_t record_mask_length,
-                           bool is_right)
+                           const mmdbw_uint128_t node_ip_num,
+                           const uint8_t node_mask_length,
+                           const mmdbw_uint128_t record_ip_num,
+                           const uint8_t record_mask_length,
+                           const bool is_right)
 {
     dSP;
 
@@ -106,7 +106,7 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     return;
 }
 
-SV *method_for_record_type(perl_iterator_args_s *args, int record_type)
+SV *method_for_record_type(perl_iterator_args_s *args, const int record_type)
 {
     return MMDBW_RECORD_TYPE_EMPTY == record_type
            ? args->empty_method
@@ -117,7 +117,8 @@ SV *method_for_record_type(perl_iterator_args_s *args, int record_type)
 }
 
 void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                      mmdbw_uint128_t node_ip_num, uint8_t node_mask_length)
+                      const mmdbw_uint128_t node_ip_num,
+                      const uint8_t node_mask_length)
 {
     perl_iterator_args_s *args = (perl_iterator_args_s *)tree->iteration_args;
     SV *left_method = method_for_record_type(args, node->left_record.type);
@@ -137,7 +138,7 @@ void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
 
     SV *right_method = method_for_record_type(args, node->right_record.type);
     if (NULL != right_method) {
-        uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
+        const uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
         call_iteration_method(tree,
                               args,
                               right_method,
@@ -155,7 +156,7 @@ void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
 
 /* It'd be nice to return the CV instead but there's no exposed API for
  * calling a CV directly. */
-SV *maybe_method(HV *package, const char *method)
+SV *maybe_method(HV *package, const char *const method)
 {
     GV *gv = gv_fetchmethod_autoload(package, method, 1);
     if (NULL != gv) {

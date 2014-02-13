@@ -68,11 +68,11 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
 LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
                         mmdbw_uint128_t network,
-                        uint8_t depth,
+                        const uint8_t depth,
                         void(callback) (MMDBW_tree_s * tree,
                                         MMDBW_node_s * node,
                                         mmdbw_uint128_t network,
-                                        uint8_t depth));
+                                        const uint8_t depth));
 LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               mmdbw_uint128_t UNUSED(network), uint8_t UNUSED(
                                   depth));
@@ -198,7 +198,7 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
         .family         = addresses->ai_addr->sa_family,
         .max_depth0     = (family == AF_INET ? 31 : 127),
         .address_string = ipstr,
-        .as_string      = network_as_string(ipstr, mask_length)
+        .as_string      = network_as_string(ipstr,       mask_length)
     };
 
     freeaddrinfo(addresses);
@@ -676,7 +676,7 @@ LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
     start_iteration(tree, &assign_node_number);
 }
 
-void write_search_tree(MMDBW_tree_s *tree, SV *output, bool alias_ipv6,
+void write_search_tree(MMDBW_tree_s *tree, SV *output, const bool alias_ipv6,
                        SV *root_data_type, SV *serializer)
 {
     if (alias_ipv6) {
@@ -820,11 +820,11 @@ void start_iteration(MMDBW_tree_s *tree,
 LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
                         mmdbw_uint128_t network,
-                        uint8_t depth,
+                        const uint8_t depth,
                         void(callback) (MMDBW_tree_s * tree,
                                         MMDBW_node_s * node,
                                         mmdbw_uint128_t network,
-                                        uint8_t depth))
+                                        const uint8_t depth))
 {
     /* This is bigger than it needs to be, but I'm not sure what the max
      * string size could be. */
@@ -833,7 +833,7 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
 
     callback(tree, node, network, depth);
 
-    uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
+    const uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
     if (MMDBW_RECORD_TYPE_NODE == node->left_record.type) {
         iterate_tree(tree,
                      node->left_record.value.node,
