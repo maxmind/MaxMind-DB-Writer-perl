@@ -534,7 +534,7 @@ LOCAL void merge_hash(HV *from, HV *to)
 
         SV *value = HeVAL(he);
         SvREFCNT_inc(value);
-        hv_store(to, key, key_length, value, hash);
+        (void)hv_store(to, key, key_length, value, hash);
     }
 
     return;
@@ -782,8 +782,8 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                                 DATA_SECTION_SEPARATOR_SIZE;
 
         SV *value = newSViv(data_pointer);
-        hv_store(args->data_pointer_cache, record->value.key, SHA1_KEY_LENGTH,
-                 value, 0);
+        (void)hv_store(args->data_pointer_cache, record->value.key,
+                       SHA1_KEY_LENGTH, value, 0);
 
         return data_pointer;
     }
