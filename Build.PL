@@ -21,6 +21,7 @@ _check_c_prereqs($mb);
 $mb->create_build_script();
 
 sub _mb_args {
+
     # This is a funky way of allowing this code to run stand-alone and as a
     # template to be processes by Dist::Zilla::Plugin::ModuleBuild::Custom
     my $data = do { local $/; <DATA> };
@@ -52,10 +53,11 @@ sub _check_c_prereqs {
         extra_link_flags   => \@lib_dirs,
     );
 
-    if ($ac->check_type('unsigned __int128')) {
+    if ( $ac->check_type('unsigned __int128') ) {
         1;
     }
-    elsif ( $ac->check_type('unsigned int __attribute__ ((__mode__ (TI)))') ) {
+    elsif ( $ac->check_type('unsigned int __attribute__ ((__mode__ (TI)))') )
+    {
         $mb->extra_compiler_flags(
             @{ $mb->extra_compiler_flags || [] },
             '-DMMDBW_UINT128_USING_MODE',
@@ -67,6 +69,17 @@ sub _check_c_prereqs {
   It looks like your compiler doesn't support the "unsigned __int128" or
   "unsigned int __attribute__ ((__mode__ (TI)))" types. One of these types is
   necessary to compile the MaxMind::DB::Reader::XS module.
+
+EOF
+
+        exit 1;
+    }
+
+    unless ( $ac->check_header('uthash.h') ) {
+        warn <<'EOF';
+
+  This code requires the uthash.h header. This is available from the
+  uthash-dev package on Debian systems and as uthash in Fedora.
 
 EOF
 

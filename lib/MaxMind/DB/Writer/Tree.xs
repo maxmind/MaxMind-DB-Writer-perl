@@ -85,7 +85,8 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
         PUSHs(sv_2mortal(newSVsv(
                              data_for_key(tree, record->value.key))));
-    } else if (MMDBW_RECORD_TYPE_NODE == record->type) {
+    } else if (MMDBW_RECORD_TYPE_NODE == record->type ||
+               MMDBW_RECORD_TYPE_ALIAS == record->type) {
         PUSHs(sv_2mortal(newSViv(record->value.node->number)));
     }
     PUTBACK;
@@ -109,7 +110,8 @@ SV *method_for_record_type(perl_iterator_args_s *args, int record_type)
 {
     return MMDBW_RECORD_TYPE_EMPTY == record_type
            ? args->empty_method
-           : MMDBW_RECORD_TYPE_NODE == record_type
+           : MMDBW_RECORD_TYPE_NODE == record_type ||
+           MMDBW_RECORD_TYPE_ALIAS == record_type
            ? args->node_method
            : args->data_method;
 }
@@ -287,14 +289,3 @@ _free_tree(self)
 
     CODE:
         free_tree(tree_from_self(self));
-
-HV *
-_data(self)
-    SV *self;
-
-    CODE:
-        MMDBW_tree_s *tree = tree_from_self(self);
-        RETVAL = tree->data_hash;
-
-    OUTPUT:
-        RETVAL
