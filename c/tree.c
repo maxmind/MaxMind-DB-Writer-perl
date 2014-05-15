@@ -54,8 +54,8 @@ LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                           MMDBW_network_s *network,
                                           int *current_bit,
                                           MMDBW_node_s *(if_not_node)(
-                                              MMDBW_tree_s * tree,
-                                              MMDBW_record_s * record));
+                                              MMDBW_tree_s *tree,
+                                              MMDBW_record_s *record));
 LOCAL MMDBW_node_s *return_null(
     MMDBW_tree_s *UNUSED(tree), MMDBW_record_s *UNUSED(record));
 LOCAL MMDBW_node_s *make_next_node(MMDBW_tree_s *tree, MMDBW_record_s *record);
@@ -69,8 +69,8 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
                         mmdbw_uint128_t network,
                         const uint8_t depth,
-                        void(callback) (MMDBW_tree_s * tree,
-                                        MMDBW_node_s * node,
+                        void(callback) (MMDBW_tree_s *tree,
+                                        MMDBW_node_s *node,
                                         mmdbw_uint128_t network,
                                         const uint8_t depth));
 LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
@@ -584,8 +584,8 @@ LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                           MMDBW_network_s *network,
                                           int *current_bit,
                                           MMDBW_node_s *(if_not_node)(
-                                              MMDBW_tree_s * tree,
-                                              MMDBW_record_s * record))
+                                              MMDBW_tree_s *tree,
+                                              MMDBW_record_s *record))
 {
     MMDBW_node_s *node = tree->root_node;
     uint8_t last_bit = network->max_depth0 - (network->mask_length - 1);
@@ -804,8 +804,8 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
  * trees with aliases. We don't want to go down the same branch more than
  * once. */
 void start_iteration(MMDBW_tree_s *tree,
-                     void(callback) (MMDBW_tree_s * tree,
-                                     MMDBW_node_s * node,
+                     void(callback) (MMDBW_tree_s *tree,
+                                     MMDBW_node_s *node,
                                      mmdbw_uint128_t network,
                                      uint8_t depth))
 {
@@ -821,8 +821,8 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
                         mmdbw_uint128_t network,
                         const uint8_t depth,
-                        void(callback) (MMDBW_tree_s * tree,
-                                        MMDBW_node_s * node,
+                        void(callback) (MMDBW_tree_s *tree,
+                                        MMDBW_node_s *node,
                                         mmdbw_uint128_t network,
                                         const uint8_t depth))
 {
