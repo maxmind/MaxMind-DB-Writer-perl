@@ -396,7 +396,7 @@ The C<$data> payload is encoded according to the L<MaxMind DB database format
 spec|http://maxmind.github.io/MaxMind-DB/>. The short overview is that
 anything that can be encoded in JSON can be stored in an MMDB file. It can
 also handle unsigned 64-bit 128-bit integers if they are passed as
-L<Math::UInt128> objects.
+L<Math::UInt128|Math::Int128> objects.
 
 =head2 $tree->write_tree($fh)
 
