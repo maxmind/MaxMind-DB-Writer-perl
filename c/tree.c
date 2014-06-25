@@ -442,6 +442,66 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         other_record = &(node_to_set->right_record);
     }
 
+    if (tree->merge_record_collisions &&
+        (MMDBW_RECORD_TYPE_NODE == record_to_set->type ||
+         MMDBW_RECORD_TYPE_ALIAS == record_to_set->type)) {
+
+        // XXX - check that we don't exceed maximum
+        uint8_t new_mask_length = network->mask_length + 1;
+
+        MMDBW_network_s left = {
+            .bytes          = network->bytes,
+            .mask_length    = new_mask_length,
+            .max_depth0     = network->max_depth0,
+            .family         = network->family,
+            .address_string = network->address_string,
+            .as_string      = network_as_string(
+                network->address_string, new_mask_length)
+        };
+
+
+        MMDBW_record_s new_left_record = {
+            .type    = new_record->type,
+            .value   = {
+                .key = new_record->value.key
+            }
+        };
+
+        insert_record_for_network(tree, &left, &new_left_record);
+
+        int bytes_length = network->family == AF_INET ? 4 : 16;
+        uint8_t right_bytes[bytes_length];
+        memcpy(&right_bytes, network->bytes, bytes_length);
+
+        right_bytes[ (new_mask_length -
+                      1) /
+                     8] |= 1 << (network->max_depth0 + 1 - new_mask_length);
+
+        char *right_address_string = checked_malloc(INET6_ADDRSTRLEN);
+        inet_ntop(network->family, &right_bytes, right_address_string,
+                  sizeof(right_address_string));
+
+        MMDBW_network_s right = {
+            .bytes          = (const uint8_t *const)&right_bytes,
+            .mask_length    = new_mask_length,
+            .max_depth0     = network->max_depth0,
+            .family         = network->family,
+            .address_string = right_address_string,
+            .as_string      = network_as_string(
+                right_address_string, new_mask_length)
+        };
+
+        MMDBW_record_s new_right_record = {
+            .type    = new_record->type,
+            .value   = {
+                .key = new_record->value.key
+            }
+        };
+
+        insert_record_for_network(tree, &right, &new_right_record);
+        return;
+    }
+
     /* If this record we're about to insert is a data record, and the other
      * record in the node also has the same data, then we instead want to
      * insert a single data record in this node's parent. We do this by
@@ -460,14 +520,15 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
             uint8_t *bytes = checked_malloc(bytes_length);
             memcpy(bytes, network->bytes, bytes_length);
 
+            uint8_t parent_mask_length = network->mask_length - 1;
             MMDBW_network_s parent_network = {
                 .bytes          = bytes,
-                .mask_length    = network->mask_length - 1,
+                .mask_length    = parent_mask_length,
                 .max_depth0     = network->max_depth0,
                 .family         = network->family,
                 .address_string = network->address_string,
                 .as_string      = network_as_string(
-                    network->address_string, parent_network.mask_length)
+                    network->address_string, parent_mask_length)
             };
 
             insert_record_for_network(tree, &parent_network, new_record);

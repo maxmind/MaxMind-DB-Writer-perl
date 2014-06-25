@@ -5,6 +5,7 @@ use warnings;
 
 use Test::More;
 
+use Data::Printer;
 use List::Util qw( all );
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Address;
@@ -73,11 +74,12 @@ sub _test_expected_data {
 
         my $iter = $network->iterator();
         while ( my $address = $iter->() ) {
+            my $result = $tree->lookup_ip_address($address);
             is_deeply(
                 $tree->lookup_ip_address($address),
                 $data,
                 "Got expected data for $address - $desc"
-            );
+            ) or diag p $result;
         }
     }
 }
