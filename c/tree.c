@@ -447,7 +447,7 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
          MMDBW_RECORD_TYPE_ALIAS == record_to_set->type)) {
 
         if (network->mask_length > network->max_depth0) {
-            croak("Somethins is very wrong. Mask length is too long.");
+            croak("Something is very wrong. Mask length is too long.");
         }
 
         uint8_t new_mask_length = network->mask_length + 1;
