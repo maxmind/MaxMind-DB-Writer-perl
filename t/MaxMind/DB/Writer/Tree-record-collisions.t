@@ -16,6 +16,51 @@ use Net::Works::Network;
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '1.0.0.0/24' ) =>
+                { first_in => 1 },
+        ],
+        (
+            map { [ $_ => { second_in => 2 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.1' => '1.0.0.2'
+                )
+        ),
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/24' ) =>
+                { third_in => 3 },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
+                { first_in => 1, third_in => 3 }
+        ],
+        (
+            map { [ $_ => { first_in => 1, second_in => 2, third_in => 3 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.1' => '1.0.0.2'
+                )
+        ),
+        (
+            map { [ $_ => { first_in => 1, third_in => 3 } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.0.3' => '1.0.0.4'
+                )
+        )
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'data hashes for records are merged on collision - larger net first',
+        { merge_record_collisions => 1 },
+    );
+}
+
+{
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/24' ) =>
                 { foo => 42 },
         ],
         (
