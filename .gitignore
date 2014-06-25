@@ -17,6 +17,8 @@ blib*
 c/*.o
 config.log
 cover_db*
+cpanfile.snapshot
 lib/**/*.c
 lib/**/*.o
+local
 pm_to_blib*
