@@ -462,7 +462,6 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                 network->address_string, new_mask_length)
         };
 
-
         MMDBW_record_s new_left_record = {
             .type    = new_record->type,
             .value   = {
@@ -471,6 +470,9 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         };
 
         insert_record_for_network(tree, &left, &new_left_record);
+
+        free((char *)left.as_string);
+
 
         int bytes_length = network->family == AF_INET ? 4 : 16;
         uint8_t right_bytes[bytes_length];
@@ -502,6 +504,9 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         };
 
         insert_record_for_network(tree, &right, &new_right_record);
+
+        free((char *)right.as_string);
+
         return;
     }
 
@@ -510,35 +515,35 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
      * insert a single data record in this node's parent. We do this by
      * inserting the new record for the parent network, which we can calculate
      * quite easily by subtracting 1 from this network's mask length. */
-    if (MMDBW_RECORD_TYPE_DATA == new_record->type
-        && MMDBW_RECORD_TYPE_DATA == other_record->type) {
+    // if (MMDBW_RECORD_TYPE_DATA == new_record->type
+    //     && MMDBW_RECORD_TYPE_DATA == other_record->type) {
 
-        const char *const new_key = new_record->value.key;
-        const char *const other_key = other_record->value.key;
+    //     const char *const new_key = new_record->value.key;
+    //     const char *const other_key = other_record->value.key;
 
-        if (strlen(new_key) == strlen(other_key)
-            && 0 == strcmp(new_key, other_key)) {
+    //     if (strlen(new_key) == strlen(other_key)
+    //         && 0 == strcmp(new_key, other_key)) {
 
-            int bytes_length = network->family == AF_INET ? 4 : 16;
-            uint8_t *bytes = checked_malloc(bytes_length);
-            memcpy(bytes, network->bytes, bytes_length);
+    //         int bytes_length = network->family == AF_INET ? 4 : 16;
+    //         uint8_t *bytes = checked_malloc(bytes_length);
+    //         memcpy(bytes, network->bytes, bytes_length);
 
-            uint8_t parent_mask_length = network->mask_length - 1;
-            MMDBW_network_s parent_network = {
-                .bytes          = bytes,
-                .mask_length    = parent_mask_length,
-                .max_depth0     = network->max_depth0,
-                .family         = network->family,
-                .address_string = network->address_string,
-                .as_string      = network_as_string(
-                    network->address_string, parent_mask_length)
-            };
+    //         uint8_t parent_mask_length = network->mask_length - 1;
+    //         MMDBW_network_s parent_network = {
+    //             .bytes          = bytes,
+    //             .mask_length    = parent_mask_length,
+    //             .max_depth0     = network->max_depth0,
+    //             .family         = network->family,
+    //             .address_string = network->address_string,
+    //             .as_string      = network_as_string(
+    //                 network->address_string, parent_mask_length)
+    //         };
 
-            insert_record_for_network(tree, &parent_network, new_record);
-            free_network(&parent_network);
-            return;
-        }
-    }
+    //         insert_record_for_network(tree, &parent_network, new_record);
+    //         free_network(&parent_network);
+    //         return;
+    //     }
+    // }
 
     if (MMDBW_RECORD_TYPE_DATA == record_to_set->type
         && MMDBW_RECORD_TYPE_DATA == new_record->type) {
