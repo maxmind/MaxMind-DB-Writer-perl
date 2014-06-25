@@ -477,7 +477,7 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                       1) /
                      8] |= 1 << (network->max_depth0 + 1 - new_mask_length);
 
-        char *right_address_string = checked_malloc(INET6_ADDRSTRLEN);
+        char right_address_string[INET6_ADDRSTRLEN];
         inet_ntop(network->family, &right_bytes, right_address_string,
                   sizeof(right_address_string));
 
