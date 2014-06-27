@@ -484,9 +484,8 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         uint8_t right_bytes[bytes_length];
         memcpy(&right_bytes, network->bytes, bytes_length);
 
-        right_bytes[ (new_mask_length -
-                      1) /
-                     8] |= 1 << (network->max_depth0 + 1 - new_mask_length);
+        right_bytes[ (new_mask_length - 1) / 8]
+            |= 1 << ((network->max_depth0 + 1 - new_mask_length) % 8);
 
         char right_address_string[AF_INET ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN];
         inet_ntop(network->family, &right_bytes, right_address_string,
