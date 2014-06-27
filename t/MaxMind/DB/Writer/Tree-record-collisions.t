@@ -73,7 +73,7 @@ use Net::Works::Network;
                 )
         ),
         (
-            map { [ $_ => { fifth_in => 5, } ] }
+            map { [ $_ => { fourth_in => 4, fifth_in => 5, } ] }
                 Net::Works::Network->range_as_subnets(
                 '1.0.255.254' => '1.0.255.255'
                 )
