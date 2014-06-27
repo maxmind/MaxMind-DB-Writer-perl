@@ -28,31 +28,62 @@ use Net::Works::Network;
             Net::Works::Network->new_from_string( string => '1.0.0.0/24' ) =>
                 { third_in => 3 },
         ],
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/16' ) =>
+                { fourth_in => 4 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/16' ) =>
+                { fifth_in => 5 },
+        ],
     );
 
     my @expect = (
         [
             Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
-                { first_in => 1, third_in => 3 }
+                { first_in => 1, third_in => 3, fourth_in => 4, fifth_in => 5, }
         ],
         (
-            map { [ $_ => { first_in => 1, second_in => 2, third_in => 3 } ] }
-                Net::Works::Network->range_as_subnets(
+            map {
+                [
+                    $_ => {
+                        first_in  => 1,
+                        second_in => 2,
+                        third_in  => 3,
+                        fourth_in => 4,
+                        fifth_in  => 5,
+                    }
+                ]
+                } Net::Works::Network->range_as_subnets(
                 '1.0.0.1' => '1.0.0.2'
                 )
         ),
         (
-            map { [ $_ => { first_in => 1, third_in => 3 } ] }
-                Net::Works::Network->range_as_subnets(
+            map {
+                [
+                    $_ => {
+                        first_in  => 1,
+                        third_in  => 3,
+                        fourth_in => 4,
+                        fifth_in  => 5,
+                    }
+                ]
+                } Net::Works::Network->range_as_subnets(
                 '1.0.0.3' => '1.0.0.4'
                 )
-        )
+        ),
+        (
+            map { [ $_ => { fifth_in => 5, } ] }
+                Net::Works::Network->range_as_subnets(
+                '1.0.255.254' => '1.0.255.255'
+                )
+        ),
     );
 
     test_tree(
         \@pairs,
         \@expect,
-        'data hashes for records are merged on collision - larger net first',
+        'data hashes for records are merged on collision',
         { merge_record_collisions => 1 },
     );
 }
