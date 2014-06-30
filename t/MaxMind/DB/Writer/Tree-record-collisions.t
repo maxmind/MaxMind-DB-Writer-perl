@@ -15,6 +15,209 @@ use Net::Works::Network;
 {
     my @pairs = (
         [
+            Net::Works::Network->new_from_string( string => '5.0.0.0/32' ) =>
+                { first_in => 1 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '5.0.0.0/30' ) =>
+                { second_in => 2 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '5.0.0.0/32' ) =>
+                { third_in => 3 },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '5.0.0.0/32' ) =>
+                { first_in => 1, second_in => 2, third_in => 3, }
+        ],
+        (
+            map { [ $_ => { second_in => 2 } ] }
+                Net::Works::Network->range_as_subnets(
+                '5.0.0.1' => '5.0.0.3'
+                )
+        ),
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'data hashes for records are merged on collision - small net, large net, small net',
+        { merge_record_collisions => 1 },
+    );
+}
+done_testing;
+exit;
+{
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
+                { first_in => 1 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { second_in => 2 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
+                { third_in => 3 },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { first_in => 1, second_in => 2, third_in => 3, }
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
+                { first_in => 1, third_in => 3, }
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'data hashes for records are merged on collision - large net, small net, large net',
+        { merge_record_collisions => 1 },
+    );
+}
+done_testing;
+exit;
+
+{
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { first_in => 1 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { second_in => 2 },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { first_in => 1, second_in => 2, }
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'data hashes for records are merged on collision - same network',
+        { merge_record_collisions => 1 },
+    );
+}
+
+{
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/23' ) =>
+                { first_in => 1 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/24' ) =>
+                { second_in => 2 },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { first_in => 1, second_in => 2, }
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.1.0/32' ) =>
+                { first_in => 1, }
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'data hashes for records are merged on collision - overlapping network, larger net first',
+        { merge_record_collisions => 1 },
+    );
+}
+
+{
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/24' ) =>
+                { first_in => 1 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/23' ) =>
+                { second_in => 2 },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { first_in => 1, second_in => 2, }
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.1.0/32' ) =>
+                { second_in => 2, }
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'data hashes for records are merged on collision - overlapping network, smaller net first',
+        { merge_record_collisions => 1 },
+    );
+}
+
+{
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { first_in => 1 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/31' ) =>
+                { second_in => 2 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
+                { third_in => 3 },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { first_in => 1, second_in => 2, third_in => 3, }
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
+                { second_in => 2, third_in => 3, }
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.2/31' ) =>
+                { third_in => 3, }
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'data hashes for records are merged on collision - smaller nets first',
+        { merge_record_collisions => 1 },
+    );
+}
+
+{
+    my @pairs = (
+        [
             Net::Works::Network->new_from_string( string => '1.0.0.0/24' ) =>
                 { first_in => 1 },
         ],
@@ -41,7 +244,10 @@ use Net::Works::Network;
     my @expect = (
         [
             Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
-                { first_in => 1, third_in => 3, fourth_in => 4, fifth_in => 5, }
+                {
+                first_in => 1, third_in => 3, fourth_in => 4,
+                fifth_in => 5,
+                }
         ],
         (
             map {
@@ -83,7 +289,7 @@ use Net::Works::Network;
     test_tree(
         \@pairs,
         \@expect,
-        'data hashes for records are merged on collision',
+        'data hashes for records are merged on collision - smaller net first',
         { merge_record_collisions => 1 },
     );
 }
