@@ -13,6 +13,49 @@ use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
 
 {
+    my %asn = (
+        autonomous_system_number       => 21928,
+        autonomous_system_organization => 'T-Mobile USA, Inc.',
+    );
+
+    my $isp = 'T-Mobile ISP';
+    my $org = 'T-Mobile Org';
+
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string(
+                string => '::172.56.0.0/112'
+            ) => \%asn,
+        ],
+        [
+            Net::Works::Network->new_from_string(
+                string => '::172.56.0.0/112'
+            ) => { isp => $isp },
+        ],
+        [
+            Net::Works::Network->new_from_string(
+                string => '::172.32.0.0/107'
+            ) => { organization => $org, },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string(
+                string => '::172.56.9.251/128'
+            ) => { %asn, isp => $isp, organization => $org, }
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'data hashes for records are merged on collision - ipv6',
+        { merge_record_collisions => 1 },
+    );
+}
+
+{
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '5.0.0.0/32' ) =>
