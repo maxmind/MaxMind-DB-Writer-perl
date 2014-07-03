@@ -91,8 +91,7 @@ use Net::Works::Network;
         { merge_record_collisions => 1 },
     );
 }
-done_testing;
-exit;
+
 {
     my @pairs = (
         [
@@ -127,8 +126,6 @@ exit;
         { merge_record_collisions => 1 },
     );
 }
-done_testing;
-exit;
 
 {
     my @pairs = (
