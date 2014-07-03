@@ -1,0 +1,13 @@
+_build/
+.build
+Build/
+config.log
+cpanfile
+cpanfile.snapshot
+local
+MaxMind-DB-Writer-*
+MYMETA.JSON
+MYMETA.YAML
+perltidy.LOG
+.tidyall.d
+.tidyallrc
