@@ -479,7 +479,6 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
 
         free((char *)left.as_string);
 
-
         int bytes_length = network->family == AF_INET ? 4 : 16;
         uint8_t right_bytes[bytes_length];
         memcpy(&right_bytes, network->bytes, bytes_length);
