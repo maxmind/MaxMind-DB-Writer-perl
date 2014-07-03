@@ -1,12 +1,17 @@
 language: perl
 
 perl:
-   - 5.19
-   - 5.18
-   - 5.16
-   - 5.14
+   - "blead"
+   - "5.20"
+   - "5.18"
+   - "5.16"
+   - "5.14"
 
 before_install:
+   - git clone git://github.com/haarg/perl-travis-helper
+   - source perl-travis-helper/init
+   - build-perl
+   - perl -V
    - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=j10:c HARNESS_TIMER=1 SKIP_POD_LINKCHECK=1
 
 install:
