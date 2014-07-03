@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.050005 2014-07-03
+
 - The merge-on-collision feature was fairly broken. Fixed by Greg Oschwald.
 
 

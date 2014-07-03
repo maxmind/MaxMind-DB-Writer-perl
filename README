@@ -2,7 +2,7 @@ NAME
     MaxMind::DB::Writer - Create MaxMind DB database files
 
 VERSION
-    version 0.050004
+    version 0.050005
 
 SYNOPSIS
         use MaxMind::DB::Writer::Tree;
