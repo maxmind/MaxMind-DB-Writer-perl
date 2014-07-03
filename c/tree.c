@@ -517,19 +517,19 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
 
     /* This must come before the node pruning code, as we only want to prune
        nodes where the merged record matches */
-    if (MMDBW_RECORD_TYPE_DATA == record_to_set->type
+    if (merge_record_collisions
+        && MMDBW_RECORD_TYPE_DATA == record_to_set->type
         && MMDBW_RECORD_TYPE_DATA == new_record->type) {
-        if (merge_record_collisions) {
-            SV *merged = merge_hashes_for_keys(tree,
-                                               record_to_set->value.key,
-                                               new_record->value.key,
-                                               network);
-            SV *key_sv = key_for_data(merged);
-            const char *const new_key = store_data_in_tree(tree, key_sv, merged);
-            SvREFCNT_dec(key_sv);
 
-            new_record->value.key = new_key;
-        }
+        SV *merged = merge_hashes_for_keys(tree,
+                                           record_to_set->value.key,
+                                           new_record->value.key,
+                                           network);
+        SV *key_sv = key_for_data(merged);
+        const char *const new_key = store_data_in_tree(tree, key_sv, merged);
+        SvREFCNT_dec(key_sv);
+
+        new_record->value.key = new_key;
     }
 
 
