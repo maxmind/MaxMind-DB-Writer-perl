@@ -50,6 +50,10 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                                      MMDBW_network_s *network,
                                      MMDBW_record_s *new_record,
                                      bool merge_record_collisions);
+LOCAL bool merge_records(MMDBW_tree_s *tree,
+                         MMDBW_network_s *network,
+                         MMDBW_record_s *new_record,
+                         MMDBW_record_s *record_to_set);
 LOCAL void merge_hash(HV *from, HV *to);
 LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                           MMDBW_network_s *network,
@@ -447,91 +451,12 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
     }
 
     if (merge_record_collisions &&
-        MMDBW_RECORD_TYPE_DATA == new_record->type &&
-        (MMDBW_RECORD_TYPE_NODE == record_to_set->type ||
-         MMDBW_RECORD_TYPE_ALIAS == record_to_set->type)) {
+        MMDBW_RECORD_TYPE_DATA == new_record->type) {
 
-        if (network->mask_length > network->max_depth0) {
-            croak("Something is very wrong. Mask length is too long.");
+        if (merge_records(tree, network, new_record, record_to_set)) {
+            return;
         }
-
-        uint8_t new_mask_length = network->mask_length + 1;
-
-        MMDBW_network_s left = {
-            .bytes          = network->bytes,
-            .mask_length    = new_mask_length,
-            .max_depth0     = network->max_depth0,
-            .family         = network->family,
-            .address_string = network->address_string,
-            .as_string      = network_as_string(
-                network->address_string, new_mask_length)
-        };
-
-        MMDBW_record_s new_left_record = {
-            .type    = new_record->type,
-            .value   = {
-                .key = new_record->value.key
-            }
-        };
-
-        insert_record_for_network(tree, &left, &new_left_record,
-                                  merge_record_collisions);
-
-        free((char *)left.as_string);
-
-        int bytes_length = network->family == AF_INET ? 4 : 16;
-        uint8_t right_bytes[bytes_length];
-        memcpy(&right_bytes, network->bytes, bytes_length);
-
-        right_bytes[ (new_mask_length - 1) / 8]
-            |= 1 << ((network->max_depth0 + 1 - new_mask_length) % 8);
-
-        char right_address_string[AF_INET ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN];
-        inet_ntop(network->family, &right_bytes, right_address_string,
-                  sizeof(right_address_string));
-
-        MMDBW_network_s right = {
-            .bytes          = (const uint8_t *const)&right_bytes,
-            .mask_length    = new_mask_length,
-            .max_depth0     = network->max_depth0,
-            .family         = network->family,
-            .address_string = right_address_string,
-            .as_string      = network_as_string(
-                right_address_string, new_mask_length)
-        };
-
-        MMDBW_record_s new_right_record = {
-            .type    = new_record->type,
-            .value   = {
-                .key = new_record->value.key
-            }
-        };
-
-        insert_record_for_network(tree, &right, &new_right_record,
-                                  merge_record_collisions);
-
-        free((char *)right.as_string);
-
-        return;
     }
-
-    /* This must come before the node pruning code, as we only want to prune
-       nodes where the merged record matches */
-    if (merge_record_collisions
-        && MMDBW_RECORD_TYPE_DATA == record_to_set->type
-        && MMDBW_RECORD_TYPE_DATA == new_record->type) {
-
-        SV *merged = merge_hashes_for_keys(tree,
-                                           record_to_set->value.key,
-                                           new_record->value.key,
-                                           network);
-        SV *key_sv = key_for_data(merged);
-        const char *const new_key = store_data_in_tree(tree, key_sv, merged);
-        SvREFCNT_dec(key_sv);
-
-        new_record->value.key = new_key;
-    }
-
 
     /* If this record we're about to insert is a data record, and the other
      * record in the node also has the same data, then we instead want to
@@ -583,6 +508,97 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
     }
 
     return;
+}
+
+LOCAL bool merge_records(MMDBW_tree_s *tree,
+                         MMDBW_network_s *network,
+                         MMDBW_record_s *new_record,
+                         MMDBW_record_s *record_to_set)
+{
+    if (MMDBW_RECORD_TYPE_NODE == record_to_set->type ||
+        MMDBW_RECORD_TYPE_ALIAS == record_to_set->type) {
+
+        if (network->mask_length > network->max_depth0) {
+            croak("Something is very wrong. Mask length is too long.");
+        }
+
+        uint8_t new_mask_length = network->mask_length + 1;
+
+        MMDBW_network_s left = {
+            .bytes          = network->bytes,
+            .mask_length    = new_mask_length,
+            .max_depth0     = network->max_depth0,
+            .family         = network->family,
+            .address_string = network->address_string,
+            .as_string      = network_as_string(
+                network->address_string, new_mask_length)
+        };
+
+        MMDBW_record_s new_left_record = {
+            .type    = new_record->type,
+            .value   = {
+                .key = new_record->value.key
+            }
+        };
+
+        insert_record_for_network(tree, &left, &new_left_record, true);
+
+        free((char *)left.as_string);
+
+        int bytes_length = network->family == AF_INET ? 4 : 16;
+        uint8_t right_bytes[bytes_length];
+        memcpy(&right_bytes, network->bytes, bytes_length);
+
+        right_bytes[ (new_mask_length - 1) / 8]
+            |= 1 << ((network->max_depth0 + 1 - new_mask_length) % 8);
+
+        char right_address_string[AF_INET ? INET_ADDRSTRLEN :
+                                  INET6_ADDRSTRLEN];
+        inet_ntop(network->family, &right_bytes, right_address_string,
+                  sizeof(right_address_string));
+
+        MMDBW_network_s right = {
+            .bytes          = (const uint8_t *const)&right_bytes,
+            .mask_length    = new_mask_length,
+            .max_depth0     = network->max_depth0,
+            .family         = network->family,
+            .address_string = right_address_string,
+            .as_string      = network_as_string(
+                right_address_string, new_mask_length)
+        };
+
+        MMDBW_record_s new_right_record = {
+            .type    = new_record->type,
+            .value   = {
+                .key = new_record->value.key
+            }
+        };
+
+        insert_record_for_network(tree, &right, &new_right_record, true);
+
+        free((char *)right.as_string);
+
+        /* There's no need continuing with the original record as the relevant
+         * data has already been inserted further down the tree by the code
+         * above. */
+        return true;
+    }
+    /* This must come before the node pruning code in
+       insert_record_for_network, as we only want to prune nodes where the
+       merged record matches. */
+    else if (MMDBW_RECORD_TYPE_DATA == record_to_set->type) {
+        SV *merged = merge_hashes_for_keys(tree,
+                                           record_to_set->value.key,
+                                           new_record->value.key,
+                                           network);
+        SV *key_sv = key_for_data(merged);
+        const char *const new_key = store_data_in_tree(tree, key_sv, merged);
+        SvREFCNT_dec(key_sv);
+
+        new_record->value.key = new_key;
+    }
+
+    return false;
 }
 
 SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
