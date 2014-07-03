@@ -35,7 +35,7 @@ use Net::Works::Network;
         [
             Net::Works::Network->new_from_string(
                 string => '::172.32.0.0/107'
-            ) => { organization => $org, },
+            ) => { organization => $org },
         ],
     );
 
@@ -43,7 +43,11 @@ use Net::Works::Network;
         [
             Net::Works::Network->new_from_string(
                 string => '::172.56.9.251/128'
-            ) => { %asn, isp => $isp, organization => $org, }
+                ) => {
+                %asn,
+                isp          => $isp,
+                organization => $org,
+                }
         ],
     );
 
@@ -74,7 +78,11 @@ use Net::Works::Network;
     my @expect = (
         [
             Net::Works::Network->new_from_string( string => '5.0.0.0/32' ) =>
-                { first_in => 1, second_in => 2, third_in => 3, }
+                {
+                first_in  => 1,
+                second_in => 2,
+                third_in  => 3,
+                }
         ],
         (
             map { [ $_ => { second_in => 2 } ] }
@@ -142,7 +150,10 @@ use Net::Works::Network;
     my @expect = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
-                { first_in => 1, second_in => 2, }
+                {
+                first_in  => 1,
+                second_in => 2,
+                }
         ],
     );
 
@@ -169,7 +180,10 @@ use Net::Works::Network;
     my @expect = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
-                { first_in => 1, second_in => 2, }
+                {
+                first_in  => 1,
+                second_in => 2,
+                }
         ],
         [
             Net::Works::Network->new_from_string( string => '2.0.1.0/32' ) =>
@@ -200,7 +214,10 @@ use Net::Works::Network;
     my @expect = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
-                { first_in => 1, second_in => 2, }
+                {
+                first_in  => 1,
+                second_in => 2,
+                }
         ],
         [
             Net::Works::Network->new_from_string( string => '2.0.1.0/32' ) =>
@@ -235,11 +252,18 @@ use Net::Works::Network;
     my @expect = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
-                { first_in => 1, second_in => 2, third_in => 3, }
+                {
+                first_in  => 1,
+                second_in => 2,
+                third_in  => 3,
+                }
         ],
         [
             Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
-                { second_in => 2, third_in => 3, }
+                {
+                second_in => 2,
+                third_in  => 3,
+                }
         ],
         [
             Net::Works::Network->new_from_string( string => '2.0.0.2/31' ) =>
@@ -285,8 +309,10 @@ use Net::Works::Network;
         [
             Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
                 {
-                first_in => 1, third_in => 3, fourth_in => 4,
-                fifth_in => 5,
+                first_in  => 1,
+                third_in  => 3,
+                fourth_in => 4,
+                fifth_in  => 5,
                 }
         ],
         (
