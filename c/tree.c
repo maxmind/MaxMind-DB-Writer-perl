@@ -843,13 +843,13 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                                       MMDBW_record_s *record,
                                       encode_args_s *args)
 {
-    uint32_t node_value;
+    uint32_t record_value;
 
     if (MMDBW_RECORD_TYPE_EMPTY == record->type) {
-        node_value = tree->node_count;
+        record_value = tree->node_count;
     } else if (MMDBW_RECORD_TYPE_NODE == record->type ||
                MMDBW_RECORD_TYPE_ALIAS == record->type) {
-        node_value = record->value.node->number;
+        record_value = record->value.node->number;
     } else {
         SV **cache_record =
             hv_fetch(args->data_pointer_cache, record->value.key,
@@ -893,20 +893,20 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
         FREETMPS;
         LEAVE;
 
-        node_value = position + tree->node_count +
+        record_value = position + tree->node_count +
                                 DATA_SECTION_SEPARATOR_SIZE;
 
-        SV *value = newSViv(node_value);
+        SV *value = newSViv(record_value);
         (void)hv_store(args->data_pointer_cache, record->value.key,
                        SHA1_KEY_LENGTH, value, 0);
     }
 
-    if (node_value > MAX_RECORD_VALUE(tree->record_size)) {
+    if (record_value > MAX_RECORD_VALUE(tree->record_size)) {
         croak("Node value of %u exceeds the record size of %u bits",
-            node_value, tree->record_size);
+            record_value, tree->record_size);
     }
 
-    return node_value;
+    return record_value;
 }
 
 /* We need to maintain a hash of already-seen nodes to handle the case of
