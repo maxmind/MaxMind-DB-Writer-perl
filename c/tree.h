@@ -16,6 +16,9 @@
 #define FLIP_NETWORK_BIT(network, max_depth0, depth) \
     ((network) | ((uint128_t)1 << ((max_depth0) - (depth))))
 
+#define MAX_RECORD_VALUE(record_size) \
+    (record_size == 32 ? UINT32_MAX : (1 << record_size) -1)
+
 #if MMDBW_UINT128_USING_MODE
 typedef unsigned int mmdbw_uint128_t __attribute__ ((__mode__(TI)));
 #else

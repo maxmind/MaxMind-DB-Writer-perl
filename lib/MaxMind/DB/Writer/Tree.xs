@@ -223,6 +223,10 @@ _build_node_count(self)
     CODE:
         MMDBW_tree_s *tree = tree_from_self(self);
         finalize_tree(tree);
+        if (tree->node_count > MAX_RECORD_VALUE(tree->record_size)) {
+            croak("Node count of %u exceeds record size limit of %u bits",
+                tree->node_count, tree->record_size);
+        }
         RETVAL = tree->node_count;
 
     OUTPUT:
