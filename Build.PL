@@ -6,6 +6,11 @@ use lib 'inc';
 use Config::AutoConf;
 use Module::Build;
 
+if ( $^O =~ /Win32/ ) {
+    die 'This distribution does not work on Windows platforms.'
+        . " See the documentation for details.\n";
+}
+
 my $mb = Module::Build->new(
     _mb_args(),
     c_source => 'c',

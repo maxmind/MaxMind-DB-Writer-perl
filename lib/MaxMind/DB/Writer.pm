@@ -45,4 +45,19 @@ This distribution contains the code necessary to write L<MaxMind DB database
 files|http://maxmind.github.io/MaxMind-DB/>. See L<MaxMind::DB::Writer::Tree>
 for API docs.
 
+=head1 WINDOWS SUPPORT
+
+This distribution does not currently work on Windows. Reasonable patches for
+Windows support are very welcome. You will probably need to start by making
+L<Math::Int128> work on Windows, since we use that module's C API for dealing
+with 128-bit integers to represent IPv6 addresses numerically.
+
+=head1 SUPPORT
+
+Please report all issues with this code using the GitHub issue tracker at
+L<https://github.com/maxmind/MaxMind-DB-Writer-perl/issues>.
+
+We welcome patches as pull requests against our GitHub repository at
+L<https://github.com/maxmind/MaxMind-DB-Writer-perl>.
+
 =cut

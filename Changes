@@ -5,6 +5,9 @@
   tree can handle. For example, if your record size is 24 bits, you cannot
   write a value larger than (2^24)-1. Fixed by Greg Oschwald.
 
+- The Build.PL file shipped with this distro now dies if you try to run it on
+  Windows, since this module simply doesn't work on Windows.
+
 
 0.050005 2014-07-03
 
