@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+- The writer now throw an error when writing out the database if it would try
+  to write a record value in the search tree that is larger than the search
+  tree can handle. For example, if your record size is 24 bits, you cannot
+  write a value larger than (2^24)-1. Fixed by Greg Oschwald.
+
+
 0.050005 2014-07-03
 
 - The merge-on-collision feature was fairly broken. Fixed by Greg Oschwald.
