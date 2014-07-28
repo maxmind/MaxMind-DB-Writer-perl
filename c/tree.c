@@ -498,7 +498,6 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         }
     }
 
-
     record_to_set->type = new_record->type;
     if (MMDBW_RECORD_TYPE_DATA == new_record->type) {
         record_to_set->value.key = new_record->value.key;
@@ -843,16 +842,21 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                                       MMDBW_record_s *record,
                                       encode_args_s *args)
 {
+    uint32_t record_value;
+
     if (MMDBW_RECORD_TYPE_EMPTY == record->type) {
-        return tree->node_count;
+        record_value = tree->node_count;
     } else if (MMDBW_RECORD_TYPE_NODE == record->type ||
                MMDBW_RECORD_TYPE_ALIAS == record->type) {
-        return record->value.node->number;
+        record_value = record->value.node->number;
     } else {
         SV **cache_record =
             hv_fetch(args->data_pointer_cache, record->value.key,
                      SHA1_KEY_LENGTH, 0);
         if (cache_record) {
+            // It is ok to return this without the size check below as it
+            // would have already croaked when it was inserted if it was too
+            // big.
             return SvIV(*cache_record);
         }
 
@@ -888,15 +892,20 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
         FREETMPS;
         LEAVE;
 
-        uint32_t data_pointer = position + tree->node_count +
-                                DATA_SECTION_SEPARATOR_SIZE;
+        record_value = position + tree->node_count +
+                       DATA_SECTION_SEPARATOR_SIZE;
 
-        SV *value = newSViv(data_pointer);
+        SV *value = newSViv(record_value);
         (void)hv_store(args->data_pointer_cache, record->value.key,
                        SHA1_KEY_LENGTH, value, 0);
-
-        return data_pointer;
     }
+
+    if (record_value > MAX_RECORD_VALUE(tree->record_size)) {
+        croak("Node value of %u exceeds the record size of %u bits",
+              record_value, tree->record_size);
+    }
+
+    return record_value;
 }
 
 /* We need to maintain a hash of already-seen nodes to handle the case of
