@@ -57,8 +57,9 @@ We welcome patches as pull requests against our GitHub repository at
 
 # AUTHORS
 
-- Dave Rolsky <autarch@urth.org>
-- Olaf Alders <olaf@wundercounter.com>
+- Olaf Alders <oalders@maxmind.com>
+- Greg Oschwald <goschwald@maxmind.com>
+- Dave Rolsky <drolsky@maxmind.com>
 
 # COPYRIGHT AND LICENSE
 

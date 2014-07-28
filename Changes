@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.050006 2014-07-28
+
 - The writer now throw an error when writing out the database if it would try
   to write a record value in the search tree that is larger than the search
   tree can handle. For example, if your record size is 24 bits, you cannot
