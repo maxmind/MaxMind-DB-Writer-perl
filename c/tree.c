@@ -498,7 +498,6 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         }
     }
 
-
     record_to_set->type = new_record->type;
     if (MMDBW_RECORD_TYPE_DATA == new_record->type) {
         record_to_set->value.key = new_record->value.key;
@@ -894,7 +893,7 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
         LEAVE;
 
         record_value = position + tree->node_count +
-                                DATA_SECTION_SEPARATOR_SIZE;
+                       DATA_SECTION_SEPARATOR_SIZE;
 
         SV *value = newSViv(record_value);
         (void)hv_store(args->data_pointer_cache, record->value.key,
@@ -903,7 +902,7 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
 
     if (record_value > MAX_RECORD_VALUE(tree->record_size)) {
         croak("Node value of %u exceeds the record size of %u bits",
-            record_value, tree->record_size);
+              record_value, tree->record_size);
     }
 
     return record_value;
