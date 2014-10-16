@@ -13,7 +13,7 @@ use MaxMind::DB::Common 0.031003 qw(
 use MaxMind::DB::Metadata;
 use MaxMind::DB::Writer::Serializer;
 use MaxMind::DB::Writer::Util qw( key_for_data );
-use Net::Works 0.16;
+use Net::Works 0.20;
 
 use Moose;
 use Moose::Util::TypeConstraints;
