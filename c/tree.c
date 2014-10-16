@@ -794,8 +794,8 @@ void write_search_tree(MMDBW_tree_s *tree, SV *output, const bool alias_ipv6,
     };
 
     tree->iteration_args = (void *)&args;
-
     start_iteration(tree, &encode_node);
+    tree->iteration_args = NULL;
 
     /* When the hash is _freed_, Perl decrements the ref count for each value
      * so we don't need to mess with them. */
