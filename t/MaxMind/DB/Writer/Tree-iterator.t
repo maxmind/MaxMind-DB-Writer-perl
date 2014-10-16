@@ -62,7 +62,7 @@ my $basic_tree = make_tree_from_pairs($insert);
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(4);
     $basic_tree->iterate($iterator);
 
-    test_iterator_sanity( $iterator, $basic_tree, 'basic tree' );
+    test_iterator_sanity( $iterator, $basic_tree, 6, 'basic tree' );
 
     is_deeply(
         [
@@ -105,7 +105,7 @@ my $basic_tree = make_tree_from_pairs($insert);
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);
     $tree->iterate($iterator);
 
-    test_iterator_sanity( $iterator, $tree, 'aliased tree' );
+    test_iterator_sanity( $iterator, $tree, 3, 'aliased tree' );
 
     my @data_record_networks = qw(
         ::1.0.0.0/120

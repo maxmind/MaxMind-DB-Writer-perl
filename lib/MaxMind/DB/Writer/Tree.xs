@@ -267,7 +267,7 @@ iterate(self, object)
         }
 
         tree->iteration_args = (void *)&args;
-        start_iteration(tree, &call_perl_object);
+        start_iteration(tree, true, &call_perl_object);
         tree->iteration_args = NULL;
 
 void

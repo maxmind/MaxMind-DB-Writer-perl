@@ -87,6 +87,7 @@ typedef struct MMDBW_network_s {
     extern void write_search_tree(MMDBW_tree_s *tree, SV *output, const bool alias_ipv6,
                                   SV *root_data_type, SV *serializer);
     extern void start_iteration(MMDBW_tree_s *tree,
+                                bool depth_first,
                                 void(callback) (MMDBW_tree_s *tree,
                                                 MMDBW_node_s *node,
                                                 mmdbw_uint128_t network,

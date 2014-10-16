@@ -74,6 +74,7 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
                         mmdbw_uint128_t network,
                         const uint8_t depth,
+                        bool depth_first,
                         void(callback) (MMDBW_tree_s *tree,
                                         MMDBW_node_s *node,
                                         mmdbw_uint128_t network,
@@ -771,7 +772,7 @@ void finalize_tree(MMDBW_tree_s *tree)
 LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
 {
     tree->node_count = 0;
-    start_iteration(tree, &assign_node_number);
+    start_iteration(tree, false, &assign_node_number);
 }
 
 void write_search_tree(MMDBW_tree_s *tree, SV *output, const bool alias_ipv6,
@@ -794,7 +795,7 @@ void write_search_tree(MMDBW_tree_s *tree, SV *output, const bool alias_ipv6,
     };
 
     tree->iteration_args = (void *)&args;
-    start_iteration(tree, &encode_node);
+    start_iteration(tree, false, &encode_node);
     tree->iteration_args = NULL;
 
     /* When the hash is _freed_, Perl decrements the ref count for each value
@@ -912,6 +913,7 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
  * trees with aliases. We don't want to go down the same branch more than
  * once. */
 void start_iteration(MMDBW_tree_s *tree,
+                     bool depth_first,
                      void(callback) (MMDBW_tree_s *tree,
                                      MMDBW_node_s *node,
                                      mmdbw_uint128_t network,
@@ -920,7 +922,7 @@ void start_iteration(MMDBW_tree_s *tree,
     mmdbw_uint128_t network = 0;
     uint8_t depth = 0;
 
-    iterate_tree(tree, tree->root_node, network, depth, callback);
+    iterate_tree(tree, tree->root_node, network, depth, depth_first, callback);
 
     return;
 }
@@ -929,12 +931,15 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
                         mmdbw_uint128_t network,
                         const uint8_t depth,
+                        bool depth_first,
                         void(callback) (MMDBW_tree_s *tree,
                                         MMDBW_node_s *node,
                                         mmdbw_uint128_t network,
                                         const uint8_t depth))
 {
-    callback(tree, node, network, depth);
+    if (!depth_first) {
+        callback(tree, node, network, depth);
+    }
 
     const uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
     if (MMDBW_RECORD_TYPE_NODE == node->left_record.type) {
@@ -942,7 +947,12 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                      node->left_record.value.node,
                      network,
                      depth + 1,
+                     depth_first,
                      callback);
+    }
+
+    if (depth_first) {
+        callback(tree, node, network, depth);
     }
 
     if (MMDBW_RECORD_TYPE_NODE == node->right_record.type) {
@@ -950,6 +960,7 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                      node->right_record.value.node,
                      FLIP_NETWORK_BIT(network, max_depth0, depth),
                      depth + 1,
+                     depth_first,
                      callback);
     }
 }
