@@ -934,11 +934,6 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                                         mmdbw_uint128_t network,
                                         const uint8_t depth))
 {
-    /* This is bigger than it needs to be, but I'm not sure what the max
-     * string size could be. */
-    char key[256];
-    sprintf(key, "%p", node);
-
     callback(tree, node, network, depth);
 
     const uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
