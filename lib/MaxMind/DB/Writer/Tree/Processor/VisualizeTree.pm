@@ -6,7 +6,7 @@ use warnings;
 use Data::Dumper::Concise;
 use Digest::MD5 qw( md5_hex );
 use GraphViz2;
-use Net::Works::Network 0.16;
+use Net::Works::Network;
 
 use Moose;
 
