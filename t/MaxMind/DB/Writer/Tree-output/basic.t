@@ -72,7 +72,7 @@ sub _test_search_tree {
 
     like(
         $buffer,
-        qr/\Q$one$two/,
+        qr/\A\Q$one$two/,
         "first node in search tree points to nodes 1 (L) and 2 (R) - $record_size-bit record"
     );
 
