@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+- The writer now iterates over the search tree in depth-first order when the
+  MaxMind::DB::Writer::Tree->iterate method is called. This means that
+  networks are seen in IP address order.
+
+
 0.050006 2014-07-28
 
 - The writer now throw an error when writing out the database if it would try
