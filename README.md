@@ -4,7 +4,7 @@ MaxMind::DB::Writer - Create MaxMind DB database files
 
 # VERSION
 
-version 0.050006
+version 0.050007
 
 # SYNOPSIS
 
