@@ -25,7 +25,10 @@ use MaxMind::DB::Writer::Tree;
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);
     $tree->iterate($iterator);
 
-    test_iterator_sanity( $iterator, $tree, 'tree from geolite2 sample data' );
+    test_iterator_sanity(
+        $iterator, $tree, 1115,
+        'tree from geolite2 sample data'
+    );
 }
 
 done_testing();

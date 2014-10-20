@@ -125,9 +125,10 @@ sub _test_expected_data {
 }
 
 sub test_iterator_sanity {
-    my $iterator = shift;
-    my $tree     = shift;
-    my $desc     = shift;
+    my $iterator      = shift;
+    my $tree          = shift;
+    my $network_count = shift;
+    my $desc          = shift;
 
     ok(
         ( all { $_ == 1 } values %{ $iterator->{nodes} } ),
@@ -150,8 +151,21 @@ sub test_iterator_sanity {
         "saw every record for every node in the tree - $desc"
     );
 
+    my @data_networks = map { $_->[0] } @{ $iterator->{data_records} };
+    is(
+        scalar @data_networks,
+        $network_count,
+        "saw $network_count networks - $desc"
+    );
+
+    is_deeply(
+        [ map { $_->as_string() } @data_networks ],
+        [ map { $_->as_string() } sort @data_networks ],
+        "data nodes are seen in network order when iterating - $desc"
+    );
+
     my %first_ips;
-    for my $network ( map { $_->[0] } @{ $iterator->{data_records} } ) {
+    for my $network (@data_networks) {
         $first_ips{ $network->first()->as_string }++;
     }
 
