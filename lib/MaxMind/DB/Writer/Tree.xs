@@ -288,6 +288,30 @@ lookup_ip_address(self, address)
         RETVAL
 
 void
+_freeze_tree(self, filename, frozen_params, frozen_params_size)
+    SV *self;
+    char *filename;
+    char *frozen_params;
+    int frozen_params_size;
+
+    CODE:
+        freeze_tree(tree_from_self(self), filename, frozen_params, frozen_params_size);
+
+MMDBW_tree_s *
+_thaw_tree(filename, initial_offset, ip_version, record_size, merge_record_collisions)
+    char *filename;
+    int initial_offset;
+    int ip_version;
+    int record_size;
+    bool merge_record_collisions;
+
+    CODE:
+    RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_record_collisions);
+
+    OUTPUT:
+        RETVAL
+
+void
 _free_tree(self)
     SV *self;
 

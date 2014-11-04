@@ -83,7 +83,13 @@ typedef struct MMDBW_network_s {
     extern SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr);
     extern MMDBW_node_s *new_node(MMDBW_tree_s *tree);
     extern void finalize_tree(MMDBW_tree_s *tree);
-    extern void write_search_tree(MMDBW_tree_s *tree, SV *output, const bool alias_ipv6,
+    extern void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
+                            size_t frozen_params_size);
+    extern MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
+                                   uint8_t ip_version, uint8_t record_size,
+                                   bool merge_record_collisions);
+    extern void write_search_tree(MMDBW_tree_s *tree, SV *output,
+                                  const bool alias_ipv6,
                                   SV *root_data_type, SV *serializer);
     extern void start_iteration(MMDBW_tree_s *tree,
                                 bool depth_first,
@@ -94,7 +100,6 @@ typedef struct MMDBW_network_s {
     extern SV *data_for_key(MMDBW_tree_s *tree, const char *const key);
     extern void free_tree(MMDBW_tree_s *tree);
     extern const char *const record_type_name(int record_type);
-    extern void dwarn(SV *thing);
     extern void warn_hex(uint8_t digest[16], char *where);
     extern char *md5_as_hex(uint8_t digest[16]);
     /* --prototypes end - don't remove this comment-- */

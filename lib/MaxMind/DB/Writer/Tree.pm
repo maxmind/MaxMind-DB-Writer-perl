@@ -3,6 +3,7 @@ package MaxMind::DB::Writer::Tree;
 use strict;
 use warnings;
 use namespace::autoclean;
+use autodie;
 
 use IO::Handle;
 use Math::Int128 0.06 qw( uint128 );
@@ -13,7 +14,10 @@ use MaxMind::DB::Common 0.031003 qw(
 use MaxMind::DB::Metadata;
 use MaxMind::DB::Writer::Serializer;
 use MaxMind::DB::Writer::Util qw( key_for_data );
+use MooseX::Params::Validate qw( validated_list );
 use Net::Works 0.20;
+use Sereal::Decoder qw( decode_sereal );
+use Sereal::Encoder qw( encode_sereal );
 
 use Moose;
 use Moose::Util::TypeConstraints;
@@ -67,7 +71,6 @@ has node_count => (
 
 has _tree => (
     is        => 'ro',
-    init_arg  => undef,
     lazy      => 1,
     builder   => '_build_tree',
     predicate => '_has_tree',
@@ -229,6 +232,67 @@ sub write_tree {
 
         return ${ $serializer->buffer() };
     }
+}
+
+{
+    my %do_not_freeze = map { $_ => 1 } qw(
+        _map_key_type_callback
+        _tree
+    );
+
+    sub freeze_tree {
+        my $self     = shift;
+        my $filename = shift;
+
+        my %constructor_params;
+        for my $attr ( $self->meta()->get_all_attributes() ) {
+            next unless $attr->init_arg();
+            next if $do_not_freeze{ $attr->name() };
+
+            my $reader = $attr->get_read_method();
+            $constructor_params{ $attr->init_arg() } = $self->$reader();
+        }
+
+        my $frozen = encode_sereal( \%constructor_params );
+        $self->_freeze_tree( $filename, $frozen, length $frozen );
+
+        return;
+    }
+}
+
+sub new_from_frozen_tree {
+    my $class = shift;
+    my ( $filename, $callback ) = validated_list(
+        \@_,
+        filename              => { isa => 'Str' },
+        map_key_type_callback => { isa => 'CodeRef' },
+    );
+
+    open my $fh, '<:raw', $filename;
+    my $packed_params_size;
+    unless ( read( $fh, $packed_params_size, 4 ) == 4 ) {
+        die "Could not read 4 bytes from $filename: $!";
+    }
+
+    my $params_size = unpack( 'L', $packed_params_size );
+    my $frozen_params;
+    unless ( read( $fh, $frozen_params, $params_size ) == $params_size ) {
+        die "Could not read $params_size bytes from $filename: $!";
+    }
+    my $params = decode_sereal($frozen_params);
+
+    my $tree = _thaw_tree(
+        $filename,
+        $params_size + 4,
+        map { $params->{$_} }
+            qw( ip_version record_size merge_record_collisions ),
+    );
+
+    return $class->new(
+        %{$params},
+        map_key_type_callback => $callback,
+        _tree                 => $tree,
+    );
 }
 
 sub DEMOLISH {
@@ -449,6 +513,43 @@ For node (and alias) records, the final argument will be the number of the
 node that this record points to.
 
 For empty records, there are no additional arguments.
+
+=head2 $tree->freeze_tree($filename)
+
+Given a file name, this method freezes the tree to that file. Unlike the
+C<write_tree()> method, this method does write out a MaxMind DB file. Instead,
+it writes out something that can be quickly thawed via the C<<
+MaxMind::DB::Writer::Tree->new_from_frozen_tree >> constructor. This is useful if
+you want to pass the in-memory representation of the tree between processes.
+
+=head2 MaxMind::DB::Writer::Tree->new_from_frozen_tree()
+
+This method constructs a tree from a file containing a frozen tree.
+
+This method require the following two parameters:
+
+=over 4
+
+=item * filename
+
+The filename containing the frozen tree.
+
+=item * map_key_type_callback
+
+This is a subroutine reference that is called in order to determine how to
+store each value in a map (hash) data structure. See L<DATA TYPES> below for
+more details.
+
+This needs to be passed because subroutine references cannot be reliably
+serialized and restored between processes.
+
+=back
+
+=head2 Caveat for Freeze/Thaw
+
+The frozen tree is more or less the raw C data structures written to disk. As
+such, it is very much not portable, and your ability to thaw a tree on a
+machine not identical to the one on which it was written is not guaranteed.
 
 =head1 DATA TYPES
 
