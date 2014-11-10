@@ -36,7 +36,7 @@ __END__
         },
     );
 
-    open my $fh, '>:raw', '/path/to/my-ip-data.mmdb';
+    open my $fh, '>:bytes', '/path/to/my-ip-data.mmdb';
     $tree->write_tree($fh);
 
 =head1 DESCRIPTION
