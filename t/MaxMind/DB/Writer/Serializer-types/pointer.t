@@ -11,7 +11,8 @@ use Test::More;
 test_encoding_of_type( pointer => test_cases_for('pointer') );
 
 {
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     like(
         exception { $serializer->_encode_pointer(undef) },

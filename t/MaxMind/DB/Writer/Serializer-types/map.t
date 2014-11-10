@@ -13,7 +13,8 @@ use MaxMind::DB::Writer::Serializer;
 test_encoding_of_type( map => test_cases_for('map') );
 
 {
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     like(
         exception { $serializer->_type_for_key('bad key') },

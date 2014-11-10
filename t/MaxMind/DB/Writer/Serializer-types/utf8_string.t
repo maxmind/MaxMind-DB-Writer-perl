@@ -30,7 +30,8 @@ _test_long_string(
 {
     my $string_too_big = 'x' x ( $max_size + 1 );
 
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     like(
         exception { $serializer->_encode_utf8_string($string_too_big) },
@@ -45,7 +46,8 @@ sub _test_long_string {
     my $length = shift;
     my $first_4 = shift;
 
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     my $string = 'x' x $length;
 

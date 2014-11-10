@@ -17,7 +17,8 @@ my $strings = test_cases_for(
 );
 
 {
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     for my $i ( 0, 2, 4, 6 ) {
         $serializer->store_data( utf8_string => $strings->[$i] );
@@ -41,7 +42,8 @@ my $strings = test_cases_for(
 }
 
 {
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     for my $i ( 4, 6, 8, 10 ) {
         $serializer->store_data( utf8_string => $strings->[$i] );
@@ -68,7 +70,8 @@ my $strings = test_cases_for(
 {
     my $uint16s = test_cases_for('uint16');
 
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     for my $i ( 0, 2, 4, 6 ) {
         $serializer->store_data( uint16 => $uint16s->[$i] );
@@ -96,7 +99,8 @@ my $strings = test_cases_for(
 {
     my $uint64s = test_cases_for('uint64');
 
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     for my $i ( 0, 2, 4, 6 ) {
         $serializer->store_data( uint64 => $uint64s->[$i] );
@@ -124,7 +128,8 @@ my $strings = test_cases_for(
 {
     my $uint128s = test_cases_for('uint128');
 
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     for my $i ( 0, 2, 4, 6 ) {
         $serializer->store_data( uint128 => $uint128s->[$i] );
@@ -150,7 +155,8 @@ my $strings = test_cases_for(
 }
 
 {
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     my $int = uint128(0) - 1;
 

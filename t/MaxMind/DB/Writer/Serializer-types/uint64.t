@@ -14,7 +14,8 @@ use MaxMind::DB::Writer::Serializer;
 test_encoding_of_type( uint64 => test_cases_for('uint64') );
 
 {
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     like(
         exception { $serializer->_encode_uint64(undef) },

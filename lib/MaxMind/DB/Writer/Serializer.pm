@@ -44,9 +44,7 @@ has _map_key_type_callback => (
     is       => 'ro',
     isa      => 'CodeRef',
     init_arg => 'map_key_type_callback',
-    default  => sub {
-        sub { }
-    },
+    required => 1,
 );
 
 # This is settable so we can more easily test the encoding portion of the code
