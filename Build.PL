@@ -28,7 +28,7 @@ $mb->create_build_script();
 sub _mb_args {
 
     # This is a funky way of allowing this code to run stand-alone and as a
-    # template to be processes by Dist::Zilla::Plugin::ModuleBuild::Custom
+    # template to be processed by Dist::Zilla::Plugin::ModuleBuild::Custom
     my $data = do { local $/; <DATA> };
 
     if ( $data !~ /^\#/ ) {
