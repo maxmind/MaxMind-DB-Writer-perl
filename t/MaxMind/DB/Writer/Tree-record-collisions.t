@@ -468,6 +468,7 @@ use Net::Works::Network;
         languages               => ['en'],
         description             => { en => 'Test tree' },
         merge_record_collisions => 1,
+        map_key_type_callback   => sub { },
     );
 
     $tree->insert_network(
@@ -499,6 +500,7 @@ use Net::Works::Network;
         languages               => ['en'],
         description             => { en => 'Test tree' },
         merge_record_collisions => 1,
+        map_key_type_callback   => sub { },
     );
 
     $tree->insert_network(

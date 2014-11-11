@@ -27,7 +27,9 @@ ok(
     'input is marked as utf8 in Perl'
 );
 
-my $serializer = MaxMind::DB::Writer::Serializer->new();
+my $serializer
+    = MaxMind::DB::Writer::Serializer->new( map_key_type_callback => sub { }
+    );
 
 like(
     exception { $serializer->store_data( bytes => $input ) },

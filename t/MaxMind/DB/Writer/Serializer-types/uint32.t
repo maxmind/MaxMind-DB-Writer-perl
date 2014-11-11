@@ -11,7 +11,8 @@ use Test::More;
 test_encoding_of_type( uint32 => test_cases_for('uint32') );
 
 {
-    my $serializer = MaxMind::DB::Writer::Serializer->new();
+    my $serializer = MaxMind::DB::Writer::Serializer->new(
+        map_key_type_callback => sub { } );
 
     like(
         exception { $serializer->_encode_uint32(undef) },

@@ -12,11 +12,12 @@ use Net::Works::Network;
     my $int128 = uint128(2) << 120;
 
     my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version  => 4,
-        record_size => 24,
-        database_type => 'Test',
-        languages     => ['en'],
-        description   => { en => 'Test tree' },
+        ip_version            => 4,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        map_key_type_callback => sub { 'uint128' },
     );
 
     is(

@@ -83,10 +83,10 @@ has _root_data_type => (
 );
 
 has _map_key_type_callback => (
-    is        => 'ro',
-    isa       => 'CodeRef',
-    init_arg  => 'map_key_type_callback',
-    predicate => '_has_map_key_type_callback',
+    is       => 'ro',
+    isa      => 'CodeRef',
+    init_arg => 'map_key_type_callback',
+    required => 1,
 );
 
 has _database_type => (
@@ -158,11 +158,7 @@ sub _build_serializer {
     my $self = shift;
 
     return MaxMind::DB::Writer::Serializer->new(
-        (
-            $self->_has_map_key_type_callback()
-            ? ( map_key_type_callback => $self->_map_key_type_callback() )
-            : ()
-        ),
+        map_key_type_callback => $self->_map_key_type_callback(),
     );
 }
 

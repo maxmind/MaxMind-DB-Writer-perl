@@ -46,10 +46,11 @@ sub make_tree_from_pairs {
 
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version => ( $pairs->[0][0] =~ /::/ ? 6 : 4 ),
-        record_size   => 24,
-        database_type => 'Test',
-        languages     => ['en'],
-        description   => { en => 'Test tree' },
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        map_key_type_callback => sub { },
         %{ $args || {} },
     );
 
