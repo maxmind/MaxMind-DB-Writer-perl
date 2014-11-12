@@ -23,21 +23,7 @@ before_install:
 install:
   - sudo apt-get update
   - sudo apt-get install graphviz-dev
-  - cpan-install GraphViz2
-  - git clone --branch=master git://github.com/maxmind/MaxMind-DB-Common-perl.git common
-  - cd common
-  - "dzil authordeps --missing | xargs -n 5 -P 10 cpanm --quiet --notest"
-  - "dzil listdeps --missing  | grep -v MaxMind::DB | cpanm --quiet --notest"
-  - dzil install --install-comman "cpanm --quiet --notest ."
-  - cd ..
-  - git clone --branch=master git://github.com/maxmind/MaxMind-DB-Reader-perl.git reader
-  - cd reader
-  - "dzil authordeps --missing | xargs -n 5 -P 10 cpanm --quiet --notest"
-  - "dzil listdeps --missing  | grep -v MaxMind::DB | cpanm --quiet --notest"
-  - dzil install --install-comman "cpanm --quiet --notest ."
-  - cd ..
-  - "dzil authordeps --missing | xargs -n 5 -P 10 cpanm --quiet --notest"
-  - "dzil listdeps --missing | grep -v MaxMind::DB | cpanm --quiet --notest"
+  - cpan-install GraphViz2 ExtUtils::MakeMaker~6.68 --deps
 
 script:
   - perl Makefile.PL
