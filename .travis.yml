@@ -26,8 +26,8 @@ install:
   - cpan-install GraphViz2 ExtUtils::MakeMaker~6.68 --deps
 
 script:
-  - perl Makefile.PL
-  - make
+  - perl Build.PL
+  - ./Build
   - prove -br -j$(test-jobs) $(test-files)
 
 notifications:
