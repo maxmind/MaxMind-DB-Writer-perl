@@ -7,32 +7,42 @@ perl:
    - "5.16"
    - "5.14"
 
+env:
+  global:
+    - RELEASE_TESTING=1
+    - AUTHOR_TESTING=1
+
 before_install:
-   - git clone git://github.com/haarg/perl-travis-helper
-   - source perl-travis-helper/init
-   - build-perl
-   - perl -V
-   - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=j10:c HARNESS_TIMER=1 SKIP_POD_LINKCHECK=1
+  - git clone git://github.com/haarg/perl-travis-helper ~/perl-travis-helper
+  - source ~/perl-travis-helper/init
+  - build-perl
+  - perl -V
+  - build-dist
+  - cd $BUILD_DIR
 
 install:
-   - cpanm --quiet --notest --skip-satisfied Dist::Zilla~5 Dist::Zilla::Plugin::PodWeaver Dist::Zilla::PluginBundle::ROKR Pod::Coverage::Moose Pod::Weaver::Section::Contributors Test::EOL Test::NoTabs Test::Spelling JSON
-   - git clone --branch=master git://github.com/maxmind/MaxMind-DB-Common-perl.git common
-   - cd common
-   - "dzil authordeps --missing | xargs -n 5 -P 10 cpanm --quiet --notest"
-   - "dzil listdeps --missing  | grep -v MaxMind::DB | cpanm --quiet --notest"
-   - dzil install --install-comman "cpanm --quiet --notest ."
-   - cd ..
-   - git clone --branch=master git://github.com/maxmind/MaxMind-DB-Reader-perl.git reader
-   - cd reader
-   - "dzil authordeps --missing | xargs -n 5 -P 10 cpanm --quiet --notest"
-   - "dzil listdeps --missing  | grep -v MaxMind::DB | cpanm --quiet --notest"
-   - dzil install --install-comman "cpanm --quiet --notest ."
-   - cd ..
-   - "dzil authordeps --missing | xargs -n 5 -P 10 cpanm --quiet --notest"
-   - "dzil listdeps --missing | grep -v MaxMind::DB | cpanm --quiet --notest"
+  - sudo apt-get update
+  - sudo apt-get install graphviz-dev
+  - cpan-install GraphViz2
+  - git clone --branch=master git://github.com/maxmind/MaxMind-DB-Common-perl.git common
+  - cd common
+  - "dzil authordeps --missing | xargs -n 5 -P 10 cpanm --quiet --notest"
+  - "dzil listdeps --missing  | grep -v MaxMind::DB | cpanm --quiet --notest"
+  - dzil install --install-comman "cpanm --quiet --notest ."
+  - cd ..
+  - git clone --branch=master git://github.com/maxmind/MaxMind-DB-Reader-perl.git reader
+  - cd reader
+  - "dzil authordeps --missing | xargs -n 5 -P 10 cpanm --quiet --notest"
+  - "dzil listdeps --missing  | grep -v MaxMind::DB | cpanm --quiet --notest"
+  - dzil install --install-comman "cpanm --quiet --notest ."
+  - cd ..
+  - "dzil authordeps --missing | xargs -n 5 -P 10 cpanm --quiet --notest"
+  - "dzil listdeps --missing | grep -v MaxMind::DB | cpanm --quiet --notest"
 
 script:
-   - dzil test --release
+  - perl Makefile.PL
+  - make
+  - prove -br -j$(test-jobs) $(test-files)
 
 notifications:
   email:
@@ -40,4 +50,3 @@ notifications:
       - dev@maxmind.com
     on_success: change
     on_failure: always
-
