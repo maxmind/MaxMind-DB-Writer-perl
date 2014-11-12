@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.060000 2014-11-11
+
 - The map_key_type_callback argument for the MaxMind::DB::Writer::Tree class
   is now required. In some use cases it's not really used but in the most
   common use case leaving it out simply leads to confusing errors when
