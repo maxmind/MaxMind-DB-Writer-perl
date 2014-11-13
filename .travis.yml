@@ -22,7 +22,7 @@ before_install:
 
 install:
   - sudo apt-get update
-  - sudo apt-get install graphviz-dev
+  - sudo apt-get install graphviz graphviz-dev
   - cpan-install GraphViz2 ExtUtils::MakeMaker~6.68 --deps
 
 script:
