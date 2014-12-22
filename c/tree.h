@@ -77,7 +77,6 @@ typedef struct MMDBW_network_s {
                                   bool merge_record_collisions);
     extern int insert_network(MMDBW_tree_s *tree, const char *const ipstr,
                               const uint8_t mask_length, SV *key, SV *data);
-    extern void delete_reserved_networks(MMDBW_tree_s *tree);
     extern void alias_ipv4_networks(MMDBW_tree_s *tree);
     extern SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
                                      const char *const key_into, MMDBW_network_s *network);

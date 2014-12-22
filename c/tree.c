@@ -43,9 +43,6 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
 LOCAL const char *const network_as_string(const char *const ipstr,
                                           const uint8_t mask_length);
 LOCAL void free_network(MMDBW_network_s *network);
-LOCAL void delete_network(MMDBW_tree_s *tree, const char *const ipstr,
-                          const uint8_t mask_length);
-LOCAL bool tree_has_network(MMDBW_tree_s *tree, MMDBW_network_s *network);
 LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                                      MMDBW_network_s *network,
                                      MMDBW_record_s *new_record,
