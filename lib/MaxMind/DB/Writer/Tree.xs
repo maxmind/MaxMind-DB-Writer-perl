@@ -76,18 +76,17 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     PUSHMARK(SP);
     EXTEND(SP, stack_size);
     PUSHs((SV *)args->receiver);
-    PUSHs(sv_2mortal(newSVu64(node_number)));
-    PUSHs(sv_2mortal(newSViv((int)is_right)));
-    PUSHs(sv_2mortal(newSVu128(node_ip_num)));
-    PUSHs(sv_2mortal(newSViv(node_mask_length)));
-    PUSHs(sv_2mortal(newSVu128(record_ip_num)));
-    PUSHs(sv_2mortal(newSViv(record_mask_length)));
+    mPUSHs(newSVu64(node_number));
+    mPUSHi((int)is_right);
+    mPUSHs(newSVu128(node_ip_num));
+    mPUSHi(node_mask_length);
+    mPUSHs(newSVu128(record_ip_num));
+    mPUSHi(record_mask_length);
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
-        PUSHs(sv_2mortal(newSVsv(
-                             data_for_key(tree, record->value.key))));
+        mPUSHs(newSVsv(data_for_key(tree, record->value.key)));
     } else if (MMDBW_RECORD_TYPE_NODE == record->type ||
                MMDBW_RECORD_TYPE_ALIAS == record->type) {
-        PUSHs(sv_2mortal(newSViv(record->value.node->number)));
+        mPUSHi(record->value.node->number);
     }
     PUTBACK;
 
