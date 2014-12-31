@@ -147,7 +147,7 @@ LOCAL const char *const store_data_in_tree(MMDBW_tree_s *tree, SV *key_sv,
     if (NULL == data) {
         data = checked_malloc(sizeof(MMDBW_data_hash_s));
 
-        SvREFCNT_inc(data_sv);
+        SvREFCNT_inc_simple_void_NN(data_sv);
         data->data_sv = data_sv;
 
         data->key = checked_malloc(SHA1_KEY_LENGTH + 1);
@@ -502,7 +502,7 @@ LOCAL void merge_hash(HV *from, HV *to)
         }
 
         SV *value = HeVAL(he);
-        SvREFCNT_inc(value);
+        SvREFCNT_inc_simple_void_NN(value);
         (void)hv_store(to, key, key_length, value, hash);
     }
 
@@ -853,7 +853,7 @@ LOCAL SV *key_for_data(SV *data)
     }
 
     SV *key = POPs;
-    SvREFCNT_inc(key);
+    SvREFCNT_inc_simple_void_NN(key);
 
     PUTBACK;
     FREETMPS;
