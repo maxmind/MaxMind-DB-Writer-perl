@@ -333,7 +333,7 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         if (strlen(new_key) == strlen(other_key)
             && 0 == strcmp(new_key, other_key)) {
 
-            int bytes_length = network->family == AF_INET ? 4 : 16;
+            size_t bytes_length = network->family == AF_INET ? 4 : 16;
             uint8_t *bytes = checked_malloc(bytes_length);
             memcpy(bytes, network->bytes, bytes_length);
 
@@ -404,7 +404,7 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
 
         free((char *)left.as_string);
 
-        int bytes_length = network->family == AF_INET ? 4 : 16;
+        size_t bytes_length = network->family == AF_INET ? 4 : 16;
         uint8_t right_bytes[bytes_length];
         memcpy(&right_bytes, network->bytes, bytes_length);
 
