@@ -58,9 +58,9 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
                            const uint64_t node_number,
                            MMDBW_record_s *record,
                            const mmdbw_uint128_t node_ip_num,
-                           const uint8_t node_mask_length,
+                           const uint8_t node_prefix_length,
                            const mmdbw_uint128_t record_ip_num,
-                           const uint8_t record_mask_length,
+                           const uint8_t record_prefix_length,
                            const bool is_right)
 {
     dSP;
@@ -79,9 +79,9 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     mPUSHs(newSVu64(node_number));
     mPUSHi((int)is_right);
     mPUSHs(newSVu128(node_ip_num));
-    mPUSHi(node_mask_length);
+    mPUSHi(node_prefix_length);
     mPUSHs(newSVu128(record_ip_num));
-    mPUSHi(record_mask_length);
+    mPUSHi(record_prefix_length);
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
         mPUSHs(newSVsv(data_for_key(tree, record->value.key)));
     } else if (MMDBW_RECORD_TYPE_NODE == record->type ||
@@ -117,7 +117,7 @@ SV *method_for_record_type(perl_iterator_args_s *args, const int record_type)
 
 void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
                       const mmdbw_uint128_t node_ip_num,
-                      const uint8_t node_mask_length)
+                      const uint8_t node_prefix_length)
 {
     perl_iterator_args_s *args = (perl_iterator_args_s *)tree->iteration_args;
     SV *left_method = method_for_record_type(args, node->left_record.type);
@@ -129,9 +129,9 @@ void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               node->number,
                               &(node->left_record),
                               node_ip_num,
-                              node_mask_length,
+                              node_prefix_length,
                               node_ip_num,
-                              node_mask_length + 1,
+                              node_prefix_length + 1,
                               false);
     }
 
@@ -144,10 +144,10 @@ void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               node->number,
                               &(node->right_record),
                               node_ip_num,
-                              node_mask_length,
+                              node_prefix_length,
                               FLIP_NETWORK_BIT(node_ip_num, max_depth0,
-                                               node_mask_length),
-                              node_mask_length + 1,
+                                               node_prefix_length),
+                              node_prefix_length + 1,
                               true);
     }
     return;
@@ -194,15 +194,15 @@ _build_tree(self)
         RETVAL
 
 void
-_insert_network(self, network, mask_length, key, data)
+_insert_network(self, network, prefix_length, key, data)
     SV *self;
     char *network;
-    uint8_t mask_length;
+    uint8_t prefix_length;
     SV *key;
     SV *data;
 
     CODE:
-        insert_network(tree_from_self(self), network, mask_length, key, data);
+        insert_network(tree_from_self(self), network, prefix_length, key, data);
 
 void
 _write_search_tree(self, output, alias_ipv6, root_data_type, serializer)

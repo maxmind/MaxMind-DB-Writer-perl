@@ -86,9 +86,9 @@ sub _insert_generated_data {
 
     for my $int ( 1 .. $inserts ) {
         my $ipv4 = Net::Works::Network->new_from_integer(
-            integer     => $int,
-            mask_length => 128,
-            version     => 6,
+            integer       => $int,
+            prefix_length => 128,
+            version       => 6,
         );
 
         my %records;

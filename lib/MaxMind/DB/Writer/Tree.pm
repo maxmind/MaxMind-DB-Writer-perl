@@ -146,7 +146,7 @@ sub insert_network {
 
     $self->_insert_network(
         $network->first()->as_string(),
-        $network->mask_length(),
+        $network->prefix_length(),
         key_for_data($data),
         $data,
     );

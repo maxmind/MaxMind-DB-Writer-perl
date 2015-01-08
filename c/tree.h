@@ -64,7 +64,7 @@ typedef struct MMDBW_tree_s {
 
 typedef struct MMDBW_network_s {
     const uint8_t *const bytes;
-    const uint8_t mask_length;
+    const uint8_t prefix_length;
     const uint8_t max_depth0;
     const int family;
     const char *const address_string;
@@ -76,7 +76,7 @@ typedef struct MMDBW_network_s {
     extern MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
                                   bool merge_record_collisions);
     extern int insert_network(MMDBW_tree_s *tree, const char *const ipstr,
-                              const uint8_t mask_length, SV *key, SV *data);
+                              const uint8_t prefix_length, SV *key, SV *data);
     extern void alias_ipv4_networks(MMDBW_tree_s *tree);
     extern SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
                                      const char *const key_into, MMDBW_network_s *network);

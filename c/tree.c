@@ -39,9 +39,9 @@ LOCAL const char *const store_data_in_tree(MMDBW_tree_s *tree, SV *key_sv,
                                            SV *data_sv);
 LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
                                       const char *const ipstr,
-                                      const uint8_t mask_length);
+                                      const uint8_t prefix_length);
 LOCAL const char *const network_as_string(const char *const ipstr,
-                                          const uint8_t mask_length);
+                                          const uint8_t prefix_length);
 LOCAL void free_network(MMDBW_network_s *network);
 LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                                      MMDBW_network_s *network,
@@ -104,9 +104,9 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
 }
 
 int insert_network(MMDBW_tree_s *tree, const char *const ipstr,
-                   const uint8_t mask_length, SV *key, SV *data)
+                   const uint8_t prefix_length, SV *key, SV *data)
 {
-    MMDBW_network_s network = resolve_network(tree, ipstr, mask_length);
+    MMDBW_network_s network = resolve_network(tree, ipstr, prefix_length);
 
     if (tree->ip_version == 4 && network.family == AF_INET6) {
         return -1;
@@ -162,7 +162,7 @@ LOCAL const char *const store_data_in_tree(MMDBW_tree_s *tree, SV *key_sv,
 /* XXX - this is mostly copied from libmaxminddb - can we somehow share this code? */
 LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
                                       const char *const ipstr,
-                                      const uint8_t mask_length)
+                                      const uint8_t prefix_length)
 {
     struct addrinfo ai_hints;
     ai_hints.ai_socktype = 0;
@@ -198,11 +198,11 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
 
     MMDBW_network_s network = {
         .bytes          = bytes,
-        .mask_length    = mask_length,
+        .prefix_length  = prefix_length,
         .family         = addresses->ai_addr->sa_family,
         .max_depth0     = (family == AF_INET ? 31 : 127),
         .address_string = ipstr,
-        .as_string      = network_as_string(ipstr,       mask_length)
+        .as_string      = network_as_string(ipstr,       prefix_length)
     };
 
     freeaddrinfo(addresses);
@@ -211,11 +211,11 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
 }
 
 LOCAL const char *const network_as_string(const char *const ipstr,
-                                          const uint8_t mask_length)
+                                          const uint8_t prefix_length)
 {
     /* 3 chars for up to 3 digits of netmask and 1 for the slash and 1 for the \0. */
     char *string = checked_malloc(strlen(ipstr) + 5);
-    sprintf(string, "%s/%u", ipstr, mask_length);
+    sprintf(string, "%s/%u", ipstr, prefix_length);
     return (const char *)string;
 }
 
@@ -227,21 +227,21 @@ LOCAL void free_network(MMDBW_network_s *network)
 
 struct network {
     const char *const ipstr;
-    const uint8_t mask_length;
+    const uint8_t prefix_length;
 };
 
 static struct network ipv4_aliases[] = {
     {
         .ipstr = "::ffff:0:0",
-        .mask_length = 96
+        .prefix_length = 96
     },
     {
         .ipstr = "2001::",
-        .mask_length = 32
+        .prefix_length = 32
     },
     {
         .ipstr = "2002::",
-        .mask_length = 16
+        .prefix_length = 16
     }
 };
 
@@ -273,7 +273,7 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
     for (int i = 0; i <= 2; i++) {
         MMDBW_network_s alias_network =
             resolve_network(tree, ipv4_aliases[i].ipstr,
-                            ipv4_aliases[i].mask_length);
+                            ipv4_aliases[i].prefix_length);
 
         int current_bit;
         MMDBW_node_s *last_node_for_alias = find_node_for_network(
@@ -322,7 +322,7 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
      * record in the node also has the same data, then we instead want to
      * insert a single data record in this node's parent. We do this by
      * inserting the new record for the parent network, which we can calculate
-     * quite easily by subtracting 1 from this network's mask length. */
+     * quite easily by subtracting 1 from this network's prefix length. */
     if (MMDBW_RECORD_TYPE_DATA == new_record->type
         && MMDBW_RECORD_TYPE_DATA == other_record->type
         ) {
@@ -337,15 +337,15 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
             uint8_t *bytes = checked_malloc(bytes_length);
             memcpy(bytes, network->bytes, bytes_length);
 
-            uint8_t parent_mask_length = network->mask_length - 1;
+            uint8_t parent_prefix_length = network->prefix_length - 1;
             MMDBW_network_s parent_network = {
                 .bytes          = bytes,
-                .mask_length    = parent_mask_length,
+                .prefix_length  = parent_prefix_length,
                 .max_depth0     = network->max_depth0,
                 .family         = network->family,
                 .address_string = network->address_string,
                 .as_string      = network_as_string(
-                    network->address_string, parent_mask_length)
+                    network->address_string, parent_prefix_length)
             };
 
             /* We don't need to merge record collisions in this insert as
@@ -377,20 +377,20 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
     if (MMDBW_RECORD_TYPE_NODE == record_to_set->type ||
         MMDBW_RECORD_TYPE_ALIAS == record_to_set->type) {
 
-        if (network->mask_length > network->max_depth0) {
-            croak("Something is very wrong. Mask length is too long.");
+        if (network->prefix_length > network->max_depth0) {
+            croak("Something is very wrong. Prefix length is too long.");
         }
 
-        uint8_t new_mask_length = network->mask_length + 1;
+        uint8_t new_prefix_length = network->prefix_length + 1;
 
         MMDBW_network_s left = {
             .bytes          = network->bytes,
-            .mask_length    = new_mask_length,
+            .prefix_length  = new_prefix_length,
             .max_depth0     = network->max_depth0,
             .family         = network->family,
             .address_string = network->address_string,
             .as_string      = network_as_string(
-                network->address_string, new_mask_length)
+                network->address_string, new_prefix_length)
         };
 
         MMDBW_record_s new_left_record = {
@@ -408,8 +408,8 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
         uint8_t right_bytes[bytes_length];
         memcpy(&right_bytes, network->bytes, bytes_length);
 
-        right_bytes[ (new_mask_length - 1) / 8]
-            |= 1 << ((network->max_depth0 + 1 - new_mask_length) % 8);
+        right_bytes[ (new_prefix_length - 1) / 8]
+            |= 1 << ((network->max_depth0 + 1 - new_prefix_length) % 8);
 
         char right_address_string[AF_INET ? INET_ADDRSTRLEN :
                                   INET6_ADDRSTRLEN];
@@ -418,12 +418,12 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
 
         MMDBW_network_s right = {
             .bytes          = (const uint8_t *const)&right_bytes,
-            .mask_length    = new_mask_length,
+            .prefix_length  = new_prefix_length,
             .max_depth0     = network->max_depth0,
             .family         = network->family,
             .address_string = right_address_string,
             .as_string      = network_as_string(
-                right_address_string, new_mask_length)
+                right_address_string, new_prefix_length)
         };
 
         MMDBW_record_s new_right_record = {
@@ -546,7 +546,7 @@ LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                               MMDBW_record_s *record))
 {
     MMDBW_node_s *node = tree->root_node;
-    uint8_t last_bit = network->max_depth0 - (network->mask_length - 1);
+    uint8_t last_bit = network->max_depth0 - (network->prefix_length - 1);
 
     for (*current_bit = network->max_depth0; *current_bit > last_bit;
          (*current_bit)--) {

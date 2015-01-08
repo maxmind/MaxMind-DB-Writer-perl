@@ -288,7 +288,7 @@ sub _subnet_as_v6 {
     my $subnet_string
         = '::'
         . $subnet->first()->as_string() . '/'
-        . ( $subnet->mask_length() + 96 );
+        . ( $subnet->prefix_length() + 96 );
 
     return Net::Works::Network->new_from_string(
         string  => $subnet_string,
