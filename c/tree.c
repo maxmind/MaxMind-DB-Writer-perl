@@ -133,7 +133,7 @@ LOCAL void insert_resolved_network(MMDBW_tree_s *tree, MMDBW_network_s *network,
     insert_record_for_network(tree, network, &new_record,
                               tree->merge_record_collisions);
 
-    tree->is_finalized = 0;
+    tree->is_finalized = false;
 }
 
 LOCAL const char *const store_data_in_tree(MMDBW_tree_s *tree, SV *key_sv,
