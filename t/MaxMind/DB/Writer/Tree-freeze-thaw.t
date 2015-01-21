@@ -4,6 +4,11 @@ use utf8;
 
 use lib 't/lib';
 
+use Test::Requires {
+    JSON => 0,
+};
+
+use Test::MaxMind::DB::Writer qw( make_tree_from_pairs );
 use Test::More;
 
 use File::Temp qw( tempdir );
@@ -87,6 +92,28 @@ for my $record_size ( 24, 28, 32 ) {
             );
         }
     }
+}
+
+{
+    open my $fh, '<', 't/test-data/geolite2-sample.json';
+    my $geolite2_data = do { local $/; <$fh> };
+    my $records = JSON->new->decode($geolite2_data);
+    close $fh;
+
+    my $tree = make_tree_from_pairs(
+        $records,
+        {
+            root_data_type     => 'utf8_string',
+            alias_ipv6_to_ipv4 => 1,
+        }
+    );
+
+    subtest(
+        'Tree made from GeoLite2 sample data',
+        sub {
+            _test_freeze_thaw_for_tree($tree);
+        }
+    );
 }
 
 sub _test_freeze_thaw_for_tree {
