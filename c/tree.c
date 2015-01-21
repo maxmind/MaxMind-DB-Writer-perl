@@ -832,7 +832,7 @@ LOCAL void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
 {
     if ((args->buffer - args->buffer_start) + size >= args->max_size) {
         croak(
-            "About to write past end of mmap buffer with %s - (%p - %p) + %d = %d > %d\n",
+            "About to write past end of mmap buffer with %s - (%p - %p) + %u = %u > %u\n",
             what,
             args->buffer,
             args->buffer_start,
@@ -856,7 +856,7 @@ LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
         croak("Could not write frozen data size to file: %s", strerror(errno));
     }
     if (written != sizeof(STRLEN)) {
-        croak("Could not write frozen data size to file: %d != %d", written,
+        croak("Could not write frozen data size to file: %d != %u", written,
               sizeof(STRLEN));
     }
 
@@ -865,7 +865,7 @@ LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
         croak("Could not write frozen data size to file: %s", strerror(errno));
     }
     if (written != frozen_data_size) {
-        croak("Could not write frozen data to file: %d != %d", written,
+        croak("Could not write frozen data to file: %d != %u", written,
               frozen_data_size);
     }
 
