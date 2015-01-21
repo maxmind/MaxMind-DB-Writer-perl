@@ -12,13 +12,44 @@ use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
 
 {
+    my $cb = sub {'uint32'};
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version              => 4,
+        record_size             => 24,
+        database_type           => 'Test',
+        languages               => ['en'],
+        description             => { en => 'Test tree' },
+        merge_record_collisions => 1,
+        map_key_type_callback   => $cb,
+    );
+
+    my $count = 2**8;
+
+    for my $i ( 1 .. $count ) {
+        my $ipv4 = Net::Works::Network->new_from_integer(
+            integer       => $i,
+            prefix_length => $i % 32,
+            version       => 4,
+        );
+        $tree->insert_network( $ipv4, { i => $i } );
+    }
+
+    subtest(
+        "Tree with $count networks - IPv4 only",
+        sub {
+            _test_freeze_thaw_for_tree($tree, $cb);
+        }
+    );
+}
+
+{
     my $cb = sub {
         my $key = $_[0];
         $key =~ s/X$//;
         return $key eq 'array' ? [ 'array', 'uint32' ] : $key;
     };
 
-    my $tree1 = MaxMind::DB::Writer::Tree->new(
+    my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version              => 6,
         record_size             => 24,
         database_type           => 'Test',
@@ -28,7 +59,7 @@ use Net::Works::Network;
         map_key_type_callback   => $cb,
     );
 
-    my $count       = 2**12;
+    my $count       = 2**14;
     my $ipv6_offset = uint128(2)**34;
 
     for my $i ( 1 .. $count ) {
@@ -37,15 +68,27 @@ use Net::Works::Network;
             prefix_length => 128,
             version       => 6
         );
-        $tree1->insert_network( $ipv4, _data_record( $i % 16 ) );
+        $tree->insert_network( $ipv4, _data_record( $i % 16 ) );
 
         my $ipv6 = Net::Works::Network->new_from_integer(
             integer       => $i + $ipv6_offset,
             prefix_length => 128,
             version       => 6
         );
-        $tree1->insert_network( $ipv6, _data_record( $i % 16 ) );
+        $tree->insert_network( $ipv6, _data_record( $i % 16 ) );
     }
+
+    subtest(
+        "Tree with $count networks - mixed IPv4 and IPv6",
+        sub {
+            _test_freeze_thaw_for_tree($tree, $cb);
+        }
+    );
+}
+
+sub _test_freeze_thaw_for_tree {
+    my $tree1 = shift;
+    my $cb    = shift;
 
     my $dir = tempdir( CLEANUP => 1 );
     my $file = "$dir/frozen-tree";

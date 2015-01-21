@@ -814,7 +814,9 @@ LOCAL void freeze_data_record(MMDBW_tree_s *tree,
 {
     freeze_args_s *args = tree->iteration_args;
 
-    freeze_to_buffer(args, &(network), 16, "network");
+    /* It'd save some space to shrink this to 4 bytes for IPv4-only trees, but
+     * that would also complicated thawing quite a bit. */
+    freeze_to_buffer(args, &network, 16, "network");
     freeze_to_buffer(args, &(depth), 1, "depth");
 
     SV *data_sv = data_for_key(tree, key);
@@ -994,9 +996,14 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
 
     thawed_network_s *thawed = checked_malloc(sizeof(thawed_network_s));
 
-    size_t bytes_length = 4 == tree->ip_version ? 4 : 16;
-    uint8_t *bytes = checked_malloc(bytes_length);
-    memcpy(bytes, &start_ip, bytes_length);
+    uint8_t *bytes;
+    if (tree->ip_version == 4) {
+        bytes = checked_malloc(4);
+        memcpy(bytes, start_ip_bytes + 12, 4);
+    } else {
+        bytes = checked_malloc(4);
+        memcpy(bytes, &start_ip, 16);
+    }
 
     MMDBW_network_s network = {
         .bytes          = bytes,
