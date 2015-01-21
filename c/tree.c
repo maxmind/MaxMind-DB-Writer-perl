@@ -852,12 +852,18 @@ LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
     char *frozen_data_chars = SvPV(frozen_data, frozen_data_size);
 
     ssize_t written = write(fd, &frozen_data_size, sizeof(STRLEN));
+    if (-1 == written) {
+        croak("Could not write frozen data size to file: %s", strerror(errno));
+    }
     if (written != sizeof(STRLEN)) {
         croak("Could not write frozen data size to file: %d != %d", written,
               sizeof(STRLEN));
     }
 
     written = write(fd, frozen_data_chars, frozen_data_size);
+    if (-1 == written) {
+        croak("Could not write frozen data size to file: %s", strerror(errno));
+    }
     if (written != frozen_data_size) {
         croak("Could not write frozen data to file: %d != %d", written,
               frozen_data_size);
