@@ -551,6 +551,9 @@ The frozen tree is more or less the raw C data structures written to disk. As
 such, it is very much not portable, and your ability to thaw a tree on a
 machine not identical to the one on which it was written is not guaranteed.
 
+In addition, there is no guarantee that the freeze/thaw format will be stable
+across different versions of this module.
+
 =head1 DATA TYPES
 
 The MaxMind DB file format is strongly typed. Because Perl is not strongly
