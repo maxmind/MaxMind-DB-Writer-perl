@@ -102,12 +102,12 @@ sub _test_freeze_thaw_for_tree {
     );
 
     my $tree1_output;
-    open my $fh, '>', \$tree1_output;
+    open my $fh, '>:raw', \$tree1_output;
     $tree1->write_tree($fh);
     close $fh;
 
     my $tree2_output;
-    open $fh, '>', \$tree2_output;
+    open $fh, '>:raw', \$tree2_output;
     $tree2->write_tree($fh);
     close $fh;
 
