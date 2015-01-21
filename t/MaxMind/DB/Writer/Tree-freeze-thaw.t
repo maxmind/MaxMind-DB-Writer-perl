@@ -11,79 +11,83 @@ use Math::Int128 qw( uint128 );
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
 
-{
-    my $cb = sub {'uint32'};
-    my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version              => 4,
-        record_size             => 24,
-        database_type           => 'Test',
-        languages               => ['en'],
-        description             => { en => 'Test tree' },
-        merge_record_collisions => 1,
-        map_key_type_callback   => $cb,
-    );
-
-    my $count = 2**8;
-
-    for my $i ( 1 .. $count ) {
-        my $ipv4 = Net::Works::Network->new_from_integer(
-            integer       => $i,
-            prefix_length => $i % 32,
-            version       => 4,
+# The record size really has nothing to do with the freeze/thaw code, but it
+# doesn't really hurt to test this either.
+for my $record_size ( 24, 28, 32 ) {
+    {
+        my $cb = sub { 'uint32' };
+        my $tree = MaxMind::DB::Writer::Tree->new(
+            ip_version              => 4,
+            record_size             => $record_size,
+            database_type           => 'Test',
+            languages               => [ 'en', 'fr' ],
+            description             => { en => 'Test tree' },
+            merge_record_collisions => 1,
+            map_key_type_callback   => $cb,
         );
-        $tree->insert_network( $ipv4, { i => $i } );
-    }
 
-    subtest(
-        "Tree with $count networks - IPv4 only",
-        sub {
-            _test_freeze_thaw_for_tree($tree, $cb);
+        my $count = 2**8;
+
+        for my $i ( 1 .. $count ) {
+            my $ipv4 = Net::Works::Network->new_from_integer(
+                integer       => $i,
+                prefix_length => $i % 32,
+                version       => 4,
+            );
+            $tree->insert_network( $ipv4, { i => $i } );
         }
-    );
-}
 
-{
-    my $cb = sub {
-        my $key = $_[0];
-        $key =~ s/X$//;
-        return $key eq 'array' ? [ 'array', 'uint32' ] : $key;
-    };
-
-    my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version              => 6,
-        record_size             => 24,
-        database_type           => 'Test',
-        languages               => ['en'],
-        description             => { en => 'Test tree' },
-        merge_record_collisions => 1,
-        map_key_type_callback   => $cb,
-    );
-
-    my $count       = 2**14;
-    my $ipv6_offset = uint128(2)**34;
-
-    for my $i ( 1 .. $count ) {
-        my $ipv4 = Net::Works::Network->new_from_integer(
-            integer       => $i,
-            prefix_length => 128,
-            version       => 6
+        subtest(
+            "Tree with $count networks - IPv4 only - $record_size-bit records",
+            sub {
+                _test_freeze_thaw_for_tree( $tree, $cb );
+            }
         );
-        $tree->insert_network( $ipv4, _data_record( $i % 16 ) );
 
-        my $ipv6 = Net::Works::Network->new_from_integer(
-            integer       => $i + $ipv6_offset,
-            prefix_length => 128,
-            version       => 6
-        );
-        $tree->insert_network( $ipv6, _data_record( $i % 16 ) );
-    }
+        {
+            my $cb = sub {
+                my $key = $_[0];
+                $key =~ s/X$//;
+                return $key eq 'array' ? [ 'array', 'uint32' ] : $key;
+            };
 
-    subtest(
-        "Tree with $count networks - mixed IPv4 and IPv6",
-        sub {
-            _test_freeze_thaw_for_tree($tree, $cb);
+            my $tree = MaxMind::DB::Writer::Tree->new(
+                ip_version              => 6,
+                record_size             => 24,
+                database_type           => 'Test',
+                languages               => ['en'],
+                description             => { en => 'Test tree' },
+                merge_record_collisions => 1,
+                map_key_type_callback   => $cb,
+            );
+
+            my $count       = 2**14;
+            my $ipv6_offset = uint128(2)**34;
+
+            for my $i ( 1 .. $count ) {
+                my $ipv4 = Net::Works::Network->new_from_integer(
+                    integer       => $i,
+                    prefix_length => 128,
+                    version       => 6
+                );
+                $tree->insert_network( $ipv4, _data_record( $i % 16 ) );
+
+                my $ipv6 = Net::Works::Network->new_from_integer(
+                    integer       => $i + $ipv6_offset,
+                    prefix_length => 128,
+                    version       => 6
+                );
+                $tree->insert_network( $ipv6, _data_record( $i % 16 ) );
+            }
+
+            subtest(
+                "Tree with $count networks - mixed IPv4 and IPv6 - $record_size-bit records",
+                sub {
+                    _test_freeze_thaw_for_tree( $tree, $cb );
+                }
+            );
         }
-    );
+    }
 }
 
 sub _test_freeze_thaw_for_tree {
@@ -114,6 +118,25 @@ sub _test_freeze_thaw_for_tree {
         $tree2_output,
         'output for tree is the same after freeze/thaw'
     );
+
+    my @attrs = qw(
+        ip_version
+        merge_record_collisions
+        record_size
+        _root_data_type
+        _database_type
+        _languages
+        _description
+        _alias_ipv6_to_ipv4
+    );
+
+    for my $attr (@attrs) {
+        is_deeply(
+            $tree1->$attr(),
+            $tree2->$attr(),
+            "$attr remains the same across freeze/thaw"
+        );
+    }
 }
 
 done_testing();
