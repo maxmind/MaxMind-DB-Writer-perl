@@ -128,6 +128,9 @@ sub _test_freeze_thaw_for_tree {
         map_key_type_callback => $tree1->_map_key_type_callback(),
     );
 
+    my $now = time();
+    $_->_set_build_epoch($now) for $tree1, $tree2;
+
     my $tree1_output;
     open my $fh, '>:raw', \$tree1_output;
     $tree1->write_tree($fh);

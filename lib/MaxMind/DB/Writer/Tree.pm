@@ -128,6 +128,17 @@ has _serializer => (
     builder  => '_build_serializer',
 );
 
+# This is an attribute so that we can explicitly set it from test code when we
+# want to compare the binary output for two trees that we want to be
+# identical.
+has _build_epoch => (
+    is      => 'rw',
+    writer  => '_set_build_epoch',
+    isa     => 'Int',
+    lazy    => 1,
+    default => sub { time() },
+);
+
 # The XS code expects $self->{_tree} to be populated.
 sub BUILD {
     $_[0]->_tree();
@@ -215,7 +226,7 @@ sub write_tree {
         my $metadata = MaxMind::DB::Metadata->new(
             binary_format_major_version => 2,
             binary_format_minor_version => 0,
-            build_epoch                 => uint128( time() ),
+            build_epoch                 => uint128( $self->_build_epoch() ),
             database_type               => $self->_database_type(),
             description                 => $self->_description(),
             ip_version                  => $self->ip_version(),
