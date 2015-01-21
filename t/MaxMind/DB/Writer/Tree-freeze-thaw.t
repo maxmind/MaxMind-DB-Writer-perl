@@ -15,7 +15,6 @@ use Net::Works::Network;
 # doesn't really hurt to test this either.
 for my $record_size ( 24, 28, 32 ) {
     {
-        my $cb = sub { 'uint32' };
         my $tree = MaxMind::DB::Writer::Tree->new(
             ip_version              => 4,
             record_size             => $record_size,
@@ -23,7 +22,7 @@ for my $record_size ( 24, 28, 32 ) {
             languages               => [ 'en', 'fr' ],
             description             => { en => 'Test tree' },
             merge_record_collisions => 1,
-            map_key_type_callback   => $cb,
+            map_key_type_callback   => sub { 'uint32' },
         );
 
         my $count = 2**8;
@@ -40,7 +39,7 @@ for my $record_size ( 24, 28, 32 ) {
         subtest(
             "Tree with $count networks - IPv4 only - $record_size-bit records",
             sub {
-                _test_freeze_thaw_for_tree( $tree, $cb );
+                _test_freeze_thaw_for_tree($tree);
             }
         );
 
@@ -92,7 +91,6 @@ for my $record_size ( 24, 28, 32 ) {
 
 sub _test_freeze_thaw_for_tree {
     my $tree1 = shift;
-    my $cb    = shift;
 
     my $dir = tempdir( CLEANUP => 1 );
     my $file = "$dir/frozen-tree";
@@ -100,7 +98,7 @@ sub _test_freeze_thaw_for_tree {
 
     my $tree2 = MaxMind::DB::Writer::Tree->new_from_frozen_tree(
         filename              => $file,
-        map_key_type_callback => $cb,
+        map_key_type_callback => $tree1->_map_key_type_callback(),
     );
 
     my $tree1_output;
@@ -113,9 +111,8 @@ sub _test_freeze_thaw_for_tree {
     $tree2->write_tree($fh);
     close $fh;
 
-    is(
-        $tree1_output,
-        $tree2_output,
+    ok(
+        $tree1_output eq $tree2_output,
         'output for tree is the same after freeze/thaw'
     );
 
