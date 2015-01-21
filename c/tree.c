@@ -684,7 +684,7 @@ LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
 /* 17 bytes of NUls followed by something that cannot be an SHA1 key are a
    clear indicator that there are no more frozen networks in the buffer. */
 #define SEVENTEEN_NULLS "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-#define SEPARATOR ("not an SHA1 key")
+#define FREEZE_SEPARATOR "not an SHA1 key"
 
 void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
                  size_t frozen_params_size)
@@ -701,9 +701,9 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
      * two records, each of which could potentially be a data record. */
     size_t buffer_size = 4 /* the size of the fozen constructor params (uint32_t) */
                          + frozen_params_size
-                         + (tree->node_count * SHA1_KEY_LENGTH * 2)
+                         + (tree->node_count * (1 + 16 + SHA1_KEY_LENGTH) * 2)
                          + 17 /* seventeen null separator */
-                         + strlen(SEPARATOR);
+                         + strlen(FREEZE_SEPARATOR);
     resize_file(fd, filename, buffer_size);
 
     uint8_t *buffer =
@@ -734,7 +734,8 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
     tree->iteration_args = NULL;
 
     freeze_to_buffer(&args, SEVENTEEN_NULLS, 17, "SEVENTEEN_NULLS");
-    freeze_to_buffer(&args, SEPARATOR, strlen(SEPARATOR), "SEPARATOR");
+    freeze_to_buffer(&args, FREEZE_SEPARATOR, strlen(
+                         FREEZE_SEPARATOR), "FREEZE_SEPARATOR");
 
     if (-1 == msync(buffer_start, buffer_size, MS_SYNC)) {
         close(fd);
@@ -978,9 +979,11 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
     uint8_t prefix_length = thaw_uint8(buffer);
 
     if (0 == start_ip && 0 == prefix_length) {
-        uint8_t *maybe_separator = thaw_bytes(buffer, strlen(SEPARATOR));
-        if (memcmp(maybe_separator, SEPARATOR, strlen(SEPARATOR)) == 0) {
-            buffer -= strlen(SEPARATOR);
+        uint8_t *maybe_separator = thaw_bytes(buffer, strlen(FREEZE_SEPARATOR));
+        if (memcmp(maybe_separator, FREEZE_SEPARATOR,
+                   strlen(FREEZE_SEPARATOR)) == 0) {
+
+            buffer -= strlen(FREEZE_SEPARATOR);
             buffer -= 17;
             return NULL;
         }
