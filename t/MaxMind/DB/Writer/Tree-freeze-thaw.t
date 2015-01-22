@@ -125,7 +125,7 @@ sub _test_freeze_thaw_for_tree {
 
     my $tree2 = MaxMind::DB::Writer::Tree->new_from_frozen_tree(
         filename              => $file,
-        map_key_type_callback => $tree1->_map_key_type_callback(),
+        map_key_type_callback => $tree1->map_key_type_callback(),
     );
 
     my $now = time();
@@ -147,14 +147,14 @@ sub _test_freeze_thaw_for_tree {
     );
 
     my @attrs = qw(
+        _root_data_type
+        alias_ipv6_to_ipv4
+        database_type
+        description
         ip_version
+        languages
         merge_record_collisions
         record_size
-        _root_data_type
-        _database_type
-        _languages
-        _description
-        _alias_ipv6_to_ipv4
     );
 
     for my $attr (@attrs) {

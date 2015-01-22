@@ -85,39 +85,34 @@ has _root_data_type => (
     default  => 'map',
 );
 
-has _map_key_type_callback => (
+has map_key_type_callback => (
     is       => 'ro',
     isa      => 'CodeRef',
-    init_arg => 'map_key_type_callback',
     required => 1,
 );
 
-has _database_type => (
+has database_type => (
     is       => 'ro',
     isa      => 'Str',
-    init_arg => 'database_type',
     required => 1,
 );
 
-has _languages => (
-    is       => 'ro',
-    isa      => 'ArrayRef[Str]',
-    init_arg => 'languages',
-    default  => sub { [] },
+has languages => (
+    is      => 'ro',
+    isa     => 'ArrayRef[Str]',
+    default => sub { [] },
 );
 
-has _description => (
+has description => (
     is       => 'ro',
     isa      => 'HashRef[Str]',
-    init_arg => 'description',
     required => 1,
 );
 
-has _alias_ipv6_to_ipv4 => (
-    is       => 'ro',
-    isa      => 'Bool',
-    default  => 0,
-    init_arg => 'alias_ipv6_to_ipv4',
+has alias_ipv6_to_ipv4 => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0,
 );
 
 has _serializer => (
@@ -172,7 +167,7 @@ sub _build_serializer {
     my $self = shift;
 
     return MaxMind::DB::Writer::Serializer->new(
-        map_key_type_callback => $self->_map_key_type_callback(),
+        map_key_type_callback => $self->map_key_type_callback(),
     );
 }
 
@@ -190,7 +185,7 @@ sub write_tree {
 
     $self->_write_search_tree(
         $output,
-        $self->_alias_ipv6_to_ipv4(),
+        $self->alias_ipv6_to_ipv4(),
         $self->_root_data_type(),
         $self->_serializer(),
     );
@@ -227,10 +222,10 @@ sub write_tree {
             binary_format_major_version => 2,
             binary_format_minor_version => 0,
             build_epoch                 => uint128( $self->_build_epoch() ),
-            database_type               => $self->_database_type(),
-            description                 => $self->_description(),
+            database_type               => $self->database_type(),
+            description                 => $self->description(),
             ip_version                  => $self->ip_version(),
-            languages                   => $self->_languages(),
+            languages                   => $self->languages(),
             node_count                  => $self->node_count(),
             record_size                 => $self->record_size(),
         );
@@ -247,7 +242,7 @@ sub write_tree {
 
 {
     my %do_not_freeze = map { $_ => 1 } qw(
-        _map_key_type_callback
+        map_key_type_callback
         _tree
     );
 
@@ -532,6 +527,41 @@ C<write_tree()> method, this method does write out a MaxMind DB file. Instead,
 it writes out something that can be quickly thawed via the C<<
 MaxMind::DB::Writer::Tree->new_from_frozen_tree >> constructor. This is useful if
 you want to pass the in-memory representation of the tree between processes.
+
+=head2 $tree->ip_version()
+
+Returns the tree's IP version, as passed to the constructor.
+
+=head2 $tree->record_size()
+
+Returns the tree's record size, as passed to the constructor.
+
+=head2 $tree->merge_record_collisions()
+
+Returns a boolean indicating whether the tree will merge colliding records, as
+determined by the constructor parameter.
+
+=head2 $tree->map_key_type_callback()
+
+Returns the callback used to determine the type of a map's values, as passed
+to the constructor.
+
+=head2 $tree->database_type()
+
+Returns the tree's database type, as passed to the constructor.
+
+=head2 $tree->languages()
+
+Returns the tree's languages, as passed to the constructor.
+
+=head2 $tree->description()
+
+Returns the tree's description hashref, as passed to the constructor.
+
+=head2 $tree->alias_ipv6_to_ipv4()
+
+Returns a boolean indicating whether the tree will alias some IPv6 ranges to
+their corresponding IPv4 ranges when the tree is written to disk.
 
 =head2 MaxMind::DB::Writer::Tree->new_from_frozen_tree()
 
