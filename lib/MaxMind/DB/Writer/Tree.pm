@@ -3,6 +3,7 @@ package MaxMind::DB::Writer::Tree;
 use strict;
 use warnings;
 use namespace::autoclean;
+use autodie;
 
 use IO::Handle;
 use Math::Int128 0.06 qw( uint128 );
@@ -13,7 +14,10 @@ use MaxMind::DB::Common 0.031003 qw(
 use MaxMind::DB::Metadata;
 use MaxMind::DB::Writer::Serializer;
 use MaxMind::DB::Writer::Util qw( key_for_data );
+use MooseX::Params::Validate qw( validated_list );
 use Net::Works 0.20;
+use Sereal::Decoder qw( decode_sereal );
+use Sereal::Encoder qw( encode_sereal );
 
 use Moose;
 use Moose::Util::TypeConstraints;
@@ -67,7 +71,6 @@ has node_count => (
 
 has _tree => (
     is        => 'ro',
-    init_arg  => undef,
     lazy      => 1,
     builder   => '_build_tree',
     predicate => '_has_tree',
@@ -82,39 +85,34 @@ has _root_data_type => (
     default  => 'map',
 );
 
-has _map_key_type_callback => (
+has map_key_type_callback => (
     is       => 'ro',
     isa      => 'CodeRef',
-    init_arg => 'map_key_type_callback',
     required => 1,
 );
 
-has _database_type => (
+has database_type => (
     is       => 'ro',
     isa      => 'Str',
-    init_arg => 'database_type',
     required => 1,
 );
 
-has _languages => (
-    is       => 'ro',
-    isa      => 'ArrayRef[Str]',
-    init_arg => 'languages',
-    default  => sub { [] },
+has languages => (
+    is      => 'ro',
+    isa     => 'ArrayRef[Str]',
+    default => sub { [] },
 );
 
-has _description => (
+has description => (
     is       => 'ro',
     isa      => 'HashRef[Str]',
-    init_arg => 'description',
     required => 1,
 );
 
-has _alias_ipv6_to_ipv4 => (
-    is       => 'ro',
-    isa      => 'Bool',
-    default  => 0,
-    init_arg => 'alias_ipv6_to_ipv4',
+has alias_ipv6_to_ipv4 => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0,
 );
 
 has _serializer => (
@@ -123,6 +121,17 @@ has _serializer => (
     init_arg => undef,
     lazy     => 1,
     builder  => '_build_serializer',
+);
+
+# This is an attribute so that we can explicitly set it from test code when we
+# want to compare the binary output for two trees that we want to be
+# identical.
+has _build_epoch => (
+    is      => 'rw',
+    writer  => '_set_build_epoch',
+    isa     => 'Int',
+    lazy    => 1,
+    default => sub { time() },
 );
 
 # The XS code expects $self->{_tree} to be populated.
@@ -158,7 +167,7 @@ sub _build_serializer {
     my $self = shift;
 
     return MaxMind::DB::Writer::Serializer->new(
-        map_key_type_callback => $self->_map_key_type_callback(),
+        map_key_type_callback => $self->map_key_type_callback(),
     );
 }
 
@@ -176,7 +185,7 @@ sub write_tree {
 
     $self->_write_search_tree(
         $output,
-        $self->_alias_ipv6_to_ipv4(),
+        $self->alias_ipv6_to_ipv4(),
         $self->_root_data_type(),
         $self->_serializer(),
     );
@@ -212,11 +221,11 @@ sub write_tree {
         my $metadata = MaxMind::DB::Metadata->new(
             binary_format_major_version => 2,
             binary_format_minor_version => 0,
-            build_epoch                 => uint128( time() ),
-            database_type               => $self->_database_type(),
-            description                 => $self->_description(),
+            build_epoch                 => uint128( $self->_build_epoch() ),
+            database_type               => $self->database_type(),
+            description                 => $self->description(),
             ip_version                  => $self->ip_version(),
-            languages                   => $self->_languages(),
+            languages                   => $self->languages(),
             node_count                  => $self->node_count(),
             record_size                 => $self->record_size(),
         );
@@ -229,6 +238,67 @@ sub write_tree {
 
         return ${ $serializer->buffer() };
     }
+}
+
+{
+    my %do_not_freeze = map { $_ => 1 } qw(
+        map_key_type_callback
+        _tree
+    );
+
+    sub freeze_tree {
+        my $self     = shift;
+        my $filename = shift;
+
+        my %constructor_params;
+        for my $attr ( $self->meta()->get_all_attributes() ) {
+            next unless $attr->init_arg();
+            next if $do_not_freeze{ $attr->name() };
+
+            my $reader = $attr->get_read_method();
+            $constructor_params{ $attr->init_arg() } = $self->$reader();
+        }
+
+        my $frozen = encode_sereal( \%constructor_params );
+        $self->_freeze_tree( $filename, $frozen, length $frozen );
+
+        return;
+    }
+}
+
+sub new_from_frozen_tree {
+    my $class = shift;
+    my ( $filename, $callback ) = validated_list(
+        \@_,
+        filename              => { isa => 'Str' },
+        map_key_type_callback => { isa => 'CodeRef' },
+    );
+
+    open my $fh, '<:raw', $filename;
+    my $packed_params_size;
+    unless ( read( $fh, $packed_params_size, 4 ) == 4 ) {
+        die "Could not read 4 bytes from $filename: $!";
+    }
+
+    my $params_size = unpack( 'L', $packed_params_size );
+    my $frozen_params;
+    unless ( read( $fh, $frozen_params, $params_size ) == $params_size ) {
+        die "Could not read $params_size bytes from $filename: $!";
+    }
+    my $params = decode_sereal($frozen_params);
+
+    my $tree = _thaw_tree(
+        $filename,
+        $params_size + 4,
+        map { $params->{$_} }
+            qw( ip_version record_size merge_record_collisions ),
+    );
+
+    return $class->new(
+        %{$params},
+        map_key_type_callback => $callback,
+        _tree                 => $tree,
+    );
 }
 
 sub DEMOLISH {
@@ -449,6 +519,81 @@ For node (and alias) records, the final argument will be the number of the
 node that this record points to.
 
 For empty records, there are no additional arguments.
+
+=head2 $tree->freeze_tree($filename)
+
+Given a file name, this method freezes the tree to that file. Unlike the
+C<write_tree()> method, this method does write out a MaxMind DB file. Instead,
+it writes out something that can be quickly thawed via the C<<
+MaxMind::DB::Writer::Tree->new_from_frozen_tree >> constructor. This is useful if
+you want to pass the in-memory representation of the tree between processes.
+
+=head2 $tree->ip_version()
+
+Returns the tree's IP version, as passed to the constructor.
+
+=head2 $tree->record_size()
+
+Returns the tree's record size, as passed to the constructor.
+
+=head2 $tree->merge_record_collisions()
+
+Returns a boolean indicating whether the tree will merge colliding records, as
+determined by the constructor parameter.
+
+=head2 $tree->map_key_type_callback()
+
+Returns the callback used to determine the type of a map's values, as passed
+to the constructor.
+
+=head2 $tree->database_type()
+
+Returns the tree's database type, as passed to the constructor.
+
+=head2 $tree->languages()
+
+Returns the tree's languages, as passed to the constructor.
+
+=head2 $tree->description()
+
+Returns the tree's description hashref, as passed to the constructor.
+
+=head2 $tree->alias_ipv6_to_ipv4()
+
+Returns a boolean indicating whether the tree will alias some IPv6 ranges to
+their corresponding IPv4 ranges when the tree is written to disk.
+
+=head2 MaxMind::DB::Writer::Tree->new_from_frozen_tree()
+
+This method constructs a tree from a file containing a frozen tree.
+
+This method require the following two parameters:
+
+=over 4
+
+=item * filename
+
+The filename containing the frozen tree.
+
+=item * map_key_type_callback
+
+This is a subroutine reference that is called in order to determine how to
+store each value in a map (hash) data structure. See L<DATA TYPES> below for
+more details.
+
+This needs to be passed because subroutine references cannot be reliably
+serialized and restored between processes.
+
+=back
+
+=head2 Caveat for Freeze/Thaw
+
+The frozen tree is more or less the raw C data structures written to disk. As
+such, it is very much not portable, and your ability to thaw a tree on a
+machine not identical to the one on which it was written is not guaranteed.
+
+In addition, there is no guarantee that the freeze/thaw format will be stable
+across different versions of this module.
 
 =head1 DATA TYPES
 

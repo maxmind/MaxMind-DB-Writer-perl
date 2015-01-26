@@ -1,0 +1,93 @@
+use strict;
+use warnings;
+
+use v5.16;
+
+use utf8;
+
+use Math::Int128 qw( uint128 );
+use MaxMind::DB::Writer::Tree;
+use Net::Works::Network;
+use Timer::Simple;
+
+my $cb = sub {
+    my $key = $_[0];
+    $key =~ s/X$//;
+    return $key eq 'array' ? [ 'array', 'uint32' ] : $key;
+};
+
+my $tree = MaxMind::DB::Writer::Tree->new(
+    ip_version              => 6,
+    record_size             => 24,
+    database_type           => 'Test',
+    languages               => ['en'],
+    description             => { en => 'Test tree' },
+    merge_record_collisions => 1,
+    map_key_type_callback   => $cb,
+);
+
+my $s = Timer::Simple->new( start => 1 );
+
+my $count = int( 2**15 * 1.6 );
+
+for my $i ( 1 .. $count ) {
+    my $n = Net::Works::Network->new_from_integer(
+        integer       => $i,
+        prefix_length => 128,
+        version       => 6
+    );
+
+    $tree->insert_network( $n, _data_record( $i % 16 ) );
+}
+
+$s->stop();
+print "Built in-memory tree of $count networks in ", $s->elapsed,
+    " seconds\n";
+$s->start();
+
+open my $fh1, '>', 'tree1';
+$tree->write_tree($fh1);
+
+$s->stop();
+print "Wrote tree to disk in ", $s->elapsed, " seconds\n";
+$s->start();
+
+my $file = './frozen';
+$tree->freeze_tree($file);
+
+$s->stop();
+print "Frozen tree to disk in ", $s->elapsed, " seconds\n";
+$s->start();
+
+my $tree2 = MaxMind::DB::Writer::Tree->from_frozen_tree( $file, $cb );
+
+$s->stop();
+print "Thawed tree in ", $s->elapsed, " seconds\n";
+$s->start();
+
+open my $fh2, '>', 'tree2';
+$tree2->write_tree($fh2);
+
+sub _data_record {
+    my $i = shift;
+
+    return {
+        utf8_string => 'unicode! ☯ - ♫ - ' . $i,
+        double      => 42.123456 + $i,
+        bytes       => pack( 'N', 42 + $i ),
+        uint16      => 100 + $i,
+        uint32      => 2**28 + $i,
+        int32       => -1 * ( 2**28 + $i ),
+        uint64      => ( uint128(1) << 60 ) + $i,
+        uint128     => ( uint128(1) << 120 ) + $i,
+        array       => [ 1, 2, 3, $i ],
+        map         => {
+            mapX => {
+                utf8_stringX => 'hello - ' . $i,
+                arrayX       => [ 7, 8, 9, $i ],
+            },
+        },
+        boolean => $i % 2,
+        float   => 1.1 + $i,
+    };
+}
