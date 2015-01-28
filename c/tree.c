@@ -734,8 +734,8 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
     tree->iteration_args = NULL;
 
     freeze_to_buffer(&args, SEVENTEEN_NULLS, 17, "SEVENTEEN_NULLS");
-    freeze_to_buffer(&args, FREEZE_SEPARATOR, strlen(
-                         FREEZE_SEPARATOR), "FREEZE_SEPARATOR");
+    freeze_to_buffer(&args, FREEZE_SEPARATOR,
+                     strlen(FREEZE_SEPARATOR), "FREEZE_SEPARATOR");
 
     if (-1 == msync(buffer_start, buffer_size, MS_SYNC)) {
         close(fd);
