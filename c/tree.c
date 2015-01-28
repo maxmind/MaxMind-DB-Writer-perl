@@ -169,7 +169,7 @@ LOCAL void insert_resolved_network(MMDBW_tree_s *tree, MMDBW_network_s *network,
                                    SV *key_sv, SV *data)
 {
     const char *const key =
-        store_data_in_tree(        tree, SvPVbyte_nolen(key_sv), data);
+        store_data_in_tree(tree, SvPVbyte_nolen(key_sv), data);
     MMDBW_record_s new_record = {
         .type    = MMDBW_RECORD_TYPE_DATA,
         .value   = {
