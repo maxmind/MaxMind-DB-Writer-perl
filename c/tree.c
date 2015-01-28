@@ -142,6 +142,7 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     tree->data_table = NULL;
     tree->last_node = NULL;
     tree->is_finalized = false;
+    tree->is_aliased = false;
     tree->iteration_args = NULL;
     tree->root_node = new_node(tree);
     tree->node_count = 0;
@@ -179,8 +180,6 @@ LOCAL void insert_resolved_network(MMDBW_tree_s *tree, MMDBW_network_s *network,
 
     insert_record_for_network(tree, network, &new_record,
                               tree->merge_record_collisions);
-
-    tree->is_finalized = false;
 }
 
 LOCAL const char *const store_data_in_tree(MMDBW_tree_s *tree,
@@ -294,6 +293,9 @@ static struct network ipv4_aliases[] = {
 void alias_ipv4_networks(MMDBW_tree_s *tree)
 {
     if (tree->ip_version == 4) {
+        return;
+    }
+    if (tree->is_aliased) {
         return;
     }
 
@@ -661,6 +663,8 @@ MMDBW_node_s *new_node(MMDBW_tree_s *tree)
     }
     tree->last_node = node;
 
+    tree->is_finalized = false;
+
     return node;
 }
 
@@ -672,7 +676,6 @@ void finalize_tree(MMDBW_tree_s *tree)
 
     assign_node_numbers(tree);
     tree->is_finalized = true;
-    return;
 }
 
 LOCAL void assign_node_numbers(MMDBW_tree_s *tree)

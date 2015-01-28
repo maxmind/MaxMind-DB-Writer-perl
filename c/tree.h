@@ -59,6 +59,7 @@ typedef struct MMDBW_tree_s {
     MMDBW_node_s *last_node;
     uint32_t node_count;
     bool is_finalized;
+    bool is_aliased;
     void *iteration_args;
 } MMDBW_tree_s;
 
