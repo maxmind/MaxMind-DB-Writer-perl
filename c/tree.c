@@ -1145,8 +1145,15 @@ LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
 
     uint32_t left =
         htonl(record_value_as_number(tree, &(node->left_record), args));
+    if (0 == left) {
+        croak("Node %u left record is 0!\n", node->number);
+    }
+
     uint32_t right =
         htonl(record_value_as_number(tree, &(node->right_record), args));
+    if (0 == right) {
+        croak("Node %u right record is 0!\n", node->number);
+    }
 
     uint8_t *left_bytes = (uint8_t *)&left;
     uint8_t *right_bytes = (uint8_t *)&right;
