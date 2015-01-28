@@ -5,7 +5,8 @@ use utf8;
 use lib 't/lib';
 
 use Test::Requires {
-    JSON => 0,
+    JSON                  => 0,
+    'MaxMind::DB::Reader' => 0.040000,
 };
 
 use Test::MaxMind::DB::Writer qw( make_tree_from_pairs );
@@ -111,7 +112,41 @@ for my $record_size ( 24, 28, 32 ) {
     subtest(
         'Tree made from GeoLite2 sample data',
         sub {
-            _test_freeze_thaw_for_tree($tree);
+            my %trees;
+            @trees{ 'pre-thaw', 'post-thaw' }
+                = _test_freeze_thaw_for_tree($tree);
+
+            my $dir = tempdir( CLEANUP => 0 );
+
+            my %readers;
+            for my $key ( keys %trees ) {
+                my $file = "$dir/$key.mmdb";
+                open my $fh, '>:raw', $file;
+                $trees{$key}->write_tree($fh);
+                close $fh;
+
+                $readers{$key} = MaxMind::DB::Reader->new( file => $file );
+            }
+
+            my %expect = (
+                '1.64.242.0'                  => 'HK',
+                '1.72.10.0'                   => 'JP',
+                '1.72.10.1'                   => 'JP',
+                '1.72.10.127'                 => 'JP',
+                '2001:230::abcd:abcd'         => 'KR',
+                '2001:67c:50:1928:1234::42ff' => 'NL',
+            );
+
+            for my $ip ( sort keys %expect ) {
+                for my $key ( sort keys %readers ) {
+                    my $reader = $readers{$key};
+                    is(
+                        $reader->record_for_address($ip),
+                        $expect{$ip},
+                        "$ip record is $expect{$ip} - $key"
+                    );
+                }
+            }
         }
     );
 }
@@ -164,6 +199,8 @@ sub _test_freeze_thaw_for_tree {
             "$attr remains the same across freeze/thaw"
         );
     }
+
+    return ( $tree1, $tree2 );
 }
 
 done_testing();
