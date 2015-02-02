@@ -101,6 +101,8 @@ LOCAL HV *thaw_data_hash(SV *data_to_decode);
 LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
                        mmdbw_uint128_t UNUSED(network),
                        uint8_t UNUSED(depth));
+LOCAL void check_record_sanity(MMDBW_node_s *node, MMDBW_record_s *record,
+                               char *side);
 LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                                       MMDBW_record_s *record,
                                       encode_args_s * args);
@@ -1146,17 +1148,13 @@ LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
 {
     encode_args_s *args = (encode_args_s *)tree->iteration_args;
 
+    check_record_sanity(node, &(node->left_record), "left");
+    check_record_sanity(node, &(node->right_record), "right");
+
     uint32_t left =
         htonl(record_value_as_number(tree, &(node->left_record), args));
-    if (0 == left) {
-        croak("Node %u left record is 0!\n", node->number);
-    }
-
     uint32_t right =
         htonl(record_value_as_number(tree, &(node->right_record), args));
-    if (0 == right) {
-        croak("Node %u right record is 0!\n", node->number);
-    }
 
     uint8_t *left_bytes = (uint8_t *)&left;
     uint8_t *right_bytes = (uint8_t *)&right;
@@ -1186,6 +1184,26 @@ LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
                           right_bytes[0], right_bytes[1],
                           right_bytes[2], right_bytes[3]),
             8, "PerlIO_printf");
+    }
+}
+
+/* Note that for data records, we will ensure that the key they contain does
+ * match a data record in the record_value_as_number() subroutine. */
+LOCAL void check_record_sanity(MMDBW_node_s *node, MMDBW_record_s *record,
+                               char *side)
+{
+    if (MMDBW_RECORD_TYPE_NODE != record->type) {
+        return;
+    }
+
+    if (record->value.node->number == node->number) {
+        croak("%s record of node %u points to the same node",
+              side, node->number);
+    }
+
+    if (record->value.node->number < node->number) {
+        croak("%s record of node %u points to a node  number (%u)",
+              side, node->number, record->value);
     }
 }
 
