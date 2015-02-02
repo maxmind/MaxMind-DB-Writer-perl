@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <netdb.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -72,7 +73,7 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
 LOCAL void merge_hash(HV *from, HV *to);
 LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                           MMDBW_network_s *network,
-                                          int *current_bit,
+                                          uint8_t *current_bit,
                                           MMDBW_node_s *(if_not_node)(
                                               MMDBW_tree_s *tree,
                                               MMDBW_record_s *record));
@@ -262,7 +263,7 @@ LOCAL const char *const network_as_string(const char *const ipstr,
 {
     /* 3 chars for up to 3 digits of netmask and 1 for the slash and 1 for the \0. */
     char *string = checked_malloc(strlen(ipstr) + 5);
-    sprintf(string, "%s/%u", ipstr, prefix_length);
+    sprintf(string, "%s/%" PRIu8, ipstr, prefix_length);
     return (const char *)string;
 }
 
@@ -303,7 +304,7 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
 
     MMDBW_network_s ipv4_root_network = resolve_network(tree, "::0.0.0.0", 96);
 
-    int current_bit;
+    uint8_t current_bit;
     MMDBW_node_s *ipv4_root_node_parent =
         find_node_for_network(tree, &ipv4_root_network, &current_bit,
                               &return_null);
@@ -325,7 +326,6 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
             resolve_network(tree, ipv4_aliases[i].ipstr,
                             ipv4_aliases[i].prefix_length);
 
-        int current_bit;
         MMDBW_node_s *last_node_for_alias = find_node_for_network(
             tree, &alias_network, &current_bit, &make_next_node);
         if (NETWORK_BIT_VALUE(&alias_network, current_bit)) {
@@ -347,7 +347,7 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                                      MMDBW_record_s *new_record,
                                      bool merge_record_collisions)
 {
-    int current_bit;
+    uint8_t current_bit;
     MMDBW_node_s *node_to_set =
         find_node_for_network(tree, network, &current_bit, &make_next_node);
 
@@ -565,7 +565,7 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
     MMDBW_network_s network =
         resolve_network(tree, ipstr, tree->ip_version == 6 ? 128 : 32);
 
-    int current_bit;
+    uint8_t current_bit;
     MMDBW_node_s *node_for_address =
         find_node_for_network(tree, &network, &current_bit, &return_null);
 
@@ -579,7 +579,8 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
     if (MMDBW_RECORD_TYPE_NODE == record_for_address.type ||
         MMDBW_RECORD_TYPE_ALIAS == record_for_address.type) {
         croak(
-            "WTF - found a node or alias record for an address lookup - %s - current_bit = %i",
+            "WTF - found a node or alias record for an address lookup - %s - current_bit = %"
+            PRIu8,
             ipstr, current_bit);
         return &PL_sv_undef;
     } else if (MMDBW_RECORD_TYPE_EMPTY == record_for_address.type) {
@@ -591,7 +592,7 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
 
 LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                           MMDBW_network_s *network,
-                                          int *current_bit,
+                                          uint8_t *current_bit,
                                           MMDBW_node_s *(if_not_node)(
                                               MMDBW_tree_s *tree,
                                               MMDBW_record_s *record))
@@ -837,7 +838,7 @@ LOCAL void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
 {
     if ((args->buffer - args->buffer_start) + size >= args->max_size) {
         croak(
-            "About to write past end of mmap buffer with %s - (%p - %p) + %u = %u > %u\n",
+            "About to write past end of mmap buffer with %s - (%p - %p) + %zu = %tu > %zu\n",
             what,
             args->buffer,
             args->buffer_start,
@@ -861,7 +862,7 @@ LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
         croak("Could not write frozen data size to file: %s", strerror(errno));
     }
     if (written != sizeof(STRLEN)) {
-        croak("Could not write frozen data size to file: %d != %u", written,
+        croak("Could not write frozen data size to file: %zd != %zu", written,
               sizeof(STRLEN));
     }
 
@@ -870,7 +871,7 @@ LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
         croak("Could not write frozen data size to file: %s", strerror(errno));
     }
     if (written != frozen_data_size) {
-        croak("Could not write frozen data to file: %d != %u", written,
+        croak("Could not write frozen data to file: %zd != %zu", written,
               frozen_data_size);
     }
 
@@ -1197,13 +1198,15 @@ LOCAL void check_record_sanity(MMDBW_node_s *node, MMDBW_record_s *record,
     }
 
     if (record->value.node->number == node->number) {
-        croak("%s record of node %u points to the same node",
+        croak("%s record of node %" PRIu32 " points to the same node",
               side, node->number);
     }
 
     if (record->value.node->number < node->number) {
-        croak("%s record of node %u points to a node  number (%u)",
-              side, node->number, record->value);
+        croak(
+            "%s record of node %" PRIu32 " points to a node  number (%" PRIu32
+            ")",
+            side, node->number, record->value);
     }
 }
 
@@ -1275,8 +1278,10 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
     }
 
     if (record_value > MAX_RECORD_VALUE(tree->record_size)) {
-        croak("Node value of %u exceeds the record size of %u bits",
-              record_value, tree->record_size);
+        croak(
+            "Node value of %" PRIu32 " exceeds the record size of %" PRIu8
+            " bits",
+            record_value, tree->record_size);
     }
 
     return record_value;
@@ -1484,7 +1489,7 @@ LOCAL void *checked_malloc(size_t size)
 LOCAL void checked_write(int fd, char *filename, void *buffer,
                          size_t count)
 {
-    int result = write(fd, buffer, count);
+    ssize_t result = write(fd, buffer, count);
     if (-1 == result) {
         close(fd);
         croak("Could not write to the file %s: %s", filename,
@@ -1493,7 +1498,7 @@ LOCAL void checked_write(int fd, char *filename, void *buffer,
     if (result != count) {
         close(fd);
         croak(
-            "Write to %s did not write the expected amount of data (wrote %u instead of %u)",
+            "Write to %s did not write the expected amount of data (wrote %zd instead of %zu)",
             filename, result, count);
     }
 }
@@ -1512,7 +1517,7 @@ LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
         croak("%s operation failed: %s\n", op, strerror(result));
     } else if (result != expected) {
         croak(
-            "%s operation wrote %i bytes when we expected to write %i",
+            "%s operation wrote %zd bytes when we expected to write %zd",
             op, result, expected);
     }
 }
