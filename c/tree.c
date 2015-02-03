@@ -1193,20 +1193,26 @@ LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
 LOCAL void check_record_sanity(MMDBW_node_s *node, MMDBW_record_s *record,
                                char *side)
 {
-    if (MMDBW_RECORD_TYPE_NODE != record->type) {
-        return;
+    if (MMDBW_RECORD_TYPE_NODE == record->type) {
+        if (record->value.node->number == node->number) {
+            croak("%s record of node %" PRIu32 " points to the same node",
+                  side, node->number);
+        }
+
+        if (record->value.node->number < node->number) {
+            croak(
+                "%s record of node %" PRIu32 " points to a node  number (%"
+                PRIu32
+                ")",
+                side, node->number, record->value);
+        }
     }
 
-    if (record->value.node->number == node->number) {
-        croak("%s record of node %" PRIu32 " points to the same node",
-              side, node->number);
-    }
-
-    if (record->value.node->number < node->number) {
-        croak(
-            "%s record of node %" PRIu32 " points to a node  number (%" PRIu32
-            ")",
-            side, node->number, record->value);
+    if (MMDBW_RECORD_TYPE_ALIAS == record->type) {
+        if (0 == record->value.node->number) {
+            croak("%s record of node %" PRIu32 " is an alias to node 0",
+                  side, node->number);
+        }
     }
 }
 
