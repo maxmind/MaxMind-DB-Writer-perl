@@ -6,6 +6,7 @@ use warnings;
 use Test::More;
 
 use Data::Printer;
+use File::Temp qw( tempdir );
 use List::Util qw( all );
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Address;
@@ -13,8 +14,13 @@ use Net::Works::Network;
 use Scalar::Util qw( blessed );
 
 use Exporter qw( import );
-our @EXPORT_OK
-    = qw( make_tree_from_pairs ranges_to_data test_iterator_sanity test_tree );
+our @EXPORT_OK = qw(
+    make_tree_from_pairs
+    ranges_to_data
+    test_iterator_sanity
+    test_freeze_thaw
+    test_tree
+);
 
 sub test_tree {
     my $insert_pairs = shift;
@@ -174,6 +180,58 @@ sub test_iterator_sanity {
         ( all { $_ == 1 } values %first_ips ),
         "did not see two data records with the same network first IP address - $desc"
     );
+}
+
+sub test_freeze_thaw {
+    my $tree1 = shift;
+
+    my $dir = tempdir( CLEANUP => 1 );
+    my $file = "$dir/frozen-tree";
+    $tree1->freeze_tree($file);
+
+    my $tree2 = MaxMind::DB::Writer::Tree->new_from_frozen_tree(
+        filename              => $file,
+        map_key_type_callback => $tree1->map_key_type_callback(),
+    );
+
+    my $now = time();
+    $_->_set_build_epoch($now) for $tree1, $tree2;
+
+    my $tree1_output;
+    open my $fh, '>:raw', \$tree1_output;
+    $tree1->write_tree($fh);
+    close $fh;
+
+    my $tree2_output;
+    open $fh, '>:raw', \$tree2_output;
+    $tree2->write_tree($fh);
+    close $fh;
+
+    ok(
+        $tree1_output eq $tree2_output,
+        'output for tree is the same after freeze/thaw'
+    );
+
+    my @attrs = qw(
+        _root_data_type
+        alias_ipv6_to_ipv4
+        database_type
+        description
+        ip_version
+        languages
+        merge_record_collisions
+        record_size
+    );
+
+    for my $attr (@attrs) {
+        is_deeply(
+            $tree1->$attr(),
+            $tree2->$attr(),
+            "$attr remains the same across freeze/thaw"
+        );
+    }
+
+    return ( $tree1, $tree2 );
 }
 
 1;

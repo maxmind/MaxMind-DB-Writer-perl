@@ -9,7 +9,7 @@ use Test::Requires {
     'MaxMind::DB::Reader' => 0.040000,
 };
 
-use Test::MaxMind::DB::Writer qw( make_tree_from_pairs );
+use Test::MaxMind::DB::Writer qw( make_tree_from_pairs test_freeze_thaw );
 use Test::More;
 
 use File::Temp qw( tempdir );
@@ -45,7 +45,7 @@ for my $record_size ( 24, 28, 32 ) {
         subtest(
             "Tree with $count networks - IPv4 only - $record_size-bit records",
             sub {
-                _test_freeze_thaw_for_tree($tree);
+                test_freeze_thaw($tree);
             }
         );
 
@@ -88,7 +88,7 @@ for my $record_size ( 24, 28, 32 ) {
             subtest(
                 "Tree with $count networks - mixed IPv4 and IPv6 - $record_size-bit records",
                 sub {
-                    _test_freeze_thaw_for_tree( $tree, $cb );
+                    test_freeze_thaw( $tree, $cb );
                 }
             );
         }
@@ -113,10 +113,9 @@ for my $record_size ( 24, 28, 32 ) {
         'Tree made from GeoLite2 sample data',
         sub {
             my %trees;
-            @trees{ 'pre-thaw', 'post-thaw' }
-                = _test_freeze_thaw_for_tree($tree);
+            @trees{ 'pre-thaw', 'post-thaw' } = test_freeze_thaw($tree);
 
-            my $dir = tempdir( CLEANUP => 0 );
+            my $dir = tempdir( CLEANUP => 1 );
 
             my %readers;
             for my $key ( keys %trees ) {
@@ -149,58 +148,6 @@ for my $record_size ( 24, 28, 32 ) {
             }
         }
     );
-}
-
-sub _test_freeze_thaw_for_tree {
-    my $tree1 = shift;
-
-    my $dir = tempdir( CLEANUP => 1 );
-    my $file = "$dir/frozen-tree";
-    $tree1->freeze_tree($file);
-
-    my $tree2 = MaxMind::DB::Writer::Tree->new_from_frozen_tree(
-        filename              => $file,
-        map_key_type_callback => $tree1->map_key_type_callback(),
-    );
-
-    my $now = time();
-    $_->_set_build_epoch($now) for $tree1, $tree2;
-
-    my $tree1_output;
-    open my $fh, '>:raw', \$tree1_output;
-    $tree1->write_tree($fh);
-    close $fh;
-
-    my $tree2_output;
-    open $fh, '>:raw', \$tree2_output;
-    $tree2->write_tree($fh);
-    close $fh;
-
-    ok(
-        $tree1_output eq $tree2_output,
-        'output for tree is the same after freeze/thaw'
-    );
-
-    my @attrs = qw(
-        _root_data_type
-        alias_ipv6_to_ipv4
-        database_type
-        description
-        ip_version
-        languages
-        merge_record_collisions
-        record_size
-    );
-
-    for my $attr (@attrs) {
-        is_deeply(
-            $tree1->$attr(),
-            $tree2->$attr(),
-            "$attr remains the same across freeze/thaw"
-        );
-    }
-
-    return ( $tree1, $tree2 );
 }
 
 done_testing();
