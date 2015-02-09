@@ -251,11 +251,11 @@ sub test_freeze_thaw_optional_params {
         database_type         => $type,
     );
 
-    is_deeply(
+    is(
         $tree2->database_type, $type,
         'type passed to constructor overrides frozen type'
     );
-    is(
+    is_deeply(
         $tree2->description, $description,
         'description passed to constructor overrides frozen description'
     );
