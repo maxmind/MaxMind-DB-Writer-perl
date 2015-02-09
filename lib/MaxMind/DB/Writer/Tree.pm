@@ -268,13 +268,14 @@ sub write_tree {
 
 sub new_from_frozen_tree {
     my $class = shift;
-    my ( $filename, $callback, $database_type, $description ) = validated_list(
+    my ( $filename, $callback, $database_type, $description )
+        = validated_list(
         \@_,
         filename              => { isa => 'Str' },
         map_key_type_callback => { isa => 'CodeRef' },
-        database_type => {isa => 'Str', optional => 1},
-        description => {isa => 'HashRef[Str]', optional => 1},
-    );
+        database_type         => { isa => 'Str', optional => 1 },
+        description           => { isa => 'HashRef[Str]', optional => 1 },
+        );
 
     open my $fh, '<:raw', $filename;
     my $packed_params_size;
@@ -290,7 +291,7 @@ sub new_from_frozen_tree {
     my $params = decode_sereal($frozen_params);
 
     $params->{database_type} = $database_type if defined $database_type;
-    $params->{description} = $description if defined $description;
+    $params->{description}   = $description   if defined $description;
 
     my $tree = _thaw_tree(
         $filename,

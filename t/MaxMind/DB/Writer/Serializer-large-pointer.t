@@ -21,12 +21,14 @@ while ( length ${ $serializer->buffer() } < $four_byte_pointer_threshold ) {
 }
 
 $MaxMind::DB::Writer::Serializer::DEBUG = 1;
-my $small_pointer = $serializer->store_data( utf8_string => $first_short_string );
+my $small_pointer
+    = $serializer->store_data( utf8_string => $first_short_string );
 
 my $last_short_string = 'another short string';
 
 $serializer->store_data( utf8_string => $last_short_string );
-my $large_pointer = $serializer->store_data( utf8_string => $last_short_string );
+my $large_pointer
+    = $serializer->store_data( utf8_string => $last_short_string );
 
 my $buffer = $serializer->buffer();
 open my $fh, '<:raw', $buffer;

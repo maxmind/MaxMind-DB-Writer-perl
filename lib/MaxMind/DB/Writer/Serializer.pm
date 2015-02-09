@@ -236,7 +236,8 @@ sub _encode_pointer {
 
     $self->_require_x_bits_unsigned_integer( 32, $value );
 
-    my $ctrl_byte = ord( $self->_control_bytes( $TypeNameToNum{pointer}, 0 ) );
+    my $ctrl_byte
+        = ord( $self->_control_bytes( $TypeNameToNum{pointer}, 0 ) );
 
     my @value_bytes;
     for my $n ( 0 .. 3 ) {
@@ -381,7 +382,9 @@ sub _encode_int32 {
     $encoded_value =~ s/^\x00+//;
 
     $self->_write_encoded_data(
-        $self->_control_bytes( $TypeNameToNum{int32}, length($encoded_value) ),
+        $self->_control_bytes(
+            $TypeNameToNum{int32}, length($encoded_value)
+        ),
         $encoded_value,
     );
 }
