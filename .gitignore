@@ -2,7 +2,6 @@
 .\#*
 .build
 .tidyall.d
-.tidyallrc
 /t/test-data/GeoLite2-Country.json
 Build
 Debian_CPANTS.txt
