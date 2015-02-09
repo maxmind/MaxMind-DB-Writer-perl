@@ -10,7 +10,11 @@ use Test::Requires {
     'MaxMind::DB::Reader' => 0.040000,
 };
 
-use Test::MaxMind::DB::Writer qw( make_tree_from_pairs test_freeze_thaw );
+use Test::MaxMind::DB::Writer qw(
+    make_tree_from_pairs
+    test_freeze_thaw
+    test_freeze_thaw_optional_params
+);
 use Test::More;
 
 use File::Temp qw( tempdir );
@@ -47,6 +51,7 @@ for my $record_size ( 24, 28, 32 ) {
             "Tree with $count networks - IPv4 only - $record_size-bit records",
             sub {
                 test_freeze_thaw($tree);
+                test_freeze_thaw_optional_params($tree);
             }
         );
 
