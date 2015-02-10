@@ -19,6 +19,7 @@ our @EXPORT_OK = qw(
     ranges_to_data
     test_iterator_sanity
     test_freeze_thaw
+    test_freeze_thaw_optional_params
     test_tree
 );
 
@@ -232,6 +233,32 @@ sub test_freeze_thaw {
     }
 
     return ( $tree1, $tree2 );
+}
+
+sub test_freeze_thaw_optional_params {
+    my $tree1 = shift;
+
+    my $dir = tempdir( CLEANUP => 1 );
+    my $file = "$dir/frozen-tree-params";
+    $tree1->freeze_tree($file);
+
+    my $description = { en => 'A tree in the forest' };
+    my $type        = 'TreeDB';
+    my $tree2       = MaxMind::DB::Writer::Tree->new_from_frozen_tree(
+        filename              => $file,
+        map_key_type_callback => $tree1->map_key_type_callback(),
+        description           => $description,
+        database_type         => $type,
+    );
+
+    is(
+        $tree2->database_type, $type,
+        'type passed to constructor overrides frozen type'
+    );
+    is_deeply(
+        $tree2->description, $description,
+        'description passed to constructor overrides frozen description'
+    );
 }
 
 1;

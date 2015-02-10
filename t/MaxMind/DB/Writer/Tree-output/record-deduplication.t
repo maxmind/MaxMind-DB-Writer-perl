@@ -60,6 +60,7 @@ my $calls = 0;
         # We want to track calls to this method made from tree.c (not internal
         # recursive calls).
         if ( ( caller(0) )[0] ne __PACKAGE__ ) {
+
             # There's always one call to store the metadata
             $calls++
                 unless $_[1]->{build_epoch};

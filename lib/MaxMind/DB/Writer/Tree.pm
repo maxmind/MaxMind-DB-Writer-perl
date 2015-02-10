@@ -268,11 +268,14 @@ sub write_tree {
 
 sub new_from_frozen_tree {
     my $class = shift;
-    my ( $filename, $callback ) = validated_list(
+    my ( $filename, $callback, $database_type, $description )
+        = validated_list(
         \@_,
         filename              => { isa => 'Str' },
         map_key_type_callback => { isa => 'CodeRef' },
-    );
+        database_type         => { isa => 'Str', optional => 1 },
+        description           => { isa => 'HashRef[Str]', optional => 1 },
+        );
 
     open my $fh, '<:raw', $filename;
     my $packed_params_size;
@@ -286,6 +289,9 @@ sub new_from_frozen_tree {
         die "Could not read $params_size bytes from $filename: $!";
     }
     my $params = decode_sereal($frozen_params);
+
+    $params->{database_type} = $database_type if defined $database_type;
+    $params->{description}   = $description   if defined $description;
 
     my $tree = _thaw_tree(
         $filename,
@@ -567,13 +573,15 @@ their corresponding IPv4 ranges when the tree is written to disk.
 
 This method constructs a tree from a file containing a frozen tree.
 
-This method require the following two parameters:
+This method accepts the following parameters:
 
 =over 4
 
 =item * filename
 
 The filename containing the frozen tree.
+
+This parameter is required.
 
 =item * map_key_type_callback
 
@@ -583,6 +591,22 @@ more details.
 
 This needs to be passed because subroutine references cannot be reliably
 serialized and restored between processes.
+
+This parameter is required.
+
+=item * database_type
+
+Override the C<<database_type>> of the frozen tree. This accepts a string of
+the same form as the C<<new()>> constructor.
+
+This parameter is optional.
+
+=item * description
+
+Override the C<<description>> of the frozen tree. This accepts a hashref of
+the same form as the C<<new()>> constructor.
+
+This parameter is optional.
 
 =back
 

@@ -32,8 +32,7 @@ for my $record_size ( 24, 28, 32 ) {
 
 for my $record_size ( 24, 28, 32 ) {
     for my $should_alias ( 0, 1 ) {
-        my $file
-            = "$tempdir/IPv6-$record_size-alias-$should_alias.mmdb";
+        my $file = "$tempdir/IPv6-$record_size-alias-$should_alias.mmdb";
 
         _write_tree(
             $record_size,
@@ -52,8 +51,7 @@ for my $record_size ( 24, 28, 32 ) {
             $file,
         );
 
-        my $desc
-            = "IPv6 - $record_size-bit record - alias: $should_alias";
+        my $desc = "IPv6 - $record_size-bit record - alias: $should_alias";
         _verify( $file, $desc );
     }
 }

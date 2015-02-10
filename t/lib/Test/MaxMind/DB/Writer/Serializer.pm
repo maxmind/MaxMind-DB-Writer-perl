@@ -23,7 +23,7 @@ sub test_encoding_of_type {
     while ( my ( $input, $expect ) = $iter->() ) {
         my $desc = "packed $type - ";
 
-        if ( ref $input && ! blessed $input ) {
+        if ( ref $input && !blessed $input ) {
             $desc .=
                 ref $input eq 'HASH'
                 ? 'hash with ' . ( scalar keys %{$input} ) . ' keys'
@@ -80,7 +80,7 @@ my %metadata_keys = (
 );
 
 sub _map_key_type {
-    my $key  = shift;
+    my $key = shift;
 
     # locale id
     return 'utf8_string' if $key =~ /^[a-z]{2,3}(?:-[A-Z]{2})?$/;

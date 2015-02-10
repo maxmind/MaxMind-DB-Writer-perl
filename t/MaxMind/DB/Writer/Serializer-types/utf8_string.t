@@ -18,7 +18,6 @@ use Test::More;
         $tb->todo_output();
 }
 
-
 test_encoding_of_type( utf8_string => test_cases_for('utf8_string') );
 
 my $max_size = ( 2**24 - 1 ) + 65821;
@@ -43,7 +42,7 @@ _test_long_string(
 done_testing();
 
 sub _test_long_string {
-    my $length = shift;
+    my $length  = shift;
     my $first_4 = shift;
 
     my $serializer = MaxMind::DB::Writer::Serializer->new(
