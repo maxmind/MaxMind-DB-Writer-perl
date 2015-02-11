@@ -843,7 +843,7 @@ LOCAL void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
             args->buffer,
             args->buffer_start,
             size,
-            args->buffer - args->buffer_start,
+            (args->buffer - args->buffer_start) + size,
             args->max_size);
     }
     memcpy(args->buffer, data, size);
