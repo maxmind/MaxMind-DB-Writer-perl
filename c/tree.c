@@ -705,7 +705,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
     /* This is much larger than we need but it's a lot simpler to allocate
      * this and then truncate it later. The "* 2" bit is because each node has
      * two records, each of which could potentially be a data record. */
-    size_t buffer_size = 4 /* the size of the fozen constructor params (uint32_t) */
+    size_t buffer_size = 4 /* the size of the frozen constructor params (uint32_t) */
                          + frozen_params_size
                          + (tree->node_count * (1 + 16 + SHA1_KEY_LENGTH) * 2)
                          + 17 /* seventeen null separator */
