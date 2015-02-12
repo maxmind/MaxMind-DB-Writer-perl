@@ -692,7 +692,11 @@ LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
     start_iteration(tree, false, &assign_node_number);
 }
 
-/* 17 bytes of NUls followed by something that cannot be an SHA1 key are a
+/* 16 bytes for an IP address, 1 byte for the prefix length */
+#define FROZEN_RECORD_MAX_SIZE (16 + 1 + SHA1_KEY_LENGTH)
+#define FROZEN_NODE_MAX_SIZE (FROZEN_RECORD_MAX_SIZE * 2)
+
+/* 17 bytes of NULLs followed by something that cannot be an SHA1 key are a
    clear indicator that there are no more frozen networks in the buffer. */
 #define SEVENTEEN_NULLS "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 #define FREEZE_SEPARATOR "not an SHA1 key"
@@ -707,12 +711,12 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
         croak("Could not open file %s: %s", filename, strerror(errno));
     }
 
-    /* This is much larger than we need but it's a lot simpler to allocate
-     * this and then truncate it later. The "* 2" bit is because each node has
-     * two records, each of which could potentially be a data record. */
+    /* This is much larger than we need, because it assumes that every node in
+       the tree contains two data records, which will never happen. It's a lot
+       simpler to allocate this and then truncate it later. */
     size_t buffer_size = 4 /* the size of the frozen constructor params (uint32_t) */
                          + frozen_params_size
-                         + (tree->node_count * (1 + 16 + SHA1_KEY_LENGTH) * 2)
+                         + (tree->node_count * FROZEN_NODE_MAX_SIZE)
                          + 17 /* seventeen null separator */
                          + strlen(FREEZE_SEPARATOR);
     resize_file(fd, filename, buffer_size);
