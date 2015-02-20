@@ -159,6 +159,7 @@ int insert_network(MMDBW_tree_s *tree, const char *const ipstr,
     MMDBW_network_s network = resolve_network(tree, ipstr, prefix_length);
 
     if (tree->ip_version == 4 && network.family == AF_INET6) {
+        free_network(&network);
         return -1;
     }
 
@@ -312,10 +313,12 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
      * tree that would eventually lead to that network. This means that there
      * are no IPv4 addresses in the tree, so there's nothing to alias. */
     if (32 != current_bit) {
+        free_network(&ipv4_root_network);
         return;
     }
 
     if (MMDBW_RECORD_TYPE_NODE != ipv4_root_node_parent->left_record.type) {
+        free_network(&ipv4_root_network);
         return;
     }
 
@@ -575,6 +578,8 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
     } else {
         record_for_address = node_for_address->left_record;
     }
+
+    free_network(&network);
 
     if (MMDBW_RECORD_TYPE_NODE == record_for_address.type ||
         MMDBW_RECORD_TYPE_ALIAS == record_for_address.type) {
@@ -948,10 +953,9 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
 
     STRLEN frozen_data_size = thaw_strlen(&buffer);
 
-    char *frozen_data_chars = checked_malloc(frozen_data_size);
-    memcpy(frozen_data_chars, buffer, frozen_data_size);
+    /* per-perlapi newSVpvn copies the string */
     SV *data_to_decode =
-        sv_2mortal(newSVpvn(frozen_data_chars, frozen_data_size));
+        sv_2mortal(newSVpvn((char *) buffer, frozen_data_size));
     HV *data_hash = thaw_data_hash(data_to_decode);
 
     hv_iterinit(data_hash);
@@ -997,8 +1001,10 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
 
             buffer -= strlen(FREEZE_SEPARATOR);
             buffer -= 17;
+            free(maybe_separator);
             return NULL;
         }
+        free(maybe_separator);
     }
 
     uint8_t *start_ip_bytes = (uint8_t *)&start_ip;
