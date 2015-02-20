@@ -948,6 +948,8 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
         insert_record_for_network(tree, thawed->network, thawed->record,
                                   tree->merge_record_collisions);
         free_network(thawed->network);
+        free(thawed->network);
+        free(thawed->record);
         free(thawed);
     }
 
