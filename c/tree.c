@@ -1022,7 +1022,7 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
         bytes = checked_malloc(4);
         memcpy(bytes, start_ip_bytes + 12, 4);
     } else {
-        bytes = checked_malloc(4);
+        bytes = checked_malloc(16);
         memcpy(bytes, &start_ip, 16);
     }
 
