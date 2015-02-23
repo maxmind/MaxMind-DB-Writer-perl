@@ -65,9 +65,7 @@ typedef struct MMDBW_tree_s {
 
 typedef struct MMDBW_network_s {
     const char *const address_string;
-    const char *const as_string;
     const uint8_t *const bytes;
-    const int family;
     const uint8_t prefix_length;
     const uint8_t max_depth0;
 } MMDBW_network_s;
