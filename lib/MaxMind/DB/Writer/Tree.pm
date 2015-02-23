@@ -427,8 +427,8 @@ By default, when an insert collides with a previous insert, the new data
 simply overwrites the old data where the two networks overlap.
 
 If this is set to true, then on a collision, the writer will merge the old
-data with the new data. This only works if both inserts use a hashref for the
-data payload.
+data with the new data. This only works if both inserts provide a hashref for
+the data payload.
 
 This parameter is optional. It defaults to false.
 
@@ -469,6 +469,27 @@ spec|http://maxmind.github.io/MaxMind-DB/>. The short overview is that
 anything that can be encoded in JSON can be stored in an MMDB file. It can
 also handle unsigned 64-bit and 128-bit integers if they are passed as
 L<Math::UInt128|Math::Int128> objects.
+
+=head3 Insert Order, Merging, and Overwriting
+
+Depending on whether or not you set C<merge_record_collisions> to true in the
+constructor, the order in which you insert networks will affect the final tree
+output.
+
+When C<merge_record_collisions> is I<false>, the last insert "wins". This
+means that if you insert C<1.2.3.255/32> and then C<1.2.3.0/24>, the data for
+C<1.2.3.255/24> will overwrite the data you previously inserted for
+C<1.2.3.255/232>. On the other hand, if you insert C<1.2.3.255/32> last, then
+the tree will be split so that the C<1.2.3.0 - 1.2.3.254> range has different
+data than C<1.2.3.255>.
+
+In this scenario, if you want to make sure that no data is overwritten then
+you need to sort your input by network prefix length.
+
+When C<merge_record_collisions> is I<true>, then regardless of insert order,
+the C<1.2.3.255/32> network will end up with its data plus the data provided
+for the C<1.2.3.0/24> network, while C<1.2.3.0 - 1.2.3.254> will have the
+expected data.
 
 =head2 $tree->write_tree($fh)
 
