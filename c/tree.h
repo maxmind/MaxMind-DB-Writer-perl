@@ -26,11 +26,11 @@ typedef unsigned __int128 mmdbw_uint128_t;
 #endif
 
 typedef struct MMDBW_record_s {
-    uint8_t type;
     union {
         const char *key;
         struct MMDBW_node_s *node;
     } value;
+    uint8_t type;
 } MMDBW_record_s;
 
 /* This is a linked list so we can loop through all the nodes ever allocated
@@ -38,10 +38,10 @@ typedef struct MMDBW_record_s {
  * no longer reachable in the tree, but we still need to free them and
  * decrement the ref counts for any SVs they refer to. */
 typedef struct MMDBW_node_s {
-    uint32_t number;
     MMDBW_record_s left_record;
     MMDBW_record_s right_record;
     struct MMDBW_node_s *next_node;
+    uint32_t number;
 } MMDBW_node_s;
 
 typedef struct MMDBW_data_hash_s {
@@ -64,12 +64,12 @@ typedef struct MMDBW_tree_s {
 } MMDBW_tree_s;
 
 typedef struct MMDBW_network_s {
-    const uint8_t *const bytes;
-    const uint8_t prefix_length;
-    const uint8_t max_depth0;
-    const int family;
     const char *const address_string;
     const char *const as_string;
+    const uint8_t *const bytes;
+    const int family;
+    const uint8_t prefix_length;
+    const uint8_t max_depth0;
 } MMDBW_network_s;
 
     /* *INDENT-OFF* */
