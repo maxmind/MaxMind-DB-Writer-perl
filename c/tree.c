@@ -29,6 +29,8 @@
 
 #define SHA1_KEY_LENGTH (27)
 
+#define NETWORK_IS_IPV6(network) (127 == network->max_depth0)
+
 typedef struct freeze_args_s {
     uint8_t *buffer;
     size_t buffer_used;
@@ -59,8 +61,6 @@ LOCAL const char *const store_data_in_tree(MMDBW_tree_s *tree,
 LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
                                       const char *const ipstr,
                                       const uint8_t prefix_length);
-LOCAL const char *const network_as_string(const char *const ipstr,
-                                          const uint8_t prefix_length);
 LOCAL void free_network(MMDBW_network_s *network);
 LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                                      MMDBW_network_s *network,
@@ -158,7 +158,7 @@ int insert_network(MMDBW_tree_s *tree, const char *const ipstr,
 {
     MMDBW_network_s network = resolve_network(tree, ipstr, prefix_length);
 
-    if (tree->ip_version == 4 && network.family == AF_INET6) {
+    if (tree->ip_version == 4 && NETWORK_IS_IPV6((&network))) {
         free_network(&network);
         return -1;
     }
@@ -248,10 +248,8 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
     MMDBW_network_s network = {
         .bytes          = bytes,
         .prefix_length  = prefix_length,
-        .family         = addresses->ai_addr->sa_family,
         .max_depth0     = (family == AF_INET ? 31 : 127),
         .address_string = ipstr,
-        .as_string      = network_as_string(ipstr,       prefix_length)
     };
 
     freeaddrinfo(addresses);
@@ -259,19 +257,9 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
     return network;
 }
 
-LOCAL const char *const network_as_string(const char *const ipstr,
-                                          const uint8_t prefix_length)
-{
-    /* 3 chars for up to 3 digits of netmask and 1 for the slash and 1 for the \0. */
-    char *string = checked_malloc(strlen(ipstr) + 5);
-    sprintf(string, "%s/%" PRIu8, ipstr, prefix_length);
-    return (const char *)string;
-}
-
 LOCAL void free_network(MMDBW_network_s *network)
 {
     free((char *)network->bytes);
-    free((char *)network->as_string);
 }
 
 struct network {
@@ -386,7 +374,7 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         if (strlen(new_key) == strlen(other_key)
             && 0 == strcmp(new_key, other_key)) {
 
-            size_t bytes_length = network->family == AF_INET ? 4 : 16;
+            size_t bytes_length = NETWORK_IS_IPV6(network) ? 16 : 4;
             uint8_t *bytes = checked_malloc(bytes_length);
             memcpy(bytes, network->bytes, bytes_length);
 
@@ -395,10 +383,7 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                 .bytes          = bytes,
                 .prefix_length  = parent_prefix_length,
                 .max_depth0     = network->max_depth0,
-                .family         = network->family,
                 .address_string = network->address_string,
-                .as_string      = network_as_string(
-                    network->address_string, parent_prefix_length)
             };
 
             /* We don't need to merge record collisions in this insert as
@@ -440,10 +425,7 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
             .bytes          = network->bytes,
             .prefix_length  = new_prefix_length,
             .max_depth0     = network->max_depth0,
-            .family         = network->family,
             .address_string = network->address_string,
-            .as_string      = network_as_string(
-                network->address_string, new_prefix_length)
         };
 
         MMDBW_record_s new_left_record = {
@@ -455,28 +437,25 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
 
         insert_record_for_network(tree, &left, &new_left_record, true);
 
-        free((char *)left.as_string);
-
-        size_t bytes_length = network->family == AF_INET ? 4 : 16;
+        size_t bytes_length = NETWORK_IS_IPV6(network) ? 16 : 4;
         uint8_t right_bytes[bytes_length];
         memcpy(&right_bytes, network->bytes, bytes_length);
 
         right_bytes[ (new_prefix_length - 1) / 8]
             |= 1 << ((network->max_depth0 + 1 - new_prefix_length) % 8);
 
-        char right_address_string[AF_INET ? INET_ADDRSTRLEN :
-                                  INET6_ADDRSTRLEN];
-        inet_ntop(network->family, &right_bytes, right_address_string,
+        char right_address_string[NETWORK_IS_IPV6(network) ? INET6_ADDRSTRLEN :
+                                  INET_ADDRSTRLEN];
+        inet_ntop(NETWORK_IS_IPV6(network) ? AF_INET6 : AF_INET,
+                  &right_bytes,
+                  right_address_string,
                   sizeof(right_address_string));
 
         MMDBW_network_s right = {
             .bytes          = (const uint8_t *const)&right_bytes,
             .prefix_length  = new_prefix_length,
             .max_depth0     = network->max_depth0,
-            .family         = network->family,
             .address_string = right_address_string,
-            .as_string      = network_as_string(
-                right_address_string, new_prefix_length)
         };
 
         MMDBW_record_s new_right_record = {
@@ -487,8 +466,6 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
         };
 
         insert_record_for_network(tree, &right, &new_right_record, true);
-
-        free((char *)right.as_string);
 
         /* There's no need continuing with the original record as the relevant
          * data has already been inserted further down the tree by the code
@@ -524,8 +501,9 @@ SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
           && SvTYPE(SvRV(data_from)) == SVt_PVHV
           && SvTYPE(SvRV(data_into)) == SVt_PVHV)) {
         croak(
-            "Cannot merge data records unless both records are hashes - inserting %s",
-            network->as_string);
+            "Cannot merge data records unless both records are hashes - inserting %s/%"
+            PRIu8,
+            network->address_string, network->prefix_length);
     }
 
     HV *hash_from = (HV *)SvRV(data_from);
@@ -961,7 +939,7 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
 
     /* per-perlapi newSVpvn copies the string */
     SV *data_to_decode =
-        sv_2mortal(newSVpvn((char *) buffer, frozen_data_size));
+        sv_2mortal(newSVpvn((char *)buffer, frozen_data_size));
     HV *data_hash = thaw_data_hash(data_to_decode);
 
     hv_iterinit(data_hash);
@@ -1035,11 +1013,8 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
     MMDBW_network_s network = {
         .bytes          = bytes,
         .prefix_length  = prefix_length,
-        .family         = 4 == tree->ip_version ? AF_INET : AF_INET6,
         .max_depth0     = 4 == tree->ip_version ? 31 : 127,
         .address_string = "thawed network",
-        .as_string      = network_as_string("thawed network",
-                                            prefix_length)
     };
 
     thawed->network = checked_malloc(sizeof(MMDBW_network_s));
