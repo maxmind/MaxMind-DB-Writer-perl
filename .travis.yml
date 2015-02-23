@@ -27,7 +27,7 @@ install:
 
 script:
   - perl Build.PL
-  - ./Build
+  - CFLAGS="-std=c99 -Wall -Wextra -Werror" ./Build
   - prove -br -j$(test-jobs) $(test-files)
 
 notifications:

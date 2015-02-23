@@ -47,6 +47,7 @@ typedef struct MMDBW_node_s {
 typedef struct MMDBW_data_hash_s {
     SV *data_sv;
     const char *key;
+    uint32_t reference_count;
     UT_hash_handle hh;
 } MMDBW_data_hash_s;
 

@@ -56,8 +56,14 @@ typedef struct encode_args_s {
 LOCAL void insert_resolved_network(MMDBW_tree_s *tree, MMDBW_network_s *network,
                                    SV *key_sv, SV *data);
 LOCAL const char *const store_data_in_tree(MMDBW_tree_s *tree,
+                              const char *const key,
+                              SV *data_sv);
+LOCAL const char *const increment_data_reference_count(MMDBW_tree_s *tree,
+                                           const char *const key);
+LOCAL void set_stored_data_in_tree(MMDBW_tree_s *tree,
                                            const char *const key,
                                            SV *data_sv);
+LOCAL void decrement_data_reference_count(MMDBW_tree_s *tree, const char *const key);
 LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
                                       const char *const ipstr,
                                       const uint8_t prefix_length);
@@ -187,6 +193,40 @@ LOCAL void insert_resolved_network(MMDBW_tree_s *tree, MMDBW_network_s *network,
 }
 
 LOCAL const char *const store_data_in_tree(MMDBW_tree_s *tree,
+                              const char *const key,
+                              SV *data_sv) {
+    const char *const new_key = increment_data_reference_count(tree, key);
+    set_stored_data_in_tree(tree, key, data_sv);
+
+    return new_key;
+}
+
+LOCAL const char *const increment_data_reference_count(MMDBW_tree_s *tree,
+                                           const char *const key)
+{
+    MMDBW_data_hash_s *data = NULL;
+    HASH_FIND(hh, tree->data_table, key, SHA1_KEY_LENGTH, data);
+
+    /* We allow this possibility as we need to create the record separately
+       from updating the data when thawing */
+    if (NULL == data) {
+        data = checked_malloc(sizeof(MMDBW_data_hash_s));
+        data->reference_count = 0;
+
+        data->data_sv = NULL;
+
+        data->key = checked_malloc(SHA1_KEY_LENGTH + 1);
+        strcpy((char *)data->key, key);
+
+        HASH_ADD_KEYPTR(hh, tree->data_table, data->key, SHA1_KEY_LENGTH, data);
+    }
+    data->reference_count++;
+
+    return data->key;
+}
+
+
+LOCAL void set_stored_data_in_tree(MMDBW_tree_s *tree,
                                            const char *const key,
                                            SV *data_sv)
 {
@@ -194,19 +234,34 @@ LOCAL const char *const store_data_in_tree(MMDBW_tree_s *tree,
     HASH_FIND(hh, tree->data_table, key, SHA1_KEY_LENGTH, data);
 
     if (NULL == data) {
-        data = checked_malloc(sizeof(MMDBW_data_hash_s));
-
-        SvREFCNT_inc_simple_void_NN(data_sv);
-        data->data_sv = data_sv;
-
-        data->key = checked_malloc(SHA1_KEY_LENGTH + 1);
-        strcpy((char *)data->key, key);
-
-        HASH_ADD_KEYPTR(hh, tree->data_table, data->key, SHA1_KEY_LENGTH, data);
+        croak("Attempt to set unknown data record in tree");
     }
 
-    return data->key;
+    if (NULL != data->data_sv) {
+        return;
+    }
+
+    SvREFCNT_inc_simple_void_NN(data_sv);
+    data->data_sv = data_sv;
 }
+
+LOCAL void decrement_data_reference_count(MMDBW_tree_s *tree, const char *const key) {
+    MMDBW_data_hash_s *data = NULL;
+    HASH_FIND(hh, tree->data_table, key, SHA1_KEY_LENGTH, data);
+
+    if (NULL == data) {
+        croak("Attempt to remove data that does not exist from tree");
+    }
+
+    data->reference_count--;
+    if (0 == data->reference_count) {
+        HASH_DEL(tree->data_table, data);
+        SvREFCNT_dec(data->data_sv);
+        free((char *)data->key);
+        free(data);
+    }
+}
+
 
 /* XXX - this is mostly copied from libmaxminddb - can we somehow share this code? */
 LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
@@ -396,6 +451,10 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         }
     }
 
+    if (MMDBW_RECORD_TYPE_DATA == record_to_set->type) {
+        decrement_data_reference_count(tree, record_to_set->value.key);
+    }
+
     record_to_set->type = new_record->type;
     if (MMDBW_RECORD_TYPE_DATA == new_record->type) {
         record_to_set->value.key = new_record->value.key;
@@ -418,6 +477,9 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
         if (network->prefix_length > network->max_depth0) {
             croak("Something is very wrong. Prefix length is too long.");
         }
+
+        /* We increment the count as we are turning one record into two */
+        increment_data_reference_count(tree, new_record->value.key);
 
         uint8_t new_prefix_length = network->prefix_length + 1;
 
@@ -480,11 +542,13 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
                                            record_to_set->value.key,
                                            new_record->value.key,
                                            network);
+
         SV *key_sv = key_for_data(merged);
         const char *const new_key =
             store_data_in_tree(tree, SvPVbyte_nolen(key_sv), merged);
         SvREFCNT_dec(key_sv);
 
+        decrement_data_reference_count(tree, new_record->value.key);
         new_record->value.key = new_key;
     }
 
@@ -627,8 +691,13 @@ LOCAL MMDBW_node_s *make_next_node(MMDBW_tree_s *tree, MMDBW_record_s *record)
 {
     MMDBW_node_s *next_node = new_node(tree);
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
+        /* We only need to increment the reference count once as we are
+           replacing the parent record */
+        increment_data_reference_count(tree, record->value.key);
+
         next_node->left_record.type = MMDBW_RECORD_TYPE_DATA;
         next_node->left_record.value.key = record->value.key;
+
         next_node->right_record.type = MMDBW_RECORD_TYPE_DATA;
         next_node->right_record.value.key = record->value.key;
     }
@@ -927,6 +996,9 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
 
     thawed_network_s *thawed;
     while (NULL != (thawed = thaw_network(tree, &buffer))) {
+        if (MMDBW_RECORD_TYPE_DATA == thawed->record->type) {
+            increment_data_reference_count(tree, thawed->record->value.key);
+        }
         insert_record_for_network(tree, thawed->network, thawed->record,
                                   tree->merge_record_collisions);
         free_network(thawed->network);
@@ -937,7 +1009,7 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
 
     STRLEN frozen_data_size = thaw_strlen(&buffer);
 
-    /* per-perlapi newSVpvn copies the string */
+    /* per perlapi newSVpvn copies the string */
     SV *data_to_decode =
         sv_2mortal(newSVpvn((char *)buffer, frozen_data_size));
     HV *data_hash = thaw_data_hash(data_to_decode);
@@ -947,7 +1019,7 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
     I32 keylen;
     SV *value;
     while (NULL != (value = hv_iternextsv(data_hash, &key, &keylen))) {
-        (void)store_data_in_tree(tree, key, value);
+        set_stored_data_in_tree(tree, key, value);
     }
 
     SvREFCNT_dec((SV *)data_hash);
@@ -1022,7 +1094,9 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
 
     MMDBW_record_s *record = checked_malloc(sizeof(MMDBW_record_s));
     record->type = MMDBW_RECORD_TYPE_DATA;
+
     record->value.key = thaw_data_key(buffer);
+
     thawed->record = record;
 
     return thawed;
@@ -1401,15 +1475,20 @@ void free_tree(MMDBW_tree_s *tree)
     while (NULL != node) {
         MMDBW_node_s *last_node = node;
         node = last_node->next_node;
+
+        if (MMDBW_RECORD_TYPE_DATA == last_node->left_record.type) {
+            decrement_data_reference_count(tree, last_node->left_record.value.key);
+        }
+        if (MMDBW_RECORD_TYPE_DATA == last_node->right_record.type) {
+            decrement_data_reference_count(tree, last_node->right_record.value.key);
+        }
         free(last_node);
     }
 
-    MMDBW_data_hash_s *data, *tmp;
-    HASH_ITER(hh, tree->data_table, data, tmp) {
-        HASH_DEL(tree->data_table, data);
-        SvREFCNT_dec(data->data_sv);
-        free((char *)data->key);
-        free(data);
+    int hash_count = HASH_COUNT(tree->data_table);
+    if (0 != hash_count) {
+        croak("%d elements left in data table after freeing all nodes!",
+            hash_count);
     }
 
     free(tree);
