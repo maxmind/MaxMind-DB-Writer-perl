@@ -17,7 +17,7 @@
     ((network) | ((uint128_t)1 << ((max_depth0) - (depth))))
 
 #define MAX_RECORD_VALUE(record_size) \
-    (record_size == 32 ? UINT32_MAX : (1 << record_size) - 1)
+    (record_size == 32 ? UINT32_MAX : (uint32_t)(1 << record_size) - 1)
 
 #if MMDBW_UINT128_USING_MODE
 typedef unsigned int mmdbw_uint128_t __attribute__ ((__mode__(TI)));
@@ -99,7 +99,7 @@ typedef struct MMDBW_network_s {
                                                 uint8_t depth));
     extern SV *data_for_key(MMDBW_tree_s *tree, const char *const key);
     extern void free_tree(MMDBW_tree_s *tree);
-    extern const char *const record_type_name(int record_type);
+    extern const char *record_type_name(int record_type);
     extern void warn_hex(uint8_t digest[16], char *where);
     extern char *md5_as_hex(uint8_t digest[16]);
     /* --prototypes end - don't remove this comment-- */
