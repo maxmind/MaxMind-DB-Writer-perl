@@ -132,8 +132,12 @@ LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
 /* --prototypes end - don't remove this comment-- */
 /* *INDENT-ON* */
 
-MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
-                       bool merge_record_collisions)
+MMDBW_tree_s *new_tree
+(
+    const uint8_t ip_version,
+    uint8_t record_size,
+    bool merge_record_collisions
+)
 {
     MMDBW_tree_s *tree = checked_malloc(sizeof(MMDBW_tree_s));
 
@@ -153,8 +157,14 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     return tree;
 }
 
-int insert_network(MMDBW_tree_s *tree, const char *const ipstr,
-                   const uint8_t prefix_length, SV *key, SV *data)
+int insert_network
+(
+    MMDBW_tree_s *tree,
+    const char *const ipstr,
+    const uint8_t prefix_length,
+    SV *key,
+    SV *data
+)
 {
     MMDBW_network_s network = resolve_network(tree, ipstr, prefix_length);
 
@@ -170,8 +180,13 @@ int insert_network(MMDBW_tree_s *tree, const char *const ipstr,
     return 0;
 }
 
-LOCAL void insert_resolved_network(MMDBW_tree_s *tree, MMDBW_network_s *network,
-                                   SV *key_sv, SV *data)
+LOCAL void insert_resolved_network
+(
+    MMDBW_tree_s *tree,
+    MMDBW_network_s *network,
+    SV *key_sv,
+    SV *data
+)
 {
     const char *const key =
         store_data_in_tree(tree, SvPVbyte_nolen(key_sv), data);
@@ -186,9 +201,12 @@ LOCAL void insert_resolved_network(MMDBW_tree_s *tree, MMDBW_network_s *network,
                               tree->merge_record_collisions);
 }
 
-LOCAL const char *const store_data_in_tree(MMDBW_tree_s *tree,
-                                           const char *const key,
-                                           SV *data_sv)
+LOCAL const char *const store_data_in_tree
+(
+    MMDBW_tree_s *tree,
+    const char *const key,
+    SV *data_sv
+)
 {
     MMDBW_data_hash_s *data = NULL;
     HASH_FIND(hh, tree->data_table, key, SHA1_KEY_LENGTH, data);
@@ -209,9 +227,12 @@ LOCAL const char *const store_data_in_tree(MMDBW_tree_s *tree,
 }
 
 /* XXX - this is mostly copied from libmaxminddb - can we somehow share this code? */
-LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
-                                      const char *const ipstr,
-                                      const uint8_t prefix_length)
+LOCAL MMDBW_network_s resolve_network
+(
+    MMDBW_tree_s *tree,
+    const char *const ipstr,
+    const uint8_t prefix_length
+)
 {
     struct addrinfo ai_hints;
     ai_hints.ai_socktype = 0;
@@ -257,7 +278,10 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
     return network;
 }
 
-LOCAL void free_network(MMDBW_network_s *network)
+LOCAL void free_network
+(
+    MMDBW_network_s *network
+)
 {
     free((char *)network->bytes);
 }
@@ -282,7 +306,10 @@ static struct network ipv4_aliases[] = {
     }
 };
 
-void alias_ipv4_networks(MMDBW_tree_s *tree)
+void alias_ipv4_networks
+(
+    MMDBW_tree_s *tree
+)
 {
     if (tree->ip_version == 4) {
         return;
@@ -333,10 +360,13 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
     free_network(&ipv4_root_network);
 }
 
-LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
-                                     MMDBW_network_s *network,
-                                     MMDBW_record_s *new_record,
-                                     bool merge_record_collisions)
+LOCAL void insert_record_for_network
+(
+    MMDBW_tree_s *tree,
+    MMDBW_network_s *network,
+    MMDBW_record_s *new_record,
+    bool merge_record_collisions
+)
 {
     uint8_t current_bit;
     MMDBW_node_s *node_to_set =
@@ -407,10 +437,13 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
     return;
 }
 
-LOCAL bool merge_records(MMDBW_tree_s *tree,
-                         MMDBW_network_s *network,
-                         MMDBW_record_s *new_record,
-                         MMDBW_record_s *record_to_set)
+LOCAL bool merge_records
+(
+    MMDBW_tree_s *tree,
+    MMDBW_network_s *network,
+    MMDBW_record_s *new_record,
+    MMDBW_record_s *record_to_set
+)
 {
     if (MMDBW_RECORD_TYPE_NODE == record_to_set->type ||
         MMDBW_RECORD_TYPE_ALIAS == record_to_set->type) {
@@ -491,8 +524,13 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
     return false;
 }
 
-SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
-                          const char *const key_into, MMDBW_network_s *network)
+SV *merge_hashes_for_keys
+(
+    MMDBW_tree_s *tree,
+    const char *const key_from,
+    const char *const key_into,
+    MMDBW_network_s *network
+)
 {
     SV *data_from = data_for_key(tree, key_from);
     SV *data_into = data_for_key(tree, key_into);
@@ -521,7 +559,11 @@ SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
     return merged_ref;
 }
 
-LOCAL void merge_hash(HV *from, HV *to)
+LOCAL void merge_hash
+(
+    HV *from,
+    HV *to
+)
 {
     (void)hv_iterinit(from);
     HE *he;
@@ -541,7 +583,11 @@ LOCAL void merge_hash(HV *from, HV *to)
     return;
 }
 
-SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
+SV *lookup_ip_address
+(
+    MMDBW_tree_s *tree,
+    const char *const ipstr
+)
 {
     MMDBW_network_s network =
         resolve_network(tree, ipstr, tree->ip_version == 6 ? 128 : 32);
@@ -573,12 +619,17 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
     }
 }
 
-LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
-                                          MMDBW_network_s *network,
-                                          uint8_t *current_bit,
-                                          MMDBW_node_s *(if_not_node)(
-                                              MMDBW_tree_s *tree,
-                                              MMDBW_record_s *record))
+LOCAL MMDBW_node_s *find_node_for_network
+(
+    MMDBW_tree_s *tree,
+    MMDBW_network_s *network,
+    uint8_t *current_bit,
+    MMDBW_node_s *(if_not_node)
+    (
+        MMDBW_tree_s *tree,
+        MMDBW_record_s *record
+    )
+)
 {
     MMDBW_node_s *node = tree->root_node;
     uint8_t last_bit = network->max_depth0 - (network->prefix_length - 1);
@@ -617,13 +668,20 @@ LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
     return node;
 }
 
-LOCAL MMDBW_node_s *return_null(
-    MMDBW_tree_s *UNUSED(tree), MMDBW_record_s *UNUSED(record))
+LOCAL MMDBW_node_s *return_null
+(
+    MMDBW_tree_s *UNUSED(tree),
+    MMDBW_record_s *UNUSED(record)
+)
 {
     return NULL;
 }
 
-LOCAL MMDBW_node_s *make_next_node(MMDBW_tree_s *tree, MMDBW_record_s *record)
+LOCAL MMDBW_node_s *make_next_node
+(
+    MMDBW_tree_s *tree,
+    MMDBW_record_s *record
+)
 {
     MMDBW_node_s *next_node = new_node(tree);
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
@@ -636,7 +694,10 @@ LOCAL MMDBW_node_s *make_next_node(MMDBW_tree_s *tree, MMDBW_record_s *record)
     return next_node;
 }
 
-MMDBW_node_s *new_node(MMDBW_tree_s *tree)
+MMDBW_node_s *new_node
+(
+    MMDBW_tree_s *tree
+)
 {
     MMDBW_node_s *node = checked_malloc(sizeof(MMDBW_node_s));
 
@@ -654,7 +715,10 @@ MMDBW_node_s *new_node(MMDBW_tree_s *tree)
     return node;
 }
 
-void finalize_tree(MMDBW_tree_s *tree)
+void finalize_tree
+(
+    MMDBW_tree_s *tree
+)
 {
     if (tree->is_finalized) {
         return;
@@ -664,7 +728,10 @@ void finalize_tree(MMDBW_tree_s *tree)
     tree->is_finalized = true;
 }
 
-LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
+LOCAL void assign_node_numbers
+(
+    MMDBW_tree_s *tree
+)
 {
     tree->node_count = 0;
     start_iteration(tree, false, &assign_node_number);
@@ -679,8 +746,13 @@ LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
 #define SEVENTEEN_NULLS "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 #define FREEZE_SEPARATOR "not an SHA1 key"
 
-void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
-                 size_t frozen_params_size)
+void freeze_tree
+(
+    MMDBW_tree_s *tree,
+    char *filename,
+    char *frozen_params,
+    size_t frozen_params_size
+)
 {
     finalize_tree(tree);
 
@@ -764,7 +836,12 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
     SvREFCNT_dec((SV *)args.data_hash);
 }
 
-LOCAL int resize_file(int fd, char *filename, size_t size)
+LOCAL int resize_file
+(
+    int fd,
+    char *filename,
+    size_t size
+)
 {
     if (-1 == lseek(fd, size - 1, SEEK_SET)) {
         close(fd);
@@ -783,8 +860,13 @@ LOCAL int resize_file(int fd, char *filename, size_t size)
     return fd;
 }
 
-LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                       mmdbw_uint128_t network, uint8_t depth)
+LOCAL void freeze_node
+(
+    MMDBW_tree_s *tree,
+    MMDBW_node_s *node,
+    mmdbw_uint128_t network,
+    uint8_t depth
+)
 {
     const uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
     const uint8_t next_depth = depth + 1;
@@ -802,9 +884,13 @@ LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
     }
 }
 
-LOCAL void freeze_data_record(MMDBW_tree_s *tree,
-                              mmdbw_uint128_t network, uint8_t depth,
-                              const char const *key)
+LOCAL void freeze_data_record
+(
+    MMDBW_tree_s *tree,
+    mmdbw_uint128_t network,
+    uint8_t depth,
+    const char const *key
+)
 {
     freeze_args_s *args = tree->iteration_args;
 
