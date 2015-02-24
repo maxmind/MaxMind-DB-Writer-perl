@@ -93,7 +93,7 @@ LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
                        mmdbw_uint128_t network, uint8_t depth);
 LOCAL void freeze_data_record(MMDBW_tree_s *tree,
                               mmdbw_uint128_t network, uint8_t depth,
-                              const char const *key);
+                              const char *key);
 LOCAL void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
                             char *what);
 LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args);
@@ -104,7 +104,7 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer);
 LOCAL uint8_t *thaw_bytes(uint8_t **buffer, size_t size);
 LOCAL mmdbw_uint128_t thaw_uint128(uint8_t **buffer);
 LOCAL STRLEN thaw_strlen(uint8_t **buffer);
-LOCAL const char const *thaw_data_key(uint8_t **buffer);
+LOCAL const char *thaw_data_key(uint8_t **buffer);
 LOCAL HV *thaw_data_hash(SV *data_to_decode);
 LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
                        mmdbw_uint128_t UNUSED(network),
@@ -877,7 +877,7 @@ LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
 
 LOCAL void freeze_data_record(MMDBW_tree_s *tree,
                               mmdbw_uint128_t network, uint8_t depth,
-                              const char const *key)
+                              const char *key)
 {
     freeze_args_s *args = tree->iteration_args;
 
@@ -1130,7 +1130,7 @@ LOCAL STRLEN thaw_strlen(uint8_t **buffer)
     return value;
 }
 
-LOCAL const char const *thaw_data_key(uint8_t **buffer)
+LOCAL const char *thaw_data_key(uint8_t **buffer)
 {
     /* Note that we do _not_ free this data when we free the thawed_record_s
        structures. We'll copy this pointer directly into the tree->data_hash
@@ -1140,7 +1140,7 @@ LOCAL const char const *thaw_data_key(uint8_t **buffer)
     memcpy(value, *buffer, SHA1_KEY_LENGTH);
     *buffer += SHA1_KEY_LENGTH;
     value[SHA1_KEY_LENGTH] = '\0';
-    return (const char const *)value;
+    return (const char *)value;
 }
 
 LOCAL HV *thaw_data_hash(SV *data_to_decode)
