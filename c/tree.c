@@ -1280,9 +1280,6 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
     return record_value;
 }
 
-/* We need to maintain a hash of already-seen nodes to handle the case of
- * trees with aliases. We don't want to go down the same branch more than
- * once. */
 void start_iteration(MMDBW_tree_s *tree,
                      bool depth_first,
                      void(callback) (MMDBW_tree_s *tree,
