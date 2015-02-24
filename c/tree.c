@@ -33,7 +33,6 @@
 
 typedef struct freeze_args_s {
     uint8_t *buffer;
-    size_t buffer_used;
     size_t max_size;
     uint8_t *buffer_start;
     HV *data_hash;
@@ -812,7 +811,6 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
 
     freeze_args_s args = {
         .buffer       = buffer,
-        .buffer_used  = 0,
         .max_size     = buffer_size,
         .buffer_start = buffer_start,
         .data_hash    = newHV()
@@ -839,7 +837,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
         croak("munmap() failed: %s", strerror(errno));
     }
 
-    if (-1 == ftruncate(fd, args.buffer_used)) {
+    if (-1 == ftruncate(fd, (args.buffer - args.buffer_start))) {
         croak("Could not truncate file %s: %s", filename, strerror(errno));
     }
 
@@ -922,19 +920,19 @@ LOCAL void freeze_data_record(MMDBW_tree_s *tree,
 LOCAL void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
                             char *what)
 {
-    if ((args->buffer - args->buffer_start) + size >= args->max_size) {
+    size_t new_size = (args->buffer - args->buffer_start) + size;
+    if (new_size >= args->max_size) {
         croak(
             "About to write past end of mmap buffer with %s - (%p - %p) + %zu = %tu > %zu\n",
             what,
             args->buffer,
             args->buffer_start,
             size,
-            (args->buffer - args->buffer_start) + size,
+            new_size,
             args->max_size);
     }
     memcpy(args->buffer, data, size);
     args->buffer += size;
-    args->buffer_used += size;
 }
 
 LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
