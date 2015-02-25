@@ -4,6 +4,7 @@ extern "C" {
 #endif
 
 #include "tree.h"
+#include "freeze_thaw.h"
 
 #ifdef __cplusplus
 }
