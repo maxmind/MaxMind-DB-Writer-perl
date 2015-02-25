@@ -156,6 +156,31 @@ for my $record_size ( 24, 28, 32 ) {
     );
 }
 
+{
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version              => 6,
+        record_size             => 24,
+        database_type           => 'Test',
+        languages               => ['en'],
+        description             => { en => 'Test tree' },
+        merge_record_collisions => 1,
+        map_key_type_callback   => sub {'uint32'},
+    );
+
+    $tree->insert_network(
+        Net::Works::Network->new_from_string( string => '::0/0' ),
+        { value => 42 },
+    );
+
+    subtest(
+        'Tree with only one network - ::0/0',
+        sub {
+            test_freeze_thaw($tree);
+            test_freeze_thaw_optional_params($tree);
+        }
+    );
+}
+
 done_testing();
 
 sub _data_record {

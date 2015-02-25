@@ -983,12 +983,11 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
         if (memcmp(maybe_separator, FREEZE_SEPARATOR,
                    strlen(FREEZE_SEPARATOR)) == 0) {
 
-            buffer -= strlen(FREEZE_SEPARATOR);
-            buffer -= 17;
             free(maybe_separator);
             return NULL;
         }
-        free(maybe_separator);
+
+        croak("Found a ::0/0 network but that should never happen!");
     }
 
     uint8_t *start_ip_bytes = (uint8_t *)&start_ip;
