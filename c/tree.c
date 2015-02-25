@@ -774,6 +774,8 @@ LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
    clear indicator that there are no more frozen networks in the buffer. */
 #define SEVENTEEN_NULLS "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 #define FREEZE_SEPARATOR "not an SHA1 key"
+/* We subtract 1 as we treat this as a sequence of bytes rather than a null terminated
+   string. */
 #define FREEZE_SEPARATOR_LENGTH (sizeof(FREEZE_SEPARATOR) - 1)
 
 void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
