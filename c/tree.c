@@ -1010,12 +1010,15 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
 
     struct stat fileinfo;
     if (-1 == fstat(fd, &fileinfo)) {
+        close(fd);
         croak("Could not stat file: %s: %s", filename, strerror(errno));
     }
 
     uint8_t *buffer =
         (uint8_t *)mmap(NULL, fileinfo.st_size, PROT_READ, MAP_SHARED, fd,
                         0);
+    close(fd);
+
     buffer += initial_offset;
 
     MMDBW_tree_s *tree = new_tree(ip_version, record_size,
@@ -1078,9 +1081,9 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
     uint8_t prefix_length = thaw_uint8(buffer);
 
     if (0 == start_ip && 0 == prefix_length) {
-        uint8_t *maybe_separator = thaw_bytes(buffer, strlen(FREEZE_SEPARATOR));
-        if (memcmp(maybe_separator, FREEZE_SEPARATOR,
-                   strlen(FREEZE_SEPARATOR)) == 0) {
+        size_t separator_length = strlen(FREEZE_SEPARATOR);
+        uint8_t *maybe_separator = thaw_bytes(buffer, separator_length + 1);
+        if (memcmp(maybe_separator, FREEZE_SEPARATOR, separator_length) == 0) {
 
             free(maybe_separator);
             return NULL;
