@@ -1027,7 +1027,6 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
                                   tree->merge_record_collisions);
         free_network(thawed->network);
         free(thawed->network);
-        free((char *)thawed->record->value.key);
         free(thawed->record);
         free(thawed);
     }
