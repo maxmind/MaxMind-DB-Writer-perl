@@ -774,6 +774,7 @@ LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
    clear indicator that there are no more frozen networks in the buffer. */
 #define SEVENTEEN_NULLS "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 #define FREEZE_SEPARATOR "not an SHA1 key"
+#define FREEZE_SEPARATOR_LENGTH (sizeof(FREEZE_SEPARATOR) - 1)
 
 void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
                  size_t frozen_params_size)
@@ -792,7 +793,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
                          + frozen_params_size
                          + (tree->node_count * FROZEN_NODE_MAX_SIZE)
                          + 17 /* seventeen null separator */
-                         + strlen(FREEZE_SEPARATOR);
+                         + FREEZE_SEPARATOR_LENGTH;
     resize_file(fd, filename, buffer_size);
 
     uint8_t *buffer =
@@ -824,7 +825,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
 
     freeze_to_buffer(&args, SEVENTEEN_NULLS, 17, "SEVENTEEN_NULLS");
     freeze_to_buffer(&args, FREEZE_SEPARATOR,
-                     strlen(FREEZE_SEPARATOR), "FREEZE_SEPARATOR");
+                     FREEZE_SEPARATOR_LENGTH, "FREEZE_SEPARATOR");
 
     if (-1 == msync(buffer_start, buffer_size, MS_SYNC)) {
         close(fd);
@@ -1081,9 +1082,8 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
     uint8_t prefix_length = thaw_uint8(buffer);
 
     if (0 == start_ip && 0 == prefix_length) {
-        size_t separator_length = strlen(FREEZE_SEPARATOR);
-        uint8_t *maybe_separator = thaw_bytes(buffer, separator_length + 1);
-        if (memcmp(maybe_separator, FREEZE_SEPARATOR, separator_length) == 0) {
+        uint8_t *maybe_separator = thaw_bytes(buffer, FREEZE_SEPARATOR_LENGTH);
+        if (memcmp(maybe_separator, FREEZE_SEPARATOR, FREEZE_SEPARATOR_LENGTH) == 0) {
 
             free(maybe_separator);
             return NULL;
