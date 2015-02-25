@@ -33,6 +33,8 @@ typedef struct freeze_args_s
 }
 freeze_args_s;
 
+freeze_args_s args;
+
 static void freeze_node
 (
     MMDBW_tree_s *tree,
@@ -51,7 +53,6 @@ static void freeze_data_record
 
 static void freeze_to_buffer
 (
-    freeze_args_s *args,
     void *data,
     size_t size,
     char *what
@@ -115,23 +116,21 @@ void freeze_tree
        sure we don't exceed our buffer size while freezing things. */
     uint8_t *buffer_start = buffer;
 
-    freeze_args_s args = {
-        .buffer       = buffer,
-        .buffer_used  = 0,
-        .max_size     = buffer_size,
-        .buffer_start = buffer_start,
-        .data_hash    = newHV()
-    };
+    args.buffer       = buffer;
+    args.buffer_used  = 0;
+    args.max_size     = buffer_size;
+    args.buffer_start = buffer_start;
+    args.data_hash    = newHV();
 
-    freeze_to_buffer(&args, &frozen_params_size, 4, "frozen_params_size");
-    freeze_to_buffer(&args, frozen_params, frozen_params_size, "frozen_params");
+    freeze_to_buffer(&frozen_params_size, 4, "frozen_params_size");
+    freeze_to_buffer(frozen_params, frozen_params_size, "frozen_params");
 
     tree->iteration_args = (void *)&args;
     start_iteration(tree, false, &freeze_node);
     tree->iteration_args = NULL;
 
-    freeze_to_buffer(&args, SEVENTEEN_NULLS, 17, "SEVENTEEN_NULLS");
-    freeze_to_buffer(&args, FREEZE_SEPARATOR,
+    freeze_to_buffer(SEVENTEEN_NULLS, 17, "SEVENTEEN_NULLS");
+    freeze_to_buffer(FREEZE_SEPARATOR,
                      strlen(FREEZE_SEPARATOR), "FREEZE_SEPARATOR");
 
     if (-1 == msync(buffer_start, buffer_size, MS_SYNC)) {
@@ -204,37 +203,36 @@ static void freeze_data_record
 
     /* It'd save some space to shrink this to 4 bytes for IPv4-only trees, but
      * that would also complicated thawing quite a bit. */
-    freeze_to_buffer(args, &network, 16, "network");
-    freeze_to_buffer(args, &(depth), 1, "depth");
+    freeze_to_buffer(&network, 16, "network");
+    freeze_to_buffer(&(depth), 1, "depth");
 
     SV *data_sv = data_for_key(tree, key);
     SvREFCNT_inc_simple_void_NN(data_sv);
 
-    freeze_to_buffer(args, (char *)key, SHA1_KEY_LENGTH, "key");
+    freeze_to_buffer((char *)key, SHA1_KEY_LENGTH, "key");
     (void)hv_store(args->data_hash, key, SHA1_KEY_LENGTH, data_sv, 0);
 }
 
 static void freeze_to_buffer
 (
-    freeze_args_s *args,
     void *data,
     size_t size,
     char *what
 )
 {
-    if ((args->buffer - args->buffer_start) + size >= args->max_size) {
+    if ((args.buffer - args.buffer_start) + size >= args.max_size) {
         croak(
             "About to write past end of mmap buffer with %s - (%p - %p) + %zu = %tu > %zu\n",
             what,
-            args->buffer,
-            args->buffer_start,
+            args.buffer,
+            args.buffer_start,
             size,
-            (args->buffer - args->buffer_start) + size,
-            args->max_size);
+            (args.buffer - args.buffer_start) + size,
+            args.max_size);
     }
-    memcpy(args->buffer, data, size);
-    args->buffer += size;
-    args->buffer_used += size;
+    memcpy(args.buffer, data, size);
+    args.buffer += size;
+    args.buffer_used += size;
 }
 
 static void freeze_data_hash_to_fd
