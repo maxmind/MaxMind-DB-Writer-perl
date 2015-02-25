@@ -86,7 +86,8 @@ LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                               MMDBW_record_s *record));
 LOCAL MMDBW_node_s *return_null(
     MMDBW_tree_s *UNUSED(tree), MMDBW_record_s *UNUSED(record));
-LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree, MMDBW_record_s *record);
+LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
+                                         MMDBW_record_s *record);
 LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node);
 LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record);
 LOCAL void assign_node_numbers(MMDBW_tree_s *tree);
@@ -275,7 +276,7 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
 {
     struct addrinfo ai_hints;
     ai_hints.ai_socktype = 0;
-
+    ai_hints.ai_protocol = 0;
     if (tree->ip_version == 6 || NULL != strchr(ipstr, ':')) {
         ai_hints.ai_flags = AI_NUMERICHOST | AI_V4MAPPED;
         ai_hints.ai_family = AF_INET6;
@@ -402,7 +403,8 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
 {
     uint8_t current_bit;
     MMDBW_node_s *node_to_set =
-        find_node_for_network(tree, network, &current_bit, &new_node_from_record);
+        find_node_for_network(tree, network, &current_bit,
+                              &new_node_from_record);
 
     MMDBW_record_s *record_to_set, *other_record;
     if (NETWORK_BIT_VALUE(network, current_bit)) {
@@ -692,7 +694,8 @@ LOCAL MMDBW_node_s *return_null(
     return NULL;
 }
 
-LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree, MMDBW_record_s *record)
+LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
+                                         MMDBW_record_s *record)
 {
     MMDBW_node_s *node = new_node(tree);
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
@@ -722,20 +725,22 @@ MMDBW_node_s *new_node(MMDBW_tree_s *tree)
     return node;
 }
 
-LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node) {
+LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node)
+{
     free_record_value(tree, &(node->left_record));
     free_record_value(tree, &(node->right_record));
 
     free(node);
 }
 
-LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record) {
+LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record)
+{
     if (MMDBW_RECORD_TYPE_NODE == record->type) {
         free_node_and_subnodes(tree, record->value.node);
     }
 
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
-            decrement_data_reference_count(tree, record->value.key);
+        decrement_data_reference_count(tree, record->value.key);
     }
 
     /* We do not follow MMDBW_RECORD_TYPE_ALIAS nodes */
@@ -1022,6 +1027,7 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
                                   tree->merge_record_collisions);
         free_network(thawed->network);
         free(thawed->network);
+        free((char *)thawed->record->value.key);
         free(thawed->record);
         free(thawed);
     }
