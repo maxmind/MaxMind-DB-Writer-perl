@@ -27,7 +27,8 @@ install:
 
 script:
   - perl Build.PL
-  - ./Build
+    # -Wno-strict-aliasing as the check causes issues on Perl 5.14 builds
+  - CFLAGS="-Wall -Wextra -Werror -Wno-strict-aliasing" ./Build
   - prove -br -j$(test-jobs) $(test-files)
 
 notifications:
