@@ -78,7 +78,10 @@ static void freeze_data_hash_to_fd
     freeze_args_s *args
 );
 
-static SV *freeze_hash(HV *hash);
+static SV *freeze_hash
+(
+    HV *hash
+);
 
 void freeze_tree
 (
@@ -216,8 +219,13 @@ static void freeze_data_record
     (void)hv_store(args->data_hash, key, SHA1_KEY_LENGTH, data_sv, 0);
 }
 
-static void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
-                            char *what)
+static void freeze_to_buffer
+(
+    freeze_args_s *args,
+    void *data,
+    size_t size,
+    char *what
+)
 {
     if ((args->buffer - args->buffer_start) + size >= args->max_size) {
         croak(
@@ -234,7 +242,11 @@ static void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
     args->buffer_used += size;
 }
 
-static void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
+static void freeze_data_hash_to_fd
+(
+    int fd,
+    freeze_args_s *args
+)
 {
     SV *frozen_data = freeze_hash(args->data_hash);
     STRLEN frozen_data_size;
@@ -261,7 +273,10 @@ static void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
     SvREFCNT_dec(frozen_data);
 }
 
-static SV *freeze_hash(HV *hash)
+static SV *freeze_hash
+(
+    HV *hash
+)
 {
     dSP;
     ENTER;
