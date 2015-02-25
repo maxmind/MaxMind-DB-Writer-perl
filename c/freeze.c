@@ -17,11 +17,6 @@
 #  define UNUSED(x) UNUSED_ ## x
 #endif
 
-/* This is also defined in MaxMind::DB::Common but we don't want to have to
- * fetch it every time we need it. */
-
-#define SHA1_KEY_LENGTH (27)
-
 /* 16 bytes for an IP address, 1 byte for the prefix length */
 #define FROZEN_RECORD_MAX_SIZE (16 + 1 + SHA1_KEY_LENGTH)
 #define FROZEN_NODE_MAX_SIZE (FROZEN_RECORD_MAX_SIZE * 2)
