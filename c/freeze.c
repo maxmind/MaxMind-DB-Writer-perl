@@ -60,8 +60,7 @@ static void freeze_to_buffer
 
 static void freeze_data_hash_to_fd
 (
-    int fd,
-    freeze_args_s *args
+    int fd
 );
 
 static SV *freeze_hash
@@ -156,7 +155,7 @@ void freeze_tree
         croak("Could not append to file %s: %s", filename, strerror(errno));
     }
 
-    freeze_data_hash_to_fd(fd, &args);
+    freeze_data_hash_to_fd(fd);
 
     if (-1 == close(fd)) {
         croak("Could not close file %s: %s", filename, strerror(errno));
@@ -237,11 +236,10 @@ static void freeze_to_buffer
 
 static void freeze_data_hash_to_fd
 (
-    int fd,
-    freeze_args_s *args
+    int fd
 )
 {
-    SV *frozen_data = freeze_hash(args->data_hash);
+    SV *frozen_data = freeze_hash(args.data_hash);
     STRLEN frozen_data_size;
     char *frozen_data_chars = SvPV(frozen_data, frozen_data_size);
 
