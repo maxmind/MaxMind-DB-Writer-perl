@@ -76,23 +76,33 @@ void freeze_tree
     size_t frozen_params_size
 )
 {
+    /* don't really understand this, it calls
+       assign_node_number recursively */
     finalize_tree(tree);
 
+    /* we're opening the file to which we'll freeze the tree */
     int fd = open(filename, O_CREAT | O_TRUNC | O_RDWR, (mode_t)0644);
-    if (-1 == fd) {
+    if ( fd == -1 ) {
         croak("Could not open file %s: %s", filename, strerror(errno));
     }
 
     /* This is much larger than we need, because it assumes that every node in
        the tree contains two data records, which will never happen. It's a lot
        simpler to allocate this and then truncate it later. */
+
+    /* we're calculating how much space we need to freeze the tree */
     size_t buffer_size = 4 /* the size of the frozen constructor params (uint32_t) */
                          + frozen_params_size
                          + (tree->node_count * FROZEN_NODE_MAX_SIZE)
                          + 17 /* seventeen null separator */
                          + strlen(FREEZE_SEPARATOR);
-    resize_file(fd, filename, buffer_size);
 
+    /* does just what it's name says, uses lseek to
+       increase the end point of the file and then uses
+       lseek to find the beginning again */
+    resize_file(fd, filename, buffer_size); /* <-- */
+
+    /* getting a pointer to the mapped region */
     uint8_t *buffer =
         (uint8_t *)mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED,
                         fd, 0);
