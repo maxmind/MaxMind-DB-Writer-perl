@@ -19,14 +19,6 @@
 #define MAX_RECORD_VALUE(record_size) \
     (record_size == 32 ? UINT32_MAX : (1 << record_size) - 1)
 
-extern void freeze_tree
-(
-    MMDBW_tree_s *tree,
-    char *filename,
-    char *frozen_params,
-    size_t frozen_params_size
-);
-
 extern MMDBW_tree_s *thaw_tree
 (
     char *filename,
@@ -35,4 +27,3 @@ extern MMDBW_tree_s *thaw_tree
     uint8_t record_size,
     bool merge_record_collisions
 );
-
