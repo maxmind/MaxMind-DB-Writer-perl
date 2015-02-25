@@ -124,9 +124,7 @@ void freeze_tree
     freeze_to_buffer(&frozen_params_size, 4, "frozen_params_size");
     freeze_to_buffer(frozen_params, frozen_params_size, "frozen_params");
 
-    tree->iteration_args = (void *)&args;
     start_iteration(tree, false, &freeze_node);
-    tree->iteration_args = NULL;
 
     freeze_to_buffer(SEVENTEEN_NULLS, 17, "SEVENTEEN_NULLS");
     freeze_to_buffer(FREEZE_SEPARATOR,
@@ -198,8 +196,6 @@ static void freeze_data_record
     const char const *key
 )
 {
-    freeze_args_s *args = tree->iteration_args;
-
     /* It'd save some space to shrink this to 4 bytes for IPv4-only trees, but
      * that would also complicated thawing quite a bit. */
     freeze_to_buffer(&network, 16, "network");
@@ -209,7 +205,7 @@ static void freeze_data_record
     SvREFCNT_inc_simple_void_NN(data_sv);
 
     freeze_to_buffer((char *)key, SHA1_KEY_LENGTH, "key");
-    (void)hv_store(args->data_hash, key, SHA1_KEY_LENGTH, data_sv, 0);
+    (void)hv_store(args.data_hash, key, SHA1_KEY_LENGTH, data_sv, 0);
 }
 
 static void freeze_to_buffer
