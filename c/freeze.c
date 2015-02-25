@@ -17,17 +17,10 @@
 #  define UNUSED(x) UNUSED_ ## x
 #endif
 
-#define NETWORK_BIT_VALUE(network, current_bit)                    \
-    (network)->bytes[((network)->max_depth0 - (current_bit)) >> 3] \
-    & (1U << (~((network)->max_depth0 - (current_bit)) & 7))
-
 /* This is also defined in MaxMind::DB::Common but we don't want to have to
  * fetch it every time we need it. */
-#define DATA_SECTION_SEPARATOR_SIZE (16)
 
 #define SHA1_KEY_LENGTH (27)
-
-#define NETWORK_IS_IPV6(network) (127 == network->max_depth0)
 
 /* 16 bytes for an IP address, 1 byte for the prefix length */
 #define FROZEN_RECORD_MAX_SIZE (16 + 1 + SHA1_KEY_LENGTH)
