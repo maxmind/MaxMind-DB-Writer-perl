@@ -726,7 +726,6 @@ LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node) {
     free_record_value(tree, &(node->left_record));
     free_record_value(tree, &(node->right_record));
 
-    tree->node_count--;
     free(node);
 }
 
