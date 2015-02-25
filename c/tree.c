@@ -555,6 +555,9 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
             store_data_in_tree(tree, SvPVbyte_nolen(key_sv), merged);
         SvREFCNT_dec(key_sv);
 
+        /* The ref count was incremented in store_data_in_tree */
+        SvREFCNT_dec(merged);
+
         decrement_data_reference_count(tree, new_record->value.key);
         new_record->value.key = new_key;
     }
