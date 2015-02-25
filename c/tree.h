@@ -14,11 +14,20 @@
 #define MMDBW_RECORD_TYPE_NODE (2)
 #define MMDBW_RECORD_TYPE_ALIAS (3)
 
+#define DATA_SECTION_SEPARATOR_SIZE (16)
+#define SHA1_KEY_LENGTH (27)
+
 #define FLIP_NETWORK_BIT(network, max_depth0, depth) \
     ((network) | ((uint128_t)1 << ((max_depth0) - (depth))))
 
+#define NETWORK_BIT_VALUE(network, current_bit)                    \
+    (network)->bytes[((network)->max_depth0 - (current_bit)) >> 3] \
+    & (1U << (~((network)->max_depth0 - (current_bit)) & 7))
+
 #define MAX_RECORD_VALUE(record_size) \
     (record_size == 32 ? UINT32_MAX : (1 << record_size) - 1)
+
+#define NETWORK_IS_IPV6(network) (127 == network->max_depth0)
 
 #if MMDBW_UINT128_USING_MODE
 typedef unsigned int mmdbw_uint128_t __attribute__
