@@ -53,6 +53,11 @@ LOCAL uint32_t thaw_uint32
     uint8_t **buffer
 );
 
+LOCAL uint8_t thaw_uint8
+(
+    uint8_t **buffer
+);
+
 LOCAL thawed_network_s *thaw_network
 (
     MMDBW_tree_s *tree,

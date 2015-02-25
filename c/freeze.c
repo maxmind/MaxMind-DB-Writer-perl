@@ -11,9 +11,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-
-#define LOCAL
-
 #ifdef __GNUC__
 #  define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
 #else
@@ -51,7 +48,7 @@ typedef struct freeze_args_s
 }
 freeze_args_s;
 
-LOCAL void freeze_node
+static void freeze_node
 (
     MMDBW_tree_s *tree,
     MMDBW_node_s *node,
@@ -59,7 +56,7 @@ LOCAL void freeze_node
     uint8_t depth
 );
 
-LOCAL void freeze_data_record
+static void freeze_data_record
 (
     MMDBW_tree_s *tree,
     mmdbw_uint128_t network,
@@ -67,7 +64,7 @@ LOCAL void freeze_data_record
     const char const *key
 );
 
-LOCAL void freeze_to_buffer
+static void freeze_to_buffer
 (
     freeze_args_s *args,
     void *data,
@@ -75,18 +72,13 @@ LOCAL void freeze_to_buffer
     char *what
 );
 
-LOCAL void freeze_data_hash_to_fd
+static void freeze_data_hash_to_fd
 (
     int fd,
     freeze_args_s *args
 );
 
-LOCAL SV *freeze_hash(HV *hash);
-
-LOCAL uint8_t thaw_uint8
-(
-    uint8_t **buffer
-);
+static SV *freeze_hash(HV *hash);
 
 void freeze_tree
 (
@@ -178,7 +170,7 @@ void freeze_tree
     SvREFCNT_dec((SV *)args.data_hash);
 }
 
-LOCAL void freeze_node
+static void freeze_node
 (
     MMDBW_tree_s *tree,
     MMDBW_node_s *node,
@@ -202,7 +194,7 @@ LOCAL void freeze_node
     }
 }
 
-LOCAL void freeze_data_record
+static void freeze_data_record
 (
     MMDBW_tree_s *tree,
     mmdbw_uint128_t network,
@@ -224,7 +216,7 @@ LOCAL void freeze_data_record
     (void)hv_store(args->data_hash, key, SHA1_KEY_LENGTH, data_sv, 0);
 }
 
-LOCAL void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
+static void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
                             char *what)
 {
     if ((args->buffer - args->buffer_start) + size >= args->max_size) {
@@ -242,7 +234,7 @@ LOCAL void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
     args->buffer_used += size;
 }
 
-LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
+static void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
 {
     SV *frozen_data = freeze_hash(args->data_hash);
     STRLEN frozen_data_size;
@@ -269,7 +261,7 @@ LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
     SvREFCNT_dec(frozen_data);
 }
 
-LOCAL SV *freeze_hash(HV *hash)
+static SV *freeze_hash(HV *hash)
 {
     dSP;
     ENTER;
@@ -306,5 +298,3 @@ LOCAL SV *freeze_hash(HV *hash)
 
     return frozen;
 }
-
-
