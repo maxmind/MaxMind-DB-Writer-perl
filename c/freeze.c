@@ -2,14 +2,11 @@
 
 #include <sys/mman.h>
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <fcntl.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <netdb.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h> /* docs for memcpy show string.h included */
 
 #ifdef __GNUC__
 #  define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
