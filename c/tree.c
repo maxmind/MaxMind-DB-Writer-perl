@@ -86,7 +86,10 @@ LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                               MMDBW_record_s *record));
 LOCAL MMDBW_node_s *return_null(
     MMDBW_tree_s *UNUSED(tree), MMDBW_record_s *UNUSED(record));
-LOCAL MMDBW_node_s *make_next_node(MMDBW_tree_s *tree, MMDBW_record_s *record);
+LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
+                                         MMDBW_record_s *record);
+LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node);
+LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record);
 LOCAL void assign_node_numbers(MMDBW_tree_s *tree);
 LOCAL int resize_file(int fd, char *filename, size_t size);
 LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
@@ -150,7 +153,6 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     tree->record_size = record_size;
     tree->merge_record_collisions = merge_record_collisions;
     tree->data_table = NULL;
-    tree->last_node = NULL;
     tree->is_finalized = false;
     tree->is_aliased = false;
     tree->iteration_args = NULL;
@@ -274,7 +276,7 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
 {
     struct addrinfo ai_hints;
     ai_hints.ai_socktype = 0;
-
+    ai_hints.ai_protocol = 0;
     if (tree->ip_version == 6 || NULL != strchr(ipstr, ':')) {
         ai_hints.ai_flags = AI_NUMERICHOST | AI_V4MAPPED;
         ai_hints.ai_family = AF_INET6;
@@ -377,11 +379,13 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
                             ipv4_aliases[i].prefix_length);
 
         MMDBW_node_s *last_node_for_alias = find_node_for_network(
-            tree, &alias_network, &current_bit, &make_next_node);
+            tree, &alias_network, &current_bit, &new_node_from_record);
         if (NETWORK_BIT_VALUE(&alias_network, current_bit)) {
+            free_record_value(tree, &(last_node_for_alias->right_record));
             last_node_for_alias->right_record.type = MMDBW_RECORD_TYPE_ALIAS;
             last_node_for_alias->right_record.value.node = ipv4_root_node;
         } else {
+            free_record_value(tree, &(last_node_for_alias->left_record));
             last_node_for_alias->left_record.type = MMDBW_RECORD_TYPE_ALIAS;
             last_node_for_alias->left_record.value.node = ipv4_root_node;
         }
@@ -399,7 +403,8 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
 {
     uint8_t current_bit;
     MMDBW_node_s *node_to_set =
-        find_node_for_network(tree, network, &current_bit, &make_next_node);
+        find_node_for_network(tree, network, &current_bit,
+                              &new_node_from_record);
 
     MMDBW_record_s *record_to_set, *other_record;
     if (NETWORK_BIT_VALUE(network, current_bit)) {
@@ -455,9 +460,7 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         }
     }
 
-    if (MMDBW_RECORD_TYPE_DATA == record_to_set->type) {
-        decrement_data_reference_count(tree, record_to_set->value.key);
-    }
+    free_record_value(tree, record_to_set);
 
     record_to_set->type = new_record->type;
     if (MMDBW_RECORD_TYPE_DATA == new_record->type) {
@@ -691,22 +694,23 @@ LOCAL MMDBW_node_s *return_null(
     return NULL;
 }
 
-LOCAL MMDBW_node_s *make_next_node(MMDBW_tree_s *tree, MMDBW_record_s *record)
+LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
+                                         MMDBW_record_s *record)
 {
-    MMDBW_node_s *next_node = new_node(tree);
+    MMDBW_node_s *node = new_node(tree);
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
         /* We only need to increment the reference count once as we are
            replacing the parent record */
         increment_data_reference_count(tree, record->value.key);
 
-        next_node->left_record.type = MMDBW_RECORD_TYPE_DATA;
-        next_node->left_record.value.key = record->value.key;
+        node->left_record.type = MMDBW_RECORD_TYPE_DATA;
+        node->left_record.value.key = record->value.key;
 
-        next_node->right_record.type = MMDBW_RECORD_TYPE_DATA;
-        next_node->right_record.value.key = record->value.key;
+        node->right_record.type = MMDBW_RECORD_TYPE_DATA;
+        node->right_record.value.key = record->value.key;
     }
 
-    return next_node;
+    return node;
 }
 
 MMDBW_node_s *new_node(MMDBW_tree_s *tree)
@@ -715,17 +719,33 @@ MMDBW_node_s *new_node(MMDBW_tree_s *tree)
 
     node->number = 0;
     node->left_record.type = node->right_record.type = MMDBW_RECORD_TYPE_EMPTY;
-    node->next_node = NULL;
-
-    if (NULL != tree->last_node) {
-        tree->last_node->next_node = node;
-    }
-    tree->last_node = node;
 
     tree->is_finalized = false;
 
     return node;
 }
+
+LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node)
+{
+    free_record_value(tree, &(node->left_record));
+    free_record_value(tree, &(node->right_record));
+
+    free(node);
+}
+
+LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record)
+{
+    if (MMDBW_RECORD_TYPE_NODE == record->type) {
+        free_node_and_subnodes(tree, record->value.node);
+    }
+
+    if (MMDBW_RECORD_TYPE_DATA == record->type) {
+        decrement_data_reference_count(tree, record->value.key);
+    }
+
+    /* We do not follow MMDBW_RECORD_TYPE_ALIAS nodes */
+}
+
 
 void finalize_tree(MMDBW_tree_s *tree)
 {
@@ -1471,21 +1491,7 @@ void free_tree(MMDBW_tree_s *tree)
 {
     finalize_tree(tree);
 
-    MMDBW_node_s *node = tree->root_node;
-    while (NULL != node) {
-        MMDBW_node_s *last_node = node;
-        node = last_node->next_node;
-
-        if (MMDBW_RECORD_TYPE_DATA == last_node->left_record.type) {
-            decrement_data_reference_count(tree,
-                                           last_node->left_record.value.key);
-        }
-        if (MMDBW_RECORD_TYPE_DATA == last_node->right_record.type) {
-            decrement_data_reference_count(tree,
-                                           last_node->right_record.value.key);
-        }
-        free(last_node);
-    }
+    free_node_and_subnodes(tree, tree->root_node);
 
     int hash_count = HASH_COUNT(tree->data_table);
     if (0 != hash_count) {

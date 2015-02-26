@@ -33,14 +33,9 @@ typedef struct MMDBW_record_s {
     uint8_t type;
 } MMDBW_record_s;
 
-/* This is a linked list so we can loop through all the nodes ever allocated
- * when freeing the tree. It's possible that we have allocated nodes that are
- * no longer reachable in the tree, but we still need to free them and
- * decrement the ref counts for any SVs they refer to. */
 typedef struct MMDBW_node_s {
     MMDBW_record_s left_record;
     MMDBW_record_s right_record;
-    struct MMDBW_node_s *next_node;
     uint32_t number;
 } MMDBW_node_s;
 
@@ -57,7 +52,6 @@ typedef struct MMDBW_tree_s {
     bool merge_record_collisions;
     MMDBW_data_hash_s *data_table;
     MMDBW_node_s *root_node;
-    MMDBW_node_s *last_node;
     uint32_t node_count;
     bool is_finalized;
     bool is_aliased;
