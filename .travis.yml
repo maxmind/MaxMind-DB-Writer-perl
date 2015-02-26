@@ -37,3 +37,17 @@ notifications:
       - dev@maxmind.com
     on_success: change
     on_failure: always
+
+env:
+  global:
+   - secure: "beuMUf7wSPXanIo6TjHG+6bY4XwFKbFXwnmZsP93CulXAfm8is72uJsT58bIPGwH8dqgm5W+D6EsL+ai91QTbsxUUvMpZpjLnfdyKOSLinS9I9/0ydRK2OftU34Er9unqYIq+2X+SncXIAqQUvRpEoijR2zFa/uplG6UoWaiAes="
+
+addons:
+  coverity_scan:
+    project:
+      name: "maxmind/MaxMind-DB-Writer-perl"
+      description: "MMDB writer"
+    notification_email: dev@maxmind.com
+    build_command_prepend: "perl Build.PL; ./Build clean"
+    build_command:   "./Build"
+    branch_pattern: .*coverity.*

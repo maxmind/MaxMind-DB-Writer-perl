@@ -774,6 +774,9 @@ LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
    clear indicator that there are no more frozen networks in the buffer. */
 #define SEVENTEEN_NULLS "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 #define FREEZE_SEPARATOR "not an SHA1 key"
+/* We subtract 1 as we treat this as a sequence of bytes rather than a null terminated
+   string. */
+#define FREEZE_SEPARATOR_LENGTH (sizeof(FREEZE_SEPARATOR) - 1)
 
 void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
                  size_t frozen_params_size)
@@ -792,7 +795,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
                          + frozen_params_size
                          + (tree->node_count * FROZEN_NODE_MAX_SIZE)
                          + 17 /* seventeen null separator */
-                         + strlen(FREEZE_SEPARATOR);
+                         + FREEZE_SEPARATOR_LENGTH;
     resize_file(fd, filename, buffer_size);
 
     uint8_t *buffer =
@@ -824,7 +827,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
 
     freeze_to_buffer(&args, SEVENTEEN_NULLS, 17, "SEVENTEEN_NULLS");
     freeze_to_buffer(&args, FREEZE_SEPARATOR,
-                     strlen(FREEZE_SEPARATOR), "FREEZE_SEPARATOR");
+                     FREEZE_SEPARATOR_LENGTH, "FREEZE_SEPARATOR");
 
     if (-1 == msync(buffer_start, buffer_size, MS_SYNC)) {
         close(fd);
@@ -1010,12 +1013,15 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
 
     struct stat fileinfo;
     if (-1 == fstat(fd, &fileinfo)) {
+        close(fd);
         croak("Could not stat file: %s: %s", filename, strerror(errno));
     }
 
     uint8_t *buffer =
         (uint8_t *)mmap(NULL, fileinfo.st_size, PROT_READ, MAP_SHARED, fd,
                         0);
+    close(fd);
+
     buffer += initial_offset;
 
     MMDBW_tree_s *tree = new_tree(ip_version, record_size,
@@ -1078,9 +1084,8 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
     uint8_t prefix_length = thaw_uint8(buffer);
 
     if (0 == start_ip && 0 == prefix_length) {
-        uint8_t *maybe_separator = thaw_bytes(buffer, strlen(FREEZE_SEPARATOR));
-        if (memcmp(maybe_separator, FREEZE_SEPARATOR,
-                   strlen(FREEZE_SEPARATOR)) == 0) {
+        uint8_t *maybe_separator = thaw_bytes(buffer, FREEZE_SEPARATOR_LENGTH);
+        if (memcmp(maybe_separator, FREEZE_SEPARATOR, FREEZE_SEPARATOR_LENGTH) == 0) {
 
             free(maybe_separator);
             return NULL;
