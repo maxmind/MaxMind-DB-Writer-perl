@@ -1030,7 +1030,13 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
     thawed_network_s *thawed;
     while (NULL != (thawed = thaw_network(tree, &buffer))) {
         if (MMDBW_RECORD_TYPE_DATA == thawed->record->type) {
-            increment_data_reference_count(tree, thawed->record->value.key);
+            const char *key = increment_data_reference_count(
+                tree, thawed->record->value.key);
+
+            /* insert_record_for_network reuses the key. We want it to use
+               the same copy as used in the data hash. */
+            free((char *)thawed->record->value.key);
+            thawed->record->value.key = key;
         }
         insert_record_for_network(tree, thawed->network, thawed->record,
                                   tree->merge_record_collisions);
@@ -1085,7 +1091,8 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
 
     if (0 == start_ip && 0 == prefix_length) {
         uint8_t *maybe_separator = thaw_bytes(buffer, FREEZE_SEPARATOR_LENGTH);
-        if (memcmp(maybe_separator, FREEZE_SEPARATOR, FREEZE_SEPARATOR_LENGTH) == 0) {
+        if (memcmp(maybe_separator, FREEZE_SEPARATOR,
+                   FREEZE_SEPARATOR_LENGTH) == 0) {
 
             free(maybe_separator);
             return NULL;
@@ -1159,10 +1166,6 @@ LOCAL STRLEN thaw_strlen(uint8_t **buffer)
 
 LOCAL const char *thaw_data_key(uint8_t **buffer)
 {
-    /* Note that we do _not_ free this data when we free the thawed_record_s
-       structures. We'll copy this pointer directly into the tree->data_hash
-       struct as our key, and it will be freed when the tree itself is
-       freed. */
     char *value = checked_malloc(SHA1_KEY_LENGTH + 1);
     memcpy(value, *buffer, SHA1_KEY_LENGTH);
     *buffer += SHA1_KEY_LENGTH;
