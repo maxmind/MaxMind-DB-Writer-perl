@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.080000 2015-03-04
+
 - Implemented $tree->freeze_tree and
   MaxMind::DB::Writer::Tree->new_from_frozen_tree methods. This provides a way
   of passing the tree between different processes.
