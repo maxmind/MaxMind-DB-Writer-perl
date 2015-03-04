@@ -32,10 +32,8 @@
 #define NETWORK_IS_IPV6(network) (127 == network->max_depth0)
 
 typedef struct freeze_args_s {
-    uint8_t *buffer;
-    size_t buffer_used;
-    size_t max_size;
-    uint8_t *buffer_start;
+    int fd;
+    char *filename;
     HV *data_hash;
 } freeze_args_s;
 
@@ -91,14 +89,12 @@ LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
 LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node);
 LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record);
 LOCAL void assign_node_numbers(MMDBW_tree_s *tree);
-LOCAL int resize_file(int fd, char *filename, size_t size);
 LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
                        mmdbw_uint128_t network, uint8_t depth);
 LOCAL void freeze_data_record(MMDBW_tree_s *tree,
                               mmdbw_uint128_t network, uint8_t depth,
                               const char *key);
-LOCAL void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
-                            char *what);
+LOCAL void freeze_to_fd(freeze_args_s *args, void *data, size_t size);
 LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args);
 LOCAL SV *freeze_hash(HV *hash);
 LOCAL uint8_t thaw_uint8(uint8_t **buffer);
@@ -788,69 +784,21 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
         croak("Could not open file %s: %s", filename, strerror(errno));
     }
 
-    /* This is much larger than we need, because it assumes that every node in
-       the tree contains two data records, which will never happen. It's a lot
-       simpler to allocate this and then truncate it later. */
-    size_t buffer_size = 4 /* the size of the frozen constructor params (uint32_t) */
-                         + frozen_params_size
-                         + (tree->node_count * FROZEN_NODE_MAX_SIZE)
-                         + 17 /* seventeen null separator */
-                         + FREEZE_SEPARATOR_LENGTH;
-    resize_file(fd, filename, buffer_size);
-
-    uint8_t *buffer =
-        (uint8_t *)mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED,
-                        fd, 0);
-    if (MAP_FAILED == buffer) {
-        close(fd);
-        croak("mmap() failed: %s", strerror(errno));
-    }
-
-    /* We want to save this so we can do some error checking later and make
-       sure we don't exceed our buffer size while freezing things. */
-    uint8_t *buffer_start = buffer;
-
     freeze_args_s args = {
-        .buffer       = buffer,
-        .buffer_used  = 0,
-        .max_size     = buffer_size,
-        .buffer_start = buffer_start,
-        .data_hash    = newHV()
+        .fd        = fd,
+        .filename  = filename,
+        .data_hash = newHV()
     };
 
-    freeze_to_buffer(&args, &frozen_params_size, 4, "frozen_params_size");
-    freeze_to_buffer(&args, frozen_params, frozen_params_size, "frozen_params");
+    freeze_to_fd(&args, &frozen_params_size, 4);
+    freeze_to_fd(&args, frozen_params, frozen_params_size);
 
     tree->iteration_args = (void *)&args;
     start_iteration(tree, false, &freeze_node);
     tree->iteration_args = NULL;
 
-    freeze_to_buffer(&args, SEVENTEEN_NULLS, 17, "SEVENTEEN_NULLS");
-    freeze_to_buffer(&args, FREEZE_SEPARATOR,
-                     FREEZE_SEPARATOR_LENGTH, "FREEZE_SEPARATOR");
-
-    if (-1 == msync(buffer_start, buffer_size, MS_SYNC)) {
-        close(fd);
-        croak("msync() failed: %s", strerror(errno));
-    }
-
-    if (-1 == munmap(buffer_start, buffer_size)) {
-        close(fd);
-        croak("munmap() failed: %s", strerror(errno));
-    }
-
-    if (-1 == ftruncate(fd, args.buffer_used)) {
-        croak("Could not truncate file %s: %s", filename, strerror(errno));
-    }
-
-    if (-1 == close(fd)) {
-        croak("Could not close file %s: %s", filename, strerror(errno));
-    }
-
-    fd = open(filename, O_WRONLY | O_APPEND, (mode_t)0);
-    if (-1 == fd) {
-        croak("Could not append to file %s: %s", filename, strerror(errno));
-    }
+    freeze_to_fd(&args, SEVENTEEN_NULLS, 17);
+    freeze_to_fd(&args, FREEZE_SEPARATOR, FREEZE_SEPARATOR_LENGTH);
 
     freeze_data_hash_to_fd(fd, &args);
 
@@ -861,25 +809,6 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
     /* When the hash is _freed_, Perl decrements the ref count for each value
      * so we don't need to mess with them. */
     SvREFCNT_dec((SV *)args.data_hash);
-}
-
-LOCAL int resize_file(int fd, char *filename, size_t size)
-{
-    if (-1 == lseek(fd, size - 1, SEEK_SET)) {
-        close(fd);
-        croak("Could not seek to the end of the file %s: %s",
-              filename, strerror(errno));
-    }
-
-    checked_write(fd, filename, "", 1);
-
-    if (-1 == lseek(fd, 0, SEEK_SET)) {
-        close(fd);
-        croak("Could not seek to the beginning of the file %s: %s",
-              filename, strerror(errno));
-    }
-
-    return fd;
 }
 
 LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
@@ -909,32 +838,19 @@ LOCAL void freeze_data_record(MMDBW_tree_s *tree,
 
     /* It'd save some space to shrink this to 4 bytes for IPv4-only trees, but
      * that would also complicated thawing quite a bit. */
-    freeze_to_buffer(args, &network, 16, "network");
-    freeze_to_buffer(args, &(depth), 1, "depth");
+    freeze_to_fd(args, &network, 16);
+    freeze_to_fd(args, &(depth), 1);
 
     SV *data_sv = data_for_key(tree, key);
     SvREFCNT_inc_simple_void_NN(data_sv);
 
-    freeze_to_buffer(args, (char *)key, SHA1_KEY_LENGTH, "key");
+    freeze_to_fd(args, (char *)key, SHA1_KEY_LENGTH);
     (void)hv_store(args->data_hash, key, SHA1_KEY_LENGTH, data_sv, 0);
 }
 
-LOCAL void freeze_to_buffer(freeze_args_s *args, void *data, size_t size,
-                            char *what)
+LOCAL void freeze_to_fd(freeze_args_s *args, void *data, size_t size)
 {
-    if ((args->buffer - args->buffer_start) + size >= args->max_size) {
-        croak(
-            "About to write past end of mmap buffer with %s - (%p - %p) + %zu = %tu > %zu\n",
-            what,
-            args->buffer,
-            args->buffer_start,
-            size,
-            (args->buffer - args->buffer_start) + size,
-            args->max_size);
-    }
-    memcpy(args->buffer, data, size);
-    args->buffer += size;
-    args->buffer_used += size;
+    checked_write(args->fd, args->filename, data, size);
 }
 
 LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
