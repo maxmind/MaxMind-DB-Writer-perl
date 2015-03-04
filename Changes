@@ -7,6 +7,14 @@
 - Made the attribute reader methods for all values passed to the constructor
   public.
 
+- Added some docs on how insert order affects overlapping networks. GitHub
+  #18.
+
+- Fixed memory leaks when adding data to the tree.
+
+- Reduced the size of various structs used in the C code to reduce memory
+  usage.
+
 
 0.060000 2014-11-11
 
