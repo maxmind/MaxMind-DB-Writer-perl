@@ -24,9 +24,9 @@ unless ( -f $json_file ) {
 
 In order to run this test you need to create a JSON dump of a GeoLite2 Country
 database. You can do this with the mmdb-dump-database script that ships with
-MaxMind::DB::Reader. Note that this script doesn't generate 100% JSON, so
-you'll need to trim off the trailing comma it leaves in on the last record of
-the array.
+MaxMind::DB::Reader. Note that this script doesn't generate 100% correct JSON,
+so you'll need to trim off the trailing comma it leaves in on the last record
+of the array.
 
 Save this JSON file to $json_file
 
