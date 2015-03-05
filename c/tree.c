@@ -95,7 +95,7 @@ LOCAL void freeze_data_record(MMDBW_tree_s *tree,
                               mmdbw_uint128_t network, uint8_t depth,
                               const char *key);
 LOCAL void freeze_to_fd(freeze_args_s *args, void *data, size_t size);
-LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args);
+LOCAL void freeze_data_to_fd(int fd, MMDBW_tree_s *tree);
 LOCAL SV *freeze_hash(HV *hash);
 LOCAL uint8_t thaw_uint8(uint8_t **buffer);
 LOCAL uint32_t thaw_uint32(uint8_t **buffer);
@@ -785,9 +785,8 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
     }
 
     freeze_args_s args = {
-        .fd        = fd,
-        .filename  = filename,
-        .data_hash = newHV()
+        .fd       = fd,
+        .filename = filename,
     };
 
     freeze_to_fd(&args, &frozen_params_size, 4);
@@ -800,7 +799,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
     freeze_to_fd(&args, SEVENTEEN_NULLS, 17);
     freeze_to_fd(&args, FREEZE_SEPARATOR, FREEZE_SEPARATOR_LENGTH);
 
-    freeze_data_hash_to_fd(fd, &args);
+    freeze_data_to_fd(fd, tree);
 
     if (-1 == close(fd)) {
         croak("Could not close file %s: %s", filename, strerror(errno));
@@ -840,12 +839,7 @@ LOCAL void freeze_data_record(MMDBW_tree_s *tree,
      * that would also complicated thawing quite a bit. */
     freeze_to_fd(args, &network, 16);
     freeze_to_fd(args, &(depth), 1);
-
-    SV *data_sv = data_for_key(tree, key);
-    SvREFCNT_inc_simple_void_NN(data_sv);
-
     freeze_to_fd(args, (char *)key, SHA1_KEY_LENGTH);
-    (void)hv_store(args->data_hash, key, SHA1_KEY_LENGTH, data_sv, 0);
 }
 
 LOCAL void freeze_to_fd(freeze_args_s *args, void *data, size_t size)
@@ -853,9 +847,17 @@ LOCAL void freeze_to_fd(freeze_args_s *args, void *data, size_t size)
     checked_write(args->fd, args->filename, data, size);
 }
 
-LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
+LOCAL void freeze_data_to_fd(int fd, MMDBW_tree_s *tree)
 {
-    SV *frozen_data = freeze_hash(args->data_hash);
+    HV *data_hash = newHV();
+
+    MMDBW_data_hash_s *item, *tmp;
+    HASH_ITER(hh, tree->data_table, item, tmp) {
+        SvREFCNT_inc_simple_void_NN(item->data_sv);
+        (void)hv_store(data_hash, item->key, SHA1_KEY_LENGTH, item->data_sv, 0);
+    }
+
+    SV *frozen_data = freeze_hash(data_hash);
     STRLEN frozen_data_size;
     char *frozen_data_chars = SvPV(frozen_data, frozen_data_size);
 
@@ -878,6 +880,7 @@ LOCAL void freeze_data_hash_to_fd(int fd, freeze_args_s *args)
     }
 
     SvREFCNT_dec(frozen_data);
+    SvREFCNT_dec((SV *)data_hash);
 }
 
 LOCAL SV *freeze_hash(HV *hash)
