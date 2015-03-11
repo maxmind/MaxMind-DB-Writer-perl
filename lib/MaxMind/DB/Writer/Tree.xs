@@ -117,9 +117,11 @@ SV *method_for_record_type(perl_iterator_args_s *args, const int record_type)
 
 void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
                       const mmdbw_uint128_t node_ip_num,
-                      const uint8_t node_prefix_length)
+                      const uint8_t node_prefix_length,
+                      void *void_args)
 {
-    perl_iterator_args_s *args = (perl_iterator_args_s *)tree->iteration_args;
+    perl_iterator_args_s *args = (perl_iterator_args_s *)void_args;
+
     SV *left_method = method_for_record_type(args, node->left_record.type);
 
     if (NULL != left_method) {
@@ -265,9 +267,7 @@ iterate(self, object)
                   "process_node_record, or process_data_record");
         }
 
-        tree->iteration_args = (void *)&args;
-        start_iteration(tree, true, &call_perl_object);
-        tree->iteration_args = NULL;
+        start_iteration(tree, true, (void *)&args, &call_perl_object);
 
 void
 _create_ipv4_aliases(self)

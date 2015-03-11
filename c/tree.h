@@ -55,7 +55,6 @@ typedef struct MMDBW_tree_s {
     uint32_t node_count;
     bool is_finalized;
     bool is_aliased;
-    void *iteration_args;
 } MMDBW_tree_s;
 
 typedef struct MMDBW_network_s {
@@ -87,10 +86,12 @@ typedef struct MMDBW_network_s {
                                   SV *root_data_type, SV *serializer);
     extern void start_iteration(MMDBW_tree_s *tree,
                                 bool depth_first,
+                                void *args,
                                 void(callback) (MMDBW_tree_s *tree,
                                                 MMDBW_node_s *node,
                                                 mmdbw_uint128_t network,
-                                                uint8_t depth));
+                                                uint8_t depth,
+                                                void *args));
     extern SV *data_for_key(MMDBW_tree_s *tree, const char *const key);
     extern void free_tree(MMDBW_tree_s *tree);
     extern const char *record_type_name(int record_type);
