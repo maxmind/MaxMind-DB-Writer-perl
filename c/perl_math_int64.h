@@ -1,11 +1,11 @@
 /*
  * perl_math_int64.h - This file is in the public domain
- * Author: Salvador Fandino <sfandino@yahoo.com>
- * Version: 2.0
+ * Author: Salvador Fandino <sfandino@yahoo.com>, Dave Rolsky <autarch@urth.org>
+ * Version: 2.1
  *
- * Generated on: 2012-12-10 21:34:09
- * Math::Int64 version: 0.28
- * Module::CAPIMaker version: 0.02
+ * Generated on: 2015-03-11 11:06:11
+ * Math::Int64 version: 0.51
+ * Module::CAPIMaker version: 
  */
 
 #if !defined (PERL_MATH_INT64_H_INCLUDED)
@@ -53,6 +53,14 @@ extern uint64_t  (*math_int64_c_api_randU64)(pTHX);
 #define newSVi64 newSViv
 #undef newSVu64
 #define newSVu64 newSVuv
+
+#define sv_seti64 sv_setiv_mg
+#define sv_setu64 sv_setuv_mg
+
+#else
+
+#define sv_seti64(target, i64) (sv_setsv_mg(target, sv_2mortal(newSVi64(i64))))
+#define sv_setu64(target, u64) (sv_setsv_mg(target, sv_2mortal(newSVu64(u64))))
 
 #endif
 

@@ -4,9 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <uthash.h>
-#define MATH_INT64_NATIVE_IF_AVAILABLE
-#include "perl_math_int64.h"
-#include "perl_math_int128.h"
 
 #define MMDBW_RECORD_TYPE_EMPTY (0)
 #define MMDBW_RECORD_TYPE_DATA (1)
@@ -19,11 +16,49 @@
 #define MAX_RECORD_VALUE(record_size) \
     (record_size == 32 ? UINT32_MAX : (uint32_t)(1 << record_size) - 1)
 
-#if MMDBW_UINT128_USING_MODE
-typedef unsigned int mmdbw_uint128_t __attribute__ ((__mode__(TI)));
-#else
-typedef unsigned __int128 mmdbw_uint128_t;
+#ifdef INT64_T
+#define HAVE_INT64
 #endif
+
+#ifdef __INT64
+typedef __int64 int64_t;
+typedef unsigned __int64 uint64_t;
+#define HAVE_INT64
+#endif
+
+#ifdef INT64_DI
+typedef int int64_t __attribute__ ((__mode__(DI)));
+typedef unsigned int uint64_t __attribute__ ((__mode__(DTI)));
+#define HAVE_INT64
+#endif
+
+#ifndef HAVE_INT64
+#error "No int64 type define was passed to the compiler!"
+#endif
+
+#ifdef INT128_TI
+typedef int int128_t __attribute__ ((__mode__(TI)));
+typedef unsigned int uint128_t __attribute__ ((__mode__(TI)));
+#define HAVE_INT128
+#endif
+
+#ifdef __INT128
+typedef __int128 int128_t;
+typedef unsigned __int128 uint128_t;
+#define HAVE_INT128
+#endif
+
+#ifndef HAVE_INT128
+#error "No int128 type define was passed to the compiler!"
+#endif
+
+/* perl memory allocator does not guarantee 16-byte alignment */
+typedef int128_t int128_t_a8 __attribute__ ((aligned(8)));
+typedef uint128_t uint128_t_a8 __attribute__ ((aligned(8)));
+
+#define MATH_INT64_NATIVE_IF_AVAILABLE
+#include "perl_math_int64.h"
+#include "perl_math_int128.h"
 
 typedef struct MMDBW_record_s {
     union {
@@ -55,7 +90,6 @@ typedef struct MMDBW_tree_s {
     uint32_t node_count;
     bool is_finalized;
     bool is_aliased;
-    void *iteration_args;
 } MMDBW_tree_s;
 
 typedef struct MMDBW_network_s {
@@ -87,10 +121,12 @@ typedef struct MMDBW_network_s {
                                   SV *root_data_type, SV *serializer);
     extern void start_iteration(MMDBW_tree_s *tree,
                                 bool depth_first,
+                                void *args,
                                 void(callback) (MMDBW_tree_s *tree,
                                                 MMDBW_node_s *node,
-                                                mmdbw_uint128_t network,
-                                                uint8_t depth));
+                                                uint128_t network,
+                                                uint8_t depth,
+                                                void *args));
     extern SV *data_for_key(MMDBW_tree_s *tree, const char *const key);
     extern void free_tree(MMDBW_tree_s *tree);
     extern const char *record_type_name(int record_type);

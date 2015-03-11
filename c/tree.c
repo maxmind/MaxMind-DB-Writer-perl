@@ -89,11 +89,15 @@ LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
 LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node);
 LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record);
 LOCAL void assign_node_numbers(MMDBW_tree_s *tree);
+LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
+                              uint128_t UNUSED(network),
+                              uint8_t UNUSED(depth), void *UNUSED(args));
 LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                       mmdbw_uint128_t network, uint8_t depth);
-LOCAL void freeze_data_record(MMDBW_tree_s *tree,
-                              mmdbw_uint128_t network, uint8_t depth,
-                              const char *key);
+                       uint128_t network, uint8_t depth, void *void_args);
+LOCAL void freeze_data_record(MMDBW_tree_s *UNUSED(tree),
+                              uint128_t network, uint8_t depth,
+                              const char *key,
+                              freeze_args_s *args);
 LOCAL void freeze_to_fd(freeze_args_s *args, void *data, size_t size);
 LOCAL void freeze_data_to_fd(int fd, MMDBW_tree_s *tree);
 LOCAL SV *freeze_hash(HV *hash);
@@ -101,13 +105,13 @@ LOCAL uint8_t thaw_uint8(uint8_t **buffer);
 LOCAL uint32_t thaw_uint32(uint8_t **buffer);
 LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer);
 LOCAL uint8_t *thaw_bytes(uint8_t **buffer, size_t size);
-LOCAL mmdbw_uint128_t thaw_uint128(uint8_t **buffer);
+LOCAL uint128_t thaw_uint128(uint8_t **buffer);
 LOCAL STRLEN thaw_strlen(uint8_t **buffer);
 LOCAL const char *thaw_data_key(uint8_t **buffer);
 LOCAL HV *thaw_data_hash(SV *data_to_decode);
 LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                       mmdbw_uint128_t UNUSED(network),
-                       uint8_t UNUSED(depth));
+                       uint128_t UNUSED(network),
+                       uint8_t UNUSED(depth), void *void_args);
 LOCAL void check_record_sanity(MMDBW_node_s *node, MMDBW_record_s *record,
                                char *side);
 LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
@@ -115,17 +119,15 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                                       encode_args_s * args);
 LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
-                        mmdbw_uint128_t network,
+                        uint128_t network,
                         const uint8_t depth,
                         bool depth_first,
+                        void *args,
                         void(callback) (MMDBW_tree_s *tree,
                                         MMDBW_node_s *node,
-                                        mmdbw_uint128_t network,
-                                        const uint8_t depth));
-LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                              mmdbw_uint128_t UNUSED(network),
-                              uint8_t UNUSED(
-                                  depth));
+                                        uint128_t network,
+                                        const uint8_t depth,
+                                        void *args));
 LOCAL SV *key_for_data(SV * data);
 LOCAL void dwarn(SV *thing);
 LOCAL void *checked_malloc(size_t size);
@@ -151,7 +153,6 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     tree->data_table = NULL;
     tree->is_finalized = false;
     tree->is_aliased = false;
-    tree->iteration_args = NULL;
     tree->root_node = new_node(tree);
     tree->node_count = 0;
 
@@ -759,7 +760,15 @@ void finalize_tree(MMDBW_tree_s *tree)
 LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
 {
     tree->node_count = 0;
-    start_iteration(tree, false, &assign_node_number);
+    start_iteration(tree, false, (void *)NULL, &assign_node_number);
+}
+
+LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
+                              uint128_t UNUSED(network),
+                              uint8_t UNUSED(depth), void *UNUSED(args))
+{
+    node->number = tree->node_count++;
+    return;
 }
 
 /* 16 bytes for an IP address, 1 byte for the prefix length */
@@ -792,9 +801,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
     freeze_to_fd(&args, &frozen_params_size, 4);
     freeze_to_fd(&args, frozen_params, frozen_params_size);
 
-    tree->iteration_args = (void *)&args;
-    start_iteration(tree, false, &freeze_node);
-    tree->iteration_args = NULL;
+    start_iteration(tree, false, (void *)&args, &freeze_node);
 
     freeze_to_fd(&args, SEVENTEEN_NULLS, 17);
     freeze_to_fd(&args, FREEZE_SEPARATOR, FREEZE_SEPARATOR_LENGTH);
@@ -811,30 +818,31 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
 }
 
 LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                       mmdbw_uint128_t network, uint8_t depth)
+                       uint128_t network, uint8_t depth, void *void_args)
 {
+    freeze_args_s *args = (freeze_args_s *)void_args;
+
     const uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
     const uint8_t next_depth = depth + 1;
 
     if (MMDBW_RECORD_TYPE_DATA == node->left_record.type) {
         freeze_data_record(tree, network, next_depth,
-                           node->left_record.value.key);
+                           node->left_record.value.key, args);
     }
 
     if (MMDBW_RECORD_TYPE_DATA == node->right_record.type) {
-        mmdbw_uint128_t right_network =
+        uint128_t right_network =
             FLIP_NETWORK_BIT(network, max_depth0, depth);
         freeze_data_record(tree, right_network, next_depth,
-                           node->right_record.value.key);
+                           node->right_record.value.key, args);
     }
 }
 
-LOCAL void freeze_data_record(MMDBW_tree_s *tree,
-                              mmdbw_uint128_t network, uint8_t depth,
-                              const char *key)
+LOCAL void freeze_data_record(MMDBW_tree_s *UNUSED(tree),
+                              uint128_t network, uint8_t depth,
+                              const char *key,
+                              freeze_args_s *args)
 {
-    freeze_args_s *args = tree->iteration_args;
-
     /* It'd save some space to shrink this to 4 bytes for IPv4-only trees, but
      * that would also complicated thawing quite a bit. */
     freeze_to_fd(args, &network, 16);
@@ -1005,7 +1013,7 @@ LOCAL uint32_t thaw_uint32(uint8_t **buffer)
 
 LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
 {
-    mmdbw_uint128_t start_ip = thaw_uint128(buffer);
+    uint128_t start_ip = thaw_uint128(buffer);
     uint8_t prefix_length = thaw_uint8(buffer);
 
     if (0 == start_ip && 0 == prefix_length) {
@@ -1067,9 +1075,9 @@ LOCAL uint8_t *thaw_bytes(uint8_t **buffer, size_t size)
     return value;
 }
 
-LOCAL mmdbw_uint128_t thaw_uint128(uint8_t **buffer)
+LOCAL uint128_t thaw_uint128(uint8_t **buffer)
 {
-    mmdbw_uint128_t value;
+    uint128_t value;
     memcpy(&value, *buffer, 16);
     *buffer += 16;
     return value;
@@ -1146,9 +1154,7 @@ void write_search_tree(MMDBW_tree_s *tree, SV *output,
         .data_pointer_cache = newHV()
     };
 
-    tree->iteration_args = (void *)&args;
-    start_iteration(tree, false, &encode_node);
-    tree->iteration_args = NULL;
+    start_iteration(tree, false, (void *)&args, &encode_node);
 
     /* When the hash is _freed_, Perl decrements the ref count for each value
      * so we don't need to mess with them. */
@@ -1158,10 +1164,10 @@ void write_search_tree(MMDBW_tree_s *tree, SV *output,
 }
 
 LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                       mmdbw_uint128_t UNUSED(network),
-                       uint8_t UNUSED(depth))
+                       uint128_t UNUSED(network),
+                       uint8_t UNUSED(depth), void *void_args)
 {
-    encode_args_s *args = (encode_args_s *)tree->iteration_args;
+    encode_args_s *args = (encode_args_s *)void_args;
 
     check_record_sanity(node, &(node->left_record), "left");
     check_record_sanity(node, &(node->right_record), "right");
@@ -1309,29 +1315,33 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
 
 void start_iteration(MMDBW_tree_s *tree,
                      bool depth_first,
+                     void *args,
                      void(callback) (MMDBW_tree_s *tree,
                                      MMDBW_node_s *node,
-                                     mmdbw_uint128_t network,
-                                     uint8_t depth))
+                                     uint128_t network,
+                                     uint8_t depth,
+                                     void *args))
 {
-    mmdbw_uint128_t network = 0;
+    uint128_t network = 0;
     uint8_t depth = 0;
 
     iterate_tree(tree, tree->root_node, network, depth, depth_first,
-                 callback);
+                 args, callback);
 
     return;
 }
 
 LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
-                        mmdbw_uint128_t network,
+                        uint128_t network,
                         const uint8_t depth,
                         bool depth_first,
+                        void *args,
                         void(callback) (MMDBW_tree_s *tree,
                                         MMDBW_node_s *node,
-                                        mmdbw_uint128_t network,
-                                        const uint8_t depth))
+                                        uint128_t network,
+                                        const uint8_t depth,
+                                        void *args))
 {
     if (depth > 127) {
         croak(
@@ -1339,7 +1349,7 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
     }
 
     if (!depth_first) {
-        callback(tree, node, network, depth);
+        callback(tree, node, network, depth, args);
     }
 
     if (MMDBW_RECORD_TYPE_NODE == node->left_record.type) {
@@ -1348,11 +1358,12 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                      network,
                      depth + 1,
                      depth_first,
+                     args,
                      callback);
     }
 
     if (depth_first) {
-        callback(tree, node, network, depth);
+        callback(tree, node, network, depth, args);
     }
 
     const uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
@@ -1362,17 +1373,9 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                      FLIP_NETWORK_BIT(network, max_depth0, depth),
                      depth + 1,
                      depth_first,
+                     args,
                      callback);
     }
-}
-
-LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                              mmdbw_uint128_t UNUSED(network),
-                              uint8_t UNUSED(
-                                  depth))
-{
-    node->number = tree->node_count++;
-    return;
 }
 
 LOCAL SV *key_for_data(SV * data)
