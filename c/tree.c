@@ -94,7 +94,7 @@ LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               uint8_t UNUSED(depth), void *UNUSED(args));
 LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
                        uint128_t network, uint8_t depth, void *void_args);
-LOCAL void freeze_data_record(MMDBW_tree_s *tree,
+LOCAL void freeze_data_record(MMDBW_tree_s *UNUSED(tree),
                               uint128_t network, uint8_t depth,
                               const char *key,
                               freeze_args_s *args);
@@ -838,7 +838,7 @@ LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
     }
 }
 
-LOCAL void freeze_data_record(MMDBW_tree_s *tree,
+LOCAL void freeze_data_record(MMDBW_tree_s *UNUSED(tree),
                               uint128_t network, uint8_t depth,
                               const char *key,
                               freeze_args_s *args)
