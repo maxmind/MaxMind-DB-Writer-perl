@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
+our $VERSION = '0.008001';
+
 require bytes;
 use Carp qw( confess );
 use Data::IEEE754 qw( pack_double_be pack_float_be );
