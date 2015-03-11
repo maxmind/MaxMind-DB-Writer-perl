@@ -3,6 +3,8 @@ package MaxMind::DB::Writer;
 use strict;
 use warnings;
 
+our $VERSION = '0.008001';
+
 1;
 
 # ABSTRACT: Create MaxMind DB database files
