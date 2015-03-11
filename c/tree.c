@@ -90,12 +90,12 @@ LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node);
 LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record);
 LOCAL void assign_node_numbers(MMDBW_tree_s *tree);
 LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                              mmdbw_uint128_t UNUSED(network),
+                              uint128_t UNUSED(network),
                               uint8_t UNUSED(depth), void *UNUSED(args));
 LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                       mmdbw_uint128_t network, uint8_t depth, void *void_args);
+                       uint128_t network, uint8_t depth, void *void_args);
 LOCAL void freeze_data_record(MMDBW_tree_s *tree,
-                              mmdbw_uint128_t network, uint8_t depth,
+                              uint128_t network, uint8_t depth,
                               const char *key,
                               freeze_args_s *args);
 LOCAL void freeze_to_fd(freeze_args_s *args, void *data, size_t size);
@@ -105,12 +105,12 @@ LOCAL uint8_t thaw_uint8(uint8_t **buffer);
 LOCAL uint32_t thaw_uint32(uint8_t **buffer);
 LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer);
 LOCAL uint8_t *thaw_bytes(uint8_t **buffer, size_t size);
-LOCAL mmdbw_uint128_t thaw_uint128(uint8_t **buffer);
+LOCAL uint128_t thaw_uint128(uint8_t **buffer);
 LOCAL STRLEN thaw_strlen(uint8_t **buffer);
 LOCAL const char *thaw_data_key(uint8_t **buffer);
 LOCAL HV *thaw_data_hash(SV *data_to_decode);
 LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                       mmdbw_uint128_t UNUSED(network),
+                       uint128_t UNUSED(network),
                        uint8_t UNUSED(depth), void *void_args);
 LOCAL void check_record_sanity(MMDBW_node_s *node, MMDBW_record_s *record,
                                char *side);
@@ -119,13 +119,13 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                                       encode_args_s * args);
 LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
-                        mmdbw_uint128_t network,
+                        uint128_t network,
                         const uint8_t depth,
                         bool depth_first,
                         void *args,
                         void(callback) (MMDBW_tree_s *tree,
                                         MMDBW_node_s *node,
-                                        mmdbw_uint128_t network,
+                                        uint128_t network,
                                         const uint8_t depth,
                                         void *args));
 LOCAL SV *key_for_data(SV * data);
@@ -764,7 +764,7 @@ LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
 }
 
 LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                              mmdbw_uint128_t UNUSED(network),
+                              uint128_t UNUSED(network),
                               uint8_t UNUSED(depth), void *UNUSED(args))
 {
     node->number = tree->node_count++;
@@ -818,7 +818,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
 }
 
 LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                       mmdbw_uint128_t network, uint8_t depth, void *void_args)
+                       uint128_t network, uint8_t depth, void *void_args)
 {
     freeze_args_s *args = (freeze_args_s *)void_args;
 
@@ -831,7 +831,7 @@ LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
     }
 
     if (MMDBW_RECORD_TYPE_DATA == node->right_record.type) {
-        mmdbw_uint128_t right_network =
+        uint128_t right_network =
             FLIP_NETWORK_BIT(network, max_depth0, depth);
         freeze_data_record(tree, right_network, next_depth,
                            node->right_record.value.key, args);
@@ -839,7 +839,7 @@ LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
 }
 
 LOCAL void freeze_data_record(MMDBW_tree_s *tree,
-                              mmdbw_uint128_t network, uint8_t depth,
+                              uint128_t network, uint8_t depth,
                               const char *key,
                               freeze_args_s *args)
 {
@@ -1013,7 +1013,7 @@ LOCAL uint32_t thaw_uint32(uint8_t **buffer)
 
 LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
 {
-    mmdbw_uint128_t start_ip = thaw_uint128(buffer);
+    uint128_t start_ip = thaw_uint128(buffer);
     uint8_t prefix_length = thaw_uint8(buffer);
 
     if (0 == start_ip && 0 == prefix_length) {
@@ -1075,9 +1075,9 @@ LOCAL uint8_t *thaw_bytes(uint8_t **buffer, size_t size)
     return value;
 }
 
-LOCAL mmdbw_uint128_t thaw_uint128(uint8_t **buffer)
+LOCAL uint128_t thaw_uint128(uint8_t **buffer)
 {
-    mmdbw_uint128_t value;
+    uint128_t value;
     memcpy(&value, *buffer, 16);
     *buffer += 16;
     return value;
@@ -1164,7 +1164,7 @@ void write_search_tree(MMDBW_tree_s *tree, SV *output,
 }
 
 LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
-                       mmdbw_uint128_t UNUSED(network),
+                       uint128_t UNUSED(network),
                        uint8_t UNUSED(depth), void *void_args)
 {
     encode_args_s *args = (encode_args_s *)void_args;
@@ -1318,11 +1318,11 @@ void start_iteration(MMDBW_tree_s *tree,
                      void *args,
                      void(callback) (MMDBW_tree_s *tree,
                                      MMDBW_node_s *node,
-                                     mmdbw_uint128_t network,
+                                     uint128_t network,
                                      uint8_t depth,
                                      void *args))
 {
-    mmdbw_uint128_t network = 0;
+    uint128_t network = 0;
     uint8_t depth = 0;
 
     iterate_tree(tree, tree->root_node, network, depth, depth_first,
@@ -1333,13 +1333,13 @@ void start_iteration(MMDBW_tree_s *tree,
 
 LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         MMDBW_node_s *node,
-                        mmdbw_uint128_t network,
+                        uint128_t network,
                         const uint8_t depth,
                         bool depth_first,
                         void *args,
                         void(callback) (MMDBW_tree_s *tree,
                                         MMDBW_node_s *node,
-                                        mmdbw_uint128_t network,
+                                        uint128_t network,
                                         const uint8_t depth,
                                         void *args))
 {

@@ -8,7 +8,8 @@ use autodie;
 our $VERSION = '0.008001';
 
 use IO::Handle;
-use Math::Int128 0.06 qw( uint128 );
+use Math::Int64 0.51;
+use Math::Int128 0.21 qw( uint128 );
 use MaxMind::DB::Common 0.031003 qw(
     DATA_SECTION_SEPARATOR
     METADATA_MARKER

@@ -1,32 +1,15 @@
 /*
  * perl_math_int128.h - This file is in the public domain
- * Author: Salvador Fandino <sfandino@yahoo.com>
+ * Author: Salvador Fandino <sfandino@yahoo.com>, Dave Rolsky <autarch@urth.org>
  *
- * Generated on: 2013-09-06 20:42:10
- * Math::Int128 version: 0.13
- * Module::CAPIMaker version: 0.02
+ * Generated on: 2015-03-11 11:04:45
+ * Math::Int128 version: 0.21
  */
 
 #if !defined (PERL_MATH_INT128_H_INCLUDED)
 #define PERL_MATH_INT128_H_INCLUDED
 
 #define MATH_INT128_C_API_REQUIRED_VERSION 1
-
-#if ((__GNUC__ == 4) && (__GNUC_MINOR__ < 6))
-
-/* XXX - I had to copy this from perl_math_int128.c to get this header to
- * compile - Dave */
-
-/* workaroung for gcc 4.4/4.5 - see http://gcc.gnu.org/gcc-4.4/changes.html */
-typedef int int128_t __attribute__ ((__mode__ (TI)));
-typedef unsigned int uint128_t __attribute__ ((__mode__ (TI)));
-
-#else
-
-typedef __int128 int128_t;
-typedef unsigned __int128 uint128_t;
-
-#endif
 
 int perl_math_int128_load(int required_version);
 

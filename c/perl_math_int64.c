@@ -1,10 +1,10 @@
 /*
  * perl_math_int64.c - This file is in the public domain
- * Author: Salvador Fandino <sfandino@yahoo.com>
+ * Author: Salvador Fandino <sfandino@yahoo.com>, Dave Rolsky <autarch@urth.org>
  *
- * Generated on: 2012-12-10 21:34:09
- * Math::Int64 version: 0.28
- * Module::CAPIMaker version: 0.02
+ * Generated on: 2015-03-11 11:06:11
+ * Math::Int64 version: 0.51
+ * Module::CAPIMaker version: 
  */
 
 #include "EXTERN.h"
