@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.100001 2015-03-12
+
 - Updated to the latest versions of the Math::Int128 (0.21) and Math::Int64
   (0.51) C API integration code, as well as depending on the newest version of
   the module from Perl.
