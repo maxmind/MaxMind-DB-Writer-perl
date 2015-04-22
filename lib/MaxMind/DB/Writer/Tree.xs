@@ -95,7 +95,7 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     SPAGAIN;
 
     if (count != 0) {
-        croak("Expected no items back from ->%s() call", method);
+        croak("Expected no items back from ->%s() call", SvPV_nolen(method));
     }
 
     PUTBACK;
