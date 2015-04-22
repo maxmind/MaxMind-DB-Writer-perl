@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+- Fixed test suite on OS X: Altered to cope with different Net::Works network
+  rendering on OS X
+
 0.100001 2015-03-12
 
 - Updated to the latest versions of the Math::Int128 (0.21) and Math::Int64

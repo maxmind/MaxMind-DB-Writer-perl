@@ -25,7 +25,7 @@ my $ipv6_network
     $tree->insert_network( $ipv4_network, 'foo' );
     like(
         exception { $tree->insert_network( $ipv6_network, 'foo' ) },
-        qr{\QYou cannot insert an IPv6 network (::2/128) into an IPv4 tree.},
+        qr{You cannot insert an IPv6 network [(]::(?:0[.]0[.]0[.])?2/128[)] into an IPv4 tree.},
         q{Cannot insert an IPv6 network after we've already inserted an IPv4 network}
     );
 }
