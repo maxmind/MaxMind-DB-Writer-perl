@@ -1224,7 +1224,7 @@ LOCAL void check_record_sanity(MMDBW_node_s *node, MMDBW_record_s *record,
                 "%s record of node %" PRIu32 " points to a node  number (%"
                 PRIu32
                 ")",
-                side, node->number, record->value);
+                side, node->number, record->value.node->number);
         }
     }
 
