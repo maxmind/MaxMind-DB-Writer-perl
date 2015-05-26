@@ -673,13 +673,8 @@ LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                 return node;
             }
 
-            if (next_is_right) {
-                record->type = MMDBW_RECORD_TYPE_NODE;
-                record->value.node = next_node;
-            } else {
-                record->type = MMDBW_RECORD_TYPE_NODE;
-                record->value.node = next_node;
-            }
+            record->type = MMDBW_RECORD_TYPE_NODE;
+            record->value.node = next_node;
         }
 
         node = next_node;
