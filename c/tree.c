@@ -584,12 +584,7 @@ SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
     merge_hash(hash_into, hash_new);
     merge_hash(hash_from, hash_new);
 
-    SV *merged_ref = newRV_inc((SV *)hash_new);
-    /* We aren't keeping the original HV * around so we decrement its ref
-     * count. */
-    SvREFCNT_dec(hash_new);
-
-    return merged_ref;
+    return newRV_noinc((SV *)hash_new);
 }
 
 LOCAL void merge_hash(HV *from, HV *to)
