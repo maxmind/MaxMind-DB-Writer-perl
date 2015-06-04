@@ -571,6 +571,11 @@ SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
     if (!(SvROK(data_from) && SvROK(data_into)
           && SvTYPE(SvRV(data_from)) == SVt_PVHV
           && SvTYPE(SvRV(data_into)) == SVt_PVHV)) {
+        /* We added key_into earlier during insert_resolved_network, so we got to
+           make sure here that it's removed again after we decide to not actually
+           store this network. It might be nicer to not insert anything into the
+           tree until we're sure we really want to. */
+        decrement_data_reference_count(tree, key_into);
         croak(
             "Cannot merge data records unless both records are hashes - inserting %s/%"
             PRIu8,
