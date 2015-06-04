@@ -4,7 +4,7 @@ MaxMind::DB::Writer - Create MaxMind DB database files
 
 # VERSION
 
-version 0.100002
+version 0.100003
 
 # SYNOPSIS
 
@@ -68,6 +68,10 @@ We welcome patches as pull requests against our GitHub repository at
 - Greg Oschwald <goschwald@maxmind.com>
 - Dave Rolsky <drolsky@maxmind.com>
 - Mark Fowler <mfowler@maxmind.com>
+
+# CONTRIBUTOR
+
+Florian Ragwitz <rafl@debian.org>
 
 # COPYRIGHT AND LICENSE
 
