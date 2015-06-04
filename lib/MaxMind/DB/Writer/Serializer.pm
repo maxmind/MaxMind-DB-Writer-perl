@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.100003';
+our $VERSION = '0.100004';
 
 require bytes;
 use Carp qw( confess );
