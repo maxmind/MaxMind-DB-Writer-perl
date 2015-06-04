@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+- Fixed a bug in the data thawing code that incorrectly incremented the
+  SV referencing the HV rather than the HV. This could cause warnings about
+  attempts to free an unreferenced SV.
 - Fixed memory leaks on merge failures.
 - Minor code cleanups.
 

@@ -1120,13 +1120,13 @@ LOCAL HV *thaw_data_hash(SV *data_to_decode)
             "The Sereal::Decoder::decode_sereal sub returned an SV which is not SvROK!");
     }
 
-    SvREFCNT_inc_simple_void_NN(thawed);
+    SV *data_hash = SvREFCNT_inc_simple_NN(SvRV(thawed));
 
     PUTBACK;
     FREETMPS;
     LEAVE;
 
-    return (HV *)SvRV(thawed);
+    return (HV *)data_hash;
 }
 
 void write_search_tree(MMDBW_tree_s *tree, SV *output,
