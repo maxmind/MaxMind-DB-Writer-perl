@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+- Fixed memory leaks on merge failures.
+- Minor code cleanups.
+
 0.100002 2015-04-23
 
 - Fixed test suite on OS X: Altered to cope with different Net::Works network
