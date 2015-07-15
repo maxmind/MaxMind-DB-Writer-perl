@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.100004 2015-07-15
+
 - Previously two equivalent data structures added to a database could end up
   with different keys, causing both to be added to the final file separately.
   The key generation was updated to reduce the likelihood of this happening.
