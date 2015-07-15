@@ -7,13 +7,21 @@ our $VERSION = '0.100004';
 
 use Digest::SHA1 qw( sha1_base64 );
 use Encode qw( encode );
-use Sereal::Encoder;
+use Sereal::Encoder 3.002;
 
 use Exporter qw( import );
 our @EXPORT_OK = qw( key_for_data );
 
 {
-    my $Encoder = Sereal::Encoder->new( { sort_keys => 1 } );
+    # Although this mostly works fine when canonical and canonical_refs are
+    # enabled, it is still somewhat broken. See:
+    #
+    # https://metacpan.org/pod/distribution/Sereal-Encoder/lib/Sereal/Encoder.pm#CANONICAL-REPRESENTATION
+    #
+    # The arrays in the example, for instance, would have distinct keys
+    # despite being structurally equivalent. Requires Sereal 3.002.
+    my $Encoder
+        = Sereal::Encoder->new( { canonical => 1, canonical_refs => 1 } );
 
     sub key_for_data {
 
