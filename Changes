@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+- Previously two equivalent data structures added to a database could end up
+  with different keys, causing both to be added to the final file separately.
+  The key generation was updated to reduce the likelihood of this happening.
+
+
 0.100003 2015-06-04
 
 - Fixed a bug in the data thawing code that incorrectly incremented the
@@ -7,6 +12,7 @@
   attempts to free an unreferenced SV.
 - Fixed memory leaks on merge failures.
 - Minor code cleanups.
+
 
 0.100002 2015-04-23
 
