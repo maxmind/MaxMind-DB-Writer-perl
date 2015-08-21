@@ -136,10 +136,28 @@ sub BUILD {
     $_[0]->_tree();
 }
 
+# In an ideal world we'd check for other things we can't
+# serialize, but it gets complex with overloading, etc.
+sub _contains_undef  {
+    foreach (
+        ref $_[0] eq 'ARRAY'  ? (@{ $_[0] }) :
+        ref $_[0] eq 'HASH'   ? (values %{ $_[0] }) :
+        ref $_[0] eq 'SCALAR' ? (${ $_[0] }) : ()
+    ) {
+        return 1 unless defined;
+        _contains_undef($_);
+    };
+    return
+}
+
 sub insert_network {
     my $self    = shift;
     my $network = shift;
     my $data    = shift;
+
+    if (!defined $data || _contains_undef($data)) {
+        die 'You cannot insert the undefined value into the tree';
+    }
 
     if ( $network->version() != $self->ip_version() ) {
         my $description = $network->as_string();
