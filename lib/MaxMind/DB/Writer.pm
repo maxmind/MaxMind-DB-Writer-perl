@@ -34,7 +34,7 @@ __END__
     );
 
     my $network
-        = Net::Works::Network->new_from_string( string => '8.23.0.0/16' );
+        = Net::Works::Network->new_from_string( string => '2001:db8::/48' );
 
     $tree->insert_network(
         $network,
