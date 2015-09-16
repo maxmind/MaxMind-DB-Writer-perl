@@ -405,7 +405,7 @@ This parameter is optional.
 
 =item * description
 
-This is hashref where the keys are language names and the values are
+This is a hashref where the keys are language names and the values are
 descriptions of the database in that language. For example, you might have
 something like:
 
