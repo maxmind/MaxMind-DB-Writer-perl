@@ -54,6 +54,13 @@ This distribution contains the code necessary to write L<MaxMind DB database
 files|http://maxmind.github.io/MaxMind-DB/>. See L<MaxMind::DB::Writer::Tree>
 for API docs.
 
+=head1 MAC OS X SUPPORT
+
+If you're running into install errors under Mac OS X, you may need to force a
+build of the 64 bit binary. For example, if you're installing via C<cpanm>:
+
+    ARCHFLAGS="-arch x86_64" cpanm MaxMind::DB::Writer
+
 =head1 WINDOWS SUPPORT
 
 This distribution does not currently work on Windows. Reasonable patches for
