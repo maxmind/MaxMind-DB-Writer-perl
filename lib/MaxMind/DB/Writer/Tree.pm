@@ -411,7 +411,7 @@ something like:
 
     {
         en => 'My IP data',
-        fr => 'Mon Data de IP',
+        fr => q{Mon Data d'IP},
     }
 
 
