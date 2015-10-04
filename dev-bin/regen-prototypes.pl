@@ -97,30 +97,26 @@ my $re_args = qr/\(.*?\)/s;
 # and again from Inline::C::ParseRegExp
 my $re_signature = qr/^(.+? ($re_identifier) $re_args) (?>[\ \t\n]*?{)/x;
 
-{
-    my %skip = map { $_ => 1 } qw( memmem );
+sub parse_prototypes {
+    my $c_code = shift;
 
-    sub parse_prototypes {
-        my $c_code = shift;
+    my @protos;
 
-        my @protos;
+    for my $chunk ( $c_code =~ /^(\w+.+?[;{])/gsm ) {
+        my ( $prototype, $name ) = $chunk =~ /^$re_signature/ms
+            or next;
 
-        for my $chunk ( $c_code =~ /^(\w+.+?[;{])/gsm ) {
-            my ( $prototype, $name ) = $chunk =~ /^$re_signature/ms
-                or next;
+        next if $prototype =~ /^(?:DEBUG_FUNC|NO_PROTO)/;
 
-            next if $prototype =~ /^(?:DEBUG_FUNC|NO_PROTO)/;
-
-            push @protos,
-                {
-                name      => $name,
-                prototype => $prototype,
-                external  => $prototype =~ /^LOCAL/ ? 0 : 1,
-                };
-        }
-
-        return grep { !$skip{ $_->{name} } } @protos;
+        push @protos,
+        {
+            name      => $name,
+            prototype => $prototype,
+            external  => $prototype =~ /^LOCAL/ ? 0 : 1,
+        };
     }
+
+    return grep { $_->{name} ne 'memmem' } @protos;
 }
 
 sub read_file {

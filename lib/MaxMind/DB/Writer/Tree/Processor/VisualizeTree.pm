@@ -94,11 +94,13 @@ sub _label_for_node {
 
     my $network = $self->_network( $ip_num, $prefix_length );
 
-    return $self->_labels()->{$node_num} //=
-          "Node $node_num - "
-        . $network->as_string() . ' ('
-        . $network->first()->as_string . ' - '
-        . $network->last()->as_string() . ')';
+    return $self->_labels()->{$node_num} //= sprintf(
+        'Node %d - %s (%s - %s)',
+        $node_num,
+        $network->as_string,
+        $network->first()->as_string,
+        $network->last()->as_string,
+    );
 }
 
 sub _data_record_representation {

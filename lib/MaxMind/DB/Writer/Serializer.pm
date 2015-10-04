@@ -115,12 +115,13 @@ sub store_data {
         return $self->_store_data( pointer => $position );
     }
     else {
-        my $position = $self->_store_data( $type, $data, $member_type );
-        $self->_debug_string( 'Stored data at position', $position )
+        my $stored_position
+            = $self->_store_data( $type, $data, $member_type );
+        $self->_debug_string( 'Stored data at position', $stored_position )
             if DEBUG;
-        $self->_save_position( $key_for_data => $position );
+        $self->_save_position( $key_for_data => $stored_position );
 
-        return $position;
+        return $stored_position;
     }
 }
 
@@ -210,12 +211,12 @@ sub _store_data {
     return $current_position;
 }
 
-my @pointer_thresholds;
-push @pointer_thresholds,
+my @pointer_thresholds = (
     {
     cutoff => 2**11,
     offset => 0,
-    };
+    }
+);
 push @pointer_thresholds,
     {
     cutoff => 2**19 + $pointer_thresholds[-1]{cutoff},
