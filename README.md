@@ -4,7 +4,7 @@ MaxMind::DB::Writer - Create MaxMind DB database files
 
 # VERSION
 
-version 0.100004
+version 0.100005
 
 # SYNOPSIS
 
@@ -27,7 +27,7 @@ version 0.100004
     );
 
     my $network
-        = Net::Works::Network->new_from_string( string => '8.23.0.0/16' );
+        = Net::Works::Network->new_from_string( string => '2001:db8::/48' );
 
     $tree->insert_network(
         $network,
@@ -38,7 +38,7 @@ version 0.100004
         },
     );
 
-    open my $fh, '>:bytes', '/path/to/my-ip-data.mmdb';
+    open my $fh, '>:raw', '/path/to/my-ip-data.mmdb';
     $tree->write_tree($fh);
 
 # DESCRIPTION
@@ -46,6 +46,13 @@ version 0.100004
 This distribution contains the code necessary to write [MaxMind DB database
 files](http://maxmind.github.io/MaxMind-DB/). See [MaxMind::DB::Writer::Tree](https://metacpan.org/pod/MaxMind::DB::Writer::Tree)
 for API docs.
+
+# MAC OS X SUPPORT
+
+If you're running into install errors under Mac OS X, you may need to force a
+build of the 64 bit binary. For example, if you're installing via `cpanm`:
+
+    ARCHFLAGS="-arch x86_64" cpanm MaxMind::DB::Writer
 
 # WINDOWS SUPPORT
 
@@ -69,9 +76,10 @@ We welcome patches as pull requests against our GitHub repository at
 - Dave Rolsky <drolsky@maxmind.com>
 - Mark Fowler <mfowler@maxmind.com>
 
-# CONTRIBUTOR
+# CONTRIBUTORS
 
-Florian Ragwitz <rafl@debian.org>
+- Florian Ragwitz <rafl@debian.org>
+- Jan Bieron <jbieron+github@gmail.com>
 
 # COPYRIGHT AND LICENSE
 

@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.100005 2015-10-26
+
 - $tree->insert_network now takes an optional additional-arguments hash
   reference parameter. If this hash contains a truthy value for the
   force_overwrite key, any data for the network will be overwritten even when
