@@ -25,17 +25,17 @@ use Net::Works::Network;
         [
             Net::Works::Network->new_from_string(
                 string => '::172.56.0.0/112'
-            ) => \%asn,
+                ) => \%asn,
         ],
         [
             Net::Works::Network->new_from_string(
                 string => '::172.56.0.0/112'
-            ) => { isp => $isp },
+                ) => { isp => $isp },
         ],
         [
             Net::Works::Network->new_from_string(
                 string => '::172.32.0.0/107'
-            ) => { organization => $org },
+                ) => { organization => $org },
         ],
     );
 
@@ -390,7 +390,7 @@ use Net::Works::Network;
                 Net::Works::Network->range_as_subnets(
                 '1.0.0.16' => '1.0.0.255'
                 )
-        )
+        ),
     );
 
     test_tree(
@@ -449,13 +449,57 @@ use Net::Works::Network;
                 Net::Works::Network->range_as_subnets(
                 '1.0.0.16' => '1.0.0.255'
                 )
-        )
+        ),
     );
 
     test_tree(
         \@pairs,
         \@expect,
         'data hashes for records are merged on repeated collision - larger net first',
+        { merge_record_collisions => 1 },
+    );
+}
+
+{
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
+                { first_in => 1 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.2/31' ) =>
+                { second_in => 2 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.2/32' ) =>
+                {}, { force_overwrite => 1 },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/31' ) =>
+                {
+                first_in => 1,
+                }
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.2/32' ) =>
+                {}
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.3/32' ) =>
+                {
+                first_in  => 1,
+                second_in => 2,
+                }
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'force_overwrite overwrites record even when merge_record_collisions is enabled',
         { merge_record_collisions => 1 },
     );
 }
@@ -518,7 +562,7 @@ use Net::Works::Network;
             );
         },
         qr{\QCannot merge data records unless both records are hashes - inserting 1.0.0.0/28},
-        "cannot merge records on collision when the data is not a hash - larger record data is an array"
+        'cannot merge records on collision when the data is not a hash - larger record data is an array'
     );
 }
 

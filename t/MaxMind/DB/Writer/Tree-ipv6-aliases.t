@@ -62,7 +62,7 @@ sub _write_tree {
             en => 'Test Database',
             zh => 'Test Database Chinese',
         },
-        alias_ipv6_to_ipv4    => 1,
+        alias_ipv6_to_ipv4 => 1,
         map_key_type_callback => sub { 'utf8_string' },
     );
 

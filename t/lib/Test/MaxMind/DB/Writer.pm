@@ -35,7 +35,7 @@ sub test_tree {
 
     for my $raw (qw( 1.1.1.33 8.9.10.11 ffff::1 )) {
         my $address = Net::Works::Address->new_from_string(
-            string  => $raw,
+            string => $raw,
             version => ( $raw =~ /::/ ? 6 : 4 ),
         );
 
@@ -62,11 +62,11 @@ sub make_tree_from_pairs {
     );
 
     for my $pair ( @{$pairs} ) {
-        my ( $network, $data ) = @{$pair};
+        my ( $network, @insert_args ) = @{$pair};
         $network = Net::Works::Network->new_from_string( string => $network )
             unless blessed $network;
 
-        $tree->insert_network( $network, $data );
+        $tree->insert_network( $network, @insert_args );
     }
 
     return $tree;

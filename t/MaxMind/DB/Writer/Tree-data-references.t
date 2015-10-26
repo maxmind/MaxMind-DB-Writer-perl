@@ -52,6 +52,6 @@ sub _test_insert {
         Devel::Refcount::refcount($data), 1,
         'ref count of 1 after data is overwritten'
     );
-};
+}
 
 done_testing();

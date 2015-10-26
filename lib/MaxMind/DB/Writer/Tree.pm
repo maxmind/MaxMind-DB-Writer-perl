@@ -140,6 +140,7 @@ sub insert_network {
     my $self    = shift;
     my $network = shift;
     my $data    = shift;
+    my $additional_args = shift // {};
 
     if ( $network->version() != $self->ip_version() ) {
         my $description = $network->as_string();
@@ -155,6 +156,7 @@ sub insert_network {
         $network->prefix_length(),
         key_for_data($data),
         $data,
+        $additional_args->{force_overwrite},
     );
 
     return;
@@ -462,7 +464,7 @@ This parameter is optional. It defaults to false.
 
 =back
 
-=head2 $tree->insert_network( $network, $data )
+=head2 $tree->insert_network( $network, $data, $additional_args )
 
 This method expects two parameters. The first is a L<Net::Works::Network>
 object. The second can be any Perl data structure (except a coderef, glob, or
@@ -473,6 +475,12 @@ spec|http://maxmind.github.io/MaxMind-DB/>. The short overview is that
 anything that can be encoded in JSON can be stored in an MMDB file. It can
 also handle unsigned 64-bit and 128-bit integers if they are passed as
 L<Math::UInt128|Math::Int128> objects.
+
+C<$additional_args> is a hash reference containing additional arguments that
+change the behavior of the insert. Currently, the only supported argument is
+C<force_overwrite>. This causes the object-wide C<merge_record_collisions>
+setting to be ignored for the insert, causing C<$data> to overwrite any
+existing data for the network.
 
 =head3 Insert Order, Merging, and Overwriting
 
@@ -493,7 +501,8 @@ you need to sort your input by network prefix length.
 When C<merge_record_collisions> is I<true>, then regardless of insert order,
 the C<1.2.3.255/32> network will end up with its data plus the data provided
 for the C<1.2.3.0/24> network, while C<1.2.3.0 - 1.2.3.254> will have the
-expected data.
+expected data. This can be disabled on a per-insert basis by using the
+C<force_overwrite> argument when inserting a network as discussed above.
 
 =head2 $tree->write_tree($fh)
 
