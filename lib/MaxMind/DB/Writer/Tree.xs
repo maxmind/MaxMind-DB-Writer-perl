@@ -196,15 +196,16 @@ _build_tree(self)
         RETVAL
 
 void
-_insert_network(self, network, prefix_length, key, data)
+_insert_network(self, network, prefix_length, key, data, force_overwrite)
     SV *self;
     char *network;
     uint8_t prefix_length;
     SV *key;
     SV *data;
+    bool force_overwrite;
 
     CODE:
-        insert_network(tree_from_self(self), network, prefix_length, key, data);
+        insert_network(tree_from_self(self), network, prefix_length, key, data, force_overwrite);
 
 void
 _write_search_tree(self, output, alias_ipv6, root_data_type, serializer)
