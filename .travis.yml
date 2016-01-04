@@ -44,7 +44,7 @@ script:
 notifications:
   email:
     recipients:
-      - dev@maxmind.com
+      - dev-ci@maxmind.com
     on_success: change
     on_failure: always
 addons:
@@ -52,7 +52,7 @@ addons:
     project:
       name: "maxmind/MaxMind-DB-Writer-perl"
       description: "MMDB writer"
-    notification_email: dev@maxmind.com
+    notification_email: dev-ci@maxmind.com
     build_command_prepend: "perl Build.PL; ./Build clean"
     build_command:   "./Build"
     branch_pattern: .*coverity.*
