@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- The documentation incorrectly stated the the MaxMind::DB::Writer::Tree->new
+  parameter "map_key_type_callback" was optional. It is actually required.
+
+
 0.100005 2015-10-26
 
 - $tree->insert_network now takes an optional additional-arguments hash

@@ -425,7 +425,7 @@ This is a subroutine reference that is called in order to determine how to
 store each value in a map (hash) data structure. See L<DATA TYPES> below for
 more details.
 
-This parameter is optional.
+This parameter is required.
 
 =item * merge_record_collisions
 
