@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.100006 2016-01-18
+
 - The documentation incorrectly stated the the MaxMind::DB::Writer::Tree->new
   parameter "map_key_type_callback" was optional. It is actually required.
 
