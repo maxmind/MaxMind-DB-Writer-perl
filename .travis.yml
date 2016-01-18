@@ -7,6 +7,14 @@ addons:
       - aspell-en
       - graphviz
       - graphviz-dev
+  coverity_scan:
+    project:
+      name: "maxmind/MaxMind-DB-Writer-perl"
+      description: "MMDB writer"
+    notification_email: dev-ci@maxmind.com
+    build_command_prepend: "perl Build.PL; ./Build clean"
+    build_command:   "./Build"
+    branch_pattern: .*coverity.*
 language: perl
 perl:
   - blead
@@ -47,12 +55,7 @@ notifications:
       - dev-ci@maxmind.com
     on_success: change
     on_failure: always
-addons:
-  coverity_scan:
-    project:
-      name: "maxmind/MaxMind-DB-Writer-perl"
-      description: "MMDB writer"
-    notification_email: dev-ci@maxmind.com
-    build_command_prepend: "perl Build.PL; ./Build clean"
-    build_command:   "./Build"
-    branch_pattern: .*coverity.*
+  slack:
+    rooms:
+      secure: "VnB3Mf5zUXQGjUlNZqm2xhCBX8cXWFGrDCvmokg40H6CZIRdXUAw3gfr+OLjFYAK7Qy3UBWJlp/3pA+0F5JN/vOEDT7CogfgNMMMR3Hx60CiUttty7u2EulrOSqferCR0VOX4wN7NyUgWziUOgznD66EuaSLMisTd3T9jiRTQqo="
+
