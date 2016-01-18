@@ -3,7 +3,7 @@ package MaxMind::DB::Writer::Tree::Processor::VisualizeTree;
 use strict;
 use warnings;
 
-our $VERSION = '0.100006';
+our $VERSION = '0.100007';
 
 use Data::Dumper::Concise;
 use Digest::MD5 qw( md5_hex );
