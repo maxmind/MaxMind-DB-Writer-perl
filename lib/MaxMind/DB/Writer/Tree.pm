@@ -21,6 +21,7 @@ use MooseX::Params::Validate qw( validated_list );
 use Net::Works 0.20;
 use Sereal::Decoder qw( decode_sereal );
 use Sereal::Encoder qw( encode_sereal );
+use Socket qw( AF_INET AF_INET6 );
 
 use Moose;
 use Moose::Util::TypeConstraints;
@@ -28,7 +29,9 @@ use MooseX::StrictConstructor;
 
 use XSLoader;
 
+## no critic (ProhibitCallsToUnexportedSubs)
 XSLoader::load( __PACKAGE__, $VERSION );
+## use critic
 
 has ip_version => (
     is       => 'ro',
@@ -137,9 +140,9 @@ sub BUILD {
 }
 
 sub insert_network {
-    my $self    = shift;
-    my $network = shift;
-    my $data    = shift;
+    my $self            = shift;
+    my $network         = shift;
+    my $data            = shift;
     my $additional_args = shift // {};
 
     if ( $network->version() != $self->ip_version() ) {
@@ -152,7 +155,8 @@ sub insert_network {
     }
 
     $self->_insert_network(
-        $network->first()->as_string(),
+        $network->version == 4 ? AF_INET : AF_INET6,
+        $network->first->as_binary,
         $network->prefix_length(),
         key_for_data($data),
         $data,
@@ -168,14 +172,6 @@ sub _build_serializer {
     return MaxMind::DB::Writer::Serializer->new(
         map_key_type_callback => $self->map_key_type_callback(),
     );
-}
-
-# This is useful for diagnosing test failures
-sub _dump_data_hash {
-    my $self = shift;
-
-    require Devel::Dwarn;
-    Devel::Dwarn::Dwarn( $self->_data() );
 }
 
 sub write_tree {
