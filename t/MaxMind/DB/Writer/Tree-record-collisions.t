@@ -505,6 +505,81 @@ use Net::Works::Network;
 }
 
 {
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
+                {
+                families => [
+                    {
+                        husband => 'Fred',
+                        wife    => 'Wimla',
+                    },
+                ],
+                year => 1960,
+                },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.2/32' ) =>
+                {
+                families => [
+                    {
+                        wife  => 'Wilma',
+                        child => 'Pebbles',
+                    },
+                    {
+                        husband => 'Barney',
+                        wife    => 'Betty',
+                        child   => 'Bamm-Bamm',
+                    },
+                ],
+                company => 'Hanna-Barbera Productions',
+                }
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/31' ) =>
+                {
+                families => [
+                    {
+                        husband => 'Fred',
+                        wife    => 'Wimla',
+                    },
+                ],
+                year => 1960,
+                },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.2/32' ) =>
+                {
+                families => [
+                    {
+                        husband => 'Fred',
+                        wife    => 'Wilma',     # note replaced value
+                        child   => 'Pebbles',
+                    },
+                    {
+                        husband => 'Barney',
+                        wife    => 'Betty',
+                        child   => 'Bamm-Bamm',
+                    },
+                ],
+                year    => 1960,
+                company => 'Hanna-Barbera Productions',
+                },
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'recurse merge strategy',
+        { merge_record_collisions => 1, merge_strategy => 'recurse' },
+    );
+}
+
+{
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version              => 4,
         record_size             => 24,

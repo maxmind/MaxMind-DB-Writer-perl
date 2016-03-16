@@ -62,6 +62,12 @@ has merge_record_collisions => (
     default => 0,
 );
 
+has merge_strategy => (
+    is      => 'ro',
+    isa     => enum( [qw( toplevel recurse )] ),
+    default => 'toplevel',
+);
+
 has node_count => (
     is       => 'ro',
     init_arg => undef,
@@ -429,10 +435,78 @@ By default, when an insert collides with a previous insert, the new data
 simply overwrites the old data where the two networks overlap.
 
 If this is set to true, then on a collision, the writer will merge the old
-data with the new data. This only works if both inserts provide a hashref for
-the data payload.
+data with the new data. The merge strategy employed is controlled by the
+C<merge_strategy> attribute, described below.
 
 This parameter is optional. It defaults to false.
+
+=item * merge_strategy
+
+Controls what merge strategy is employed when C<merge_record_collisions> is
+enabled.
+
+=over 8
+
+=item * toplevel
+
+If both data structures are hashrefs then the data from the top level keys in
+the new data structure are copied over to the existing data structure,
+potentially replacing any existing values for existing keys completely.
+
+=item * recurse
+
+Recursively merges the new data structure with the old data structure.  Hash
+values and array elements are either - in the case of simple values - replaced
+with the new values, or - in the case of complex structures - have their values
+recursively merged.
+
+For example if this data is originally inserted for an IP range:
+
+  {
+      families => [ {
+          husband => 'Fred',
+          wife    => 'Wimla',
+      }, ],
+      year => 1960,
+  }
+
+And then this subsequent data is inserted for a range covered by the previous
+IP range:
+
+    {
+        families => [ {
+            wife    => 'Wilma',
+            child   => 'Pebbles',
+        }, {
+            husband => 'Barney',
+            wife    => 'Betty',
+            child   => 'Bamm-Bamm',
+        }, ],  
+        company => 'Hanna-Barbera Productions',
+    }
+
+Then querying within the range will produce the results:
+
+    {
+        families => [ {
+            husband => 'Fred',
+            wife    => 'Wilma',    # note replaced value
+            child   => 'Pebbles',
+        }, {
+            husband => 'Barney',
+            wife    => 'Betty',
+            child   => 'Bamm-Bamm',
+        }, ],
+        year => 1960,
+        company => 'Hanna-Barbera Productions',
+    }
+
+=back
+
+In all merge strategies attempting to merge two differing data structures
+causes an exception.
+
+This parameter is optional. It defaults to C<toplevel>.
 
 =item * alias_ipv6_to_ipv4
 
