@@ -16,34 +16,6 @@ typedef struct perl_iterator_args_s {
     SV *receiver;
 } perl_iterator_args_s;
 
-int call_int_method(SV *self, char *method)
-{
-    dSP;
-
-    ENTER;
-    SAVETMPS;
-    PUSHMARK(SP);
-    EXTEND(SP, 1);
-    PUSHs(self);
-    PUTBACK;
-
-    int count = call_method(method, G_SCALAR);
-
-    SPAGAIN;
-
-    if (count != 1) {
-        croak("Expected one item back from ->%s() call", method);
-    }
-
-    int value = POPi;
-
-    PUTBACK;
-    FREETMPS;
-    LEAVE;
-
-    return value;
-}
-
 MMDBW_tree_s *tree_from_self(SV *self)
 {
     /* This is a bit wrong since we're looking in the $self hash
@@ -184,13 +156,15 @@ BOOT:
     PERL_MATH_INT128_LOAD_OR_CROAK;
 
 MMDBW_tree_s *
-_build_tree(self)
-    SV *self;
+_create_tree(ip_version, record_size, merge_record_collisions, merge_strategy)
+    uint8_t ip_version;
+    uint8_t record_size;
+    bool merge_record_collisions;
+    MMDBW_merge_strategy merge_strategy;
 
     CODE:
-        RETVAL = new_tree((uint8_t)call_int_method(self, "ip_version"),
-                          (uint8_t)call_int_method(self, "record_size"),
-                          (bool)call_int_method(self, "merge_record_collisions"));
+        RETVAL = new_tree(ip_version, record_size, merge_record_collisions,
+                          merge_strategy);
 
     OUTPUT:
         RETVAL
@@ -300,15 +274,16 @@ _freeze_tree(self, filename, frozen_params, frozen_params_size)
         freeze_tree(tree_from_self(self), filename, frozen_params, frozen_params_size);
 
 MMDBW_tree_s *
-_thaw_tree(filename, initial_offset, ip_version, record_size, merge_record_collisions)
+_thaw_tree(filename, initial_offset, ip_version, record_size, merge_record_collisions, merge_strategy)
     char *filename;
     int initial_offset;
     int ip_version;
     int record_size;
     bool merge_record_collisions;
+    MMDBW_merge_strategy merge_strategy;
 
     CODE:
-    RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_record_collisions);
+    RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_record_collisions, merge_strategy);
 
     OUTPUT:
         RETVAL

@@ -35,7 +35,7 @@ sub test_tree {
 
     for my $raw (qw( 1.1.1.33 8.9.10.11 ffff::1 )) {
         my $address = Net::Works::Address->new_from_string(
-            string => $raw,
+            string  => $raw,
             version => ( $raw =~ /::/ ? 6 : 4 ),
         );
 

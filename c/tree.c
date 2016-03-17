@@ -75,7 +75,10 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
                          MMDBW_network_s *network,
                          MMDBW_record_s *new_record,
                          MMDBW_record_s *record_to_set);
-LOCAL void merge_hash(HV *from, HV *to);
+LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into);
+LOCAL void merge_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to);
+LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into);
+LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into);
 LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                           MMDBW_network_s *network,
                                           uint8_t *current_bit,
@@ -141,7 +144,8 @@ LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
 /* *INDENT-ON* */
 
 MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
-                       bool merge_record_collisions)
+                       bool merge_record_collisions,
+                       MMDBW_merge_strategy merge_strategy)
 {
     MMDBW_tree_s *tree = checked_malloc(sizeof(MMDBW_tree_s));
 
@@ -150,6 +154,7 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     /* XXX - check for 24, 28, or 32 */
     tree->record_size = record_size;
     tree->merge_record_collisions = merge_record_collisions;
+    tree->merge_strategy = merge_strategy;
     tree->data_table = NULL;
     tree->is_finalized = false;
     tree->is_aliased = false;
@@ -589,17 +594,22 @@ SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
             address_string, network->prefix_length);
     }
 
-    HV *hash_from = (HV *)SvRV(data_from);
-    HV *hash_into = (HV *)SvRV(data_into);
+    return merge_hashes(tree, data_from, data_into);
+}
+
+LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into)
+{
+    HV *hash_from = (HV *)SvRV(from);
+    HV *hash_into = (HV *)SvRV(into);
     HV *hash_new = newHV();
 
-    merge_hash(hash_into, hash_new);
-    merge_hash(hash_from, hash_new);
+    merge_hash_into_hash(tree, hash_into, hash_new);
+    merge_hash_into_hash(tree, hash_from, hash_new);
 
     return newRV_noinc((SV *)hash_new);
 }
 
-LOCAL void merge_hash(HV *from, HV *to)
+LOCAL void merge_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to)
 {
     (void)hv_iterinit(from);
     HE *he;
@@ -607,16 +617,79 @@ LOCAL void merge_hash(HV *from, HV *to)
         STRLEN key_length;
         const char *const key = HePV(he, key_length);
         U32 hash = HeHASH(he);
+        SV *value = HeVAL(he);
         if (hv_exists(to, key, key_length)) {
-            continue;
+            if (tree->merge_strategy == MMDBW_MERGE_STRATEGY_RECURSE) {
+                SV **existing_value = hv_fetch(to, key, key_length, 0);
+                if (existing_value == NULL) {
+                    // This should never happen as we just did an hv_exists
+                    croak("Received an unexpected NULL from hv_fetch");
+                }
+                value = merge_values(tree, value, *existing_value);
+            } else {
+                continue;
+            }
         }
 
-        SV *value = HeVAL(he);
         SvREFCNT_inc_simple_void_NN(value);
         (void)hv_store(to, key, key_length, value, hash);
     }
 
     return;
+}
+
+LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into)
+{
+    if (SvROK(from) != SvROK(into)) {
+        croak("Attempt to merge a reference value and non-refrence value");
+    }
+
+    if (!SvROK(from)) {
+        // If the two values are scalars, we prefer the one in the hash being
+        // inserted.
+        return from;
+    }
+
+    if (SvTYPE(SvRV(from)) == SVt_PVHV && SvTYPE(SvRV(into)) == SVt_PVHV) {
+        return merge_hashes(tree, from, into);
+    }
+
+    if (SvTYPE(SvRV(from)) == SVt_PVAV && SvTYPE(SvRV(into)) == SVt_PVAV) {
+        return merge_arrays(tree, from, into);
+    }
+
+    croak("Only arrayrefs, hashrefs, and scalars can be merged.");
+}
+
+LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into)
+{
+    AV *from_array = (AV *)SvRV(from);
+    AV *into_array = (AV *)SvRV(into);
+
+    SSize_t from_top_index = av_top_index(from_array);
+    SSize_t into_top_index = av_top_index(into_array);
+
+    SSize_t new_top_index = from_top_index >
+                            into_top_index ? from_top_index : into_top_index;
+
+    AV *new_array = newAV();
+    for (SSize_t i = i; i <= new_top_index; i++) {
+        SV * new_value = NULL;
+        SV ** from_value = av_fetch(from_array, i, 0);
+        SV ** into_value = av_fetch(into_array, i, 0);
+        if (from_value != NULL && into_value != NULL) {
+            new_value = merge_values(tree, *from_value, *into_value);
+        } else if (from_value != NULL) {
+            new_value = *from_value;
+        } else if (into_value != NULL) {
+            new_value = *into_value;
+        } else {
+            croak("Received unexpected NULLs when merging arrays");
+        }
+        SvREFCNT_inc_simple_void_NN(new_value);
+        av_push(new_array, new_value);
+    }
+    return newRV_noinc((SV *)new_array);
 }
 
 SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
@@ -933,7 +1006,8 @@ LOCAL SV *freeze_hash(HV *hash)
 
 MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
                         uint8_t ip_version, uint8_t record_size,
-                        bool merge_record_collisions)
+                        bool merge_record_collisions,
+                        MMDBW_merge_strategy merge_strategy)
 {
     int fd = open(filename, O_RDONLY, 0);
     if (-1 == fd) {
@@ -954,7 +1028,7 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
     buffer += initial_offset;
 
     MMDBW_tree_s *tree = new_tree(ip_version, record_size,
-                                  merge_record_collisions);
+                                  merge_record_collisions, merge_strategy);
 
     thawed_network_s *thawed;
     while (NULL != (thawed = thaw_network(tree, &buffer))) {

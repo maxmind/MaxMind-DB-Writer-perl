@@ -2,3 +2,11 @@ TYPEMAP
 MMDBW_tree_s *     T_OPAQUE
 uint8_t            T_UV
 uint32_t           T_UV
+MMDBW_merge_strategy  MMDBW_MERGE_STRATEGY_T
+
+INPUT
+MMDBW_MERGE_STRATEGY_T
+    char* sv_text = SvPV_nolen($arg);
+    $var = !strcmp(sv_text, \"toplevel\") ? MMDBW_MERGE_STRATEGY_TOPLEVEL
+           :  !strcmp(sv_text, \"recurse\") ? MMDBW_MERGE_STRATEGY_RECURSE
+           : MMDBW_MERGE_STRATEGY_NONE;

@@ -145,6 +145,13 @@ sub BUILD {
     $_[0]->_tree();
 }
 
+sub _build_tree {
+    my $self = shift;
+
+    return _create_tree($self->ip_version, $self->record_size,
+        $self->merge_record_collisions, $self->merge_strategy);
+}
+
 sub insert_network {
     my $self            = shift;
     my $network         = shift;
@@ -298,7 +305,7 @@ sub new_from_frozen_tree {
         $filename,
         $params_size + 4,
         map { $params->{$_} }
-            qw( ip_version record_size merge_record_collisions ),
+            qw( ip_version record_size merge_record_collisions merge_strategy),
     );
 
     return $class->new(
@@ -465,7 +472,7 @@ For example if this data is originally inserted for an IP range:
   {
       families => [ {
           husband => 'Fred',
-          wife    => 'Wimla',
+          wife    => 'Wilma',
       }, ],
       year => 1960,
   }
@@ -481,7 +488,7 @@ IP range:
             husband => 'Barney',
             wife    => 'Betty',
             child   => 'Bamm-Bamm',
-        }, ],  
+        }, ],
         company => 'Hanna-Barbera Productions',
     }
 

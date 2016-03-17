@@ -512,7 +512,7 @@ use Net::Works::Network;
                 families => [
                     {
                         husband => 'Fred',
-                        wife    => 'Wimla',
+                        wife    => 'Wilma',
                     },
                 ],
                 year => 1960,
@@ -544,7 +544,7 @@ use Net::Works::Network;
                 families => [
                     {
                         husband => 'Fred',
-                        wife    => 'Wimla',
+                        wife    => 'Wilma',
                     },
                 ],
                 year => 1960,
