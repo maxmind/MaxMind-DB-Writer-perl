@@ -668,8 +668,10 @@ LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into)
     AV *from_array = (AV *)SvRV(from);
     AV *into_array = (AV *)SvRV(into);
 
-    SSize_t from_top_index = av_top_index(from_array);
-    SSize_t into_top_index = av_top_index(into_array);
+    // Note that av_len() is really the index of the last element. In newer
+    // Perl versions, it is also called av_top_index() or av_tindex()
+    SSize_t from_top_index = av_len(from_array);
+    SSize_t into_top_index = av_len(into_array);
 
     SSize_t new_top_index = from_top_index >
                             into_top_index ? from_top_index : into_top_index;
