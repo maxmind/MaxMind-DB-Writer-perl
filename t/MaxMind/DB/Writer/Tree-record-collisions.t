@@ -463,6 +463,55 @@ use Net::Works::Network;
 {
     my @pairs = (
         [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
+                { first_in => 1 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/31' ) =>
+                {
+                    first_in => 2,
+                    second_in => 2, },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
+                {
+                    first_in => 3,
+                    second_in => 3,
+                    third_in => 3,
+                     },
+        ],
+    );
+
+    my @expect = (
+
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
+                {
+                first_in  => 3,
+                second_in => 3,
+                third_in  => 3,
+                }
+        ],
+       [
+            Net::Works::Network->new_from_string( string => '1.0.0.1/32' ) =>
+                {
+                first_in  => 2,
+                second_in => 2,
+                }
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'last in value wins when overwriting',
+        { merge_record_collisions => 1 },
+    );
+}
+
+{
+    my @pairs = (
+        [
             Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
                 { first_in => 1 },
         ],
@@ -512,7 +561,7 @@ use Net::Works::Network;
                 families => [
                     {
                         husband => 'Fred',
-                        wife    => 'Wilma',
+                        wife    => 'Pearl',
                     },
                 ],
                 year => 1960,
@@ -544,7 +593,7 @@ use Net::Works::Network;
                 families => [
                     {
                         husband => 'Fred',
-                        wife    => 'Wilma',
+                        wife    => 'Pearl',
                     },
                 ],
                 year => 1960,
