@@ -76,7 +76,7 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
                          MMDBW_record_s *new_record,
                          MMDBW_record_s *record_to_set);
 LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into);
-LOCAL void merge_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to);
+LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to);
 LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into);
 LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into);
 LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
@@ -547,8 +547,8 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
        merged record matches. */
     else if (MMDBW_RECORD_TYPE_DATA == record_to_set->type) {
         SV *merged = merge_hashes_for_keys(tree,
-                                           record_to_set->value.key,
                                            new_record->value.key,
+                                           record_to_set->value.key,
                                            network);
 
         SV *key_sv = key_for_data(merged);
@@ -579,7 +579,7 @@ SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
            make sure here that it's removed again after we decide to not actually
            store this network. It might be nicer to not insert anything into the
            tree until we're sure we really want to. */
-        decrement_data_reference_count(tree, key_into);
+        decrement_data_reference_count(tree, key_from);
 
         char address_string[NETWORK_IS_IPV6(network) ? INET6_ADDRSTRLEN :
                             INET_ADDRSTRLEN];
@@ -603,13 +603,15 @@ LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into)
     HV *hash_into = (HV *)SvRV(into);
     HV *hash_new = newHV();
 
-    merge_hash_into_hash(tree, hash_into, hash_new);
-    merge_hash_into_hash(tree, hash_from, hash_new);
+    merge_new_from_hash_into_hash(tree, hash_from, hash_new);
+    merge_new_from_hash_into_hash(tree, hash_into, hash_new);
 
     return newRV_noinc((SV *)hash_new);
 }
 
-LOCAL void merge_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to)
+// Important - unlike the other merge methods, this does _not_ overwrite
+// existing values.
+LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to)
 {
     (void)hv_iterinit(from);
     HE *he;
