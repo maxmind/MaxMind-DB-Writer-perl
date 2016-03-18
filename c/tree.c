@@ -618,7 +618,7 @@ LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to)
     while (NULL != (he = hv_iternext(from))) {
         STRLEN key_length;
         const char *const key = HePV(he, key_length);
-        U32 hash = HeHASH(he);
+        U32 hash = 0;
         SV *value = HeVAL(he);
         if (hv_exists(to, key, key_length)) {
             if (tree->merge_strategy == MMDBW_MERGE_STRATEGY_RECURSE) {
@@ -631,9 +631,11 @@ LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to)
             } else {
                 continue;
             }
+        } else {
+            hash = HeHASH(he);
+            SvREFCNT_inc_simple_void_NN(value);
         }
 
-        SvREFCNT_inc_simple_void_NN(value);
         (void)hv_store(to, key, key_length, value, hash);
     }
 
@@ -649,6 +651,7 @@ LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into)
     if (!SvROK(from)) {
         // If the two values are scalars, we prefer the one in the hash being
         // inserted.
+        SvREFCNT_inc_simple_void_NN(from);
         return from;
     }
 
@@ -685,12 +688,14 @@ LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into)
             new_value = merge_values(tree, *from_value, *into_value);
         } else if (from_value != NULL) {
             new_value = *from_value;
+            SvREFCNT_inc_simple_void_NN(new_value);
         } else if (into_value != NULL) {
             new_value = *into_value;
+            SvREFCNT_inc_simple_void_NN(new_value);
         } else {
             croak("Received unexpected NULLs when merging arrays");
         }
-        SvREFCNT_inc_simple_void_NN(new_value);
+
         av_push(new_array, new_value);
     }
     return newRV_noinc((SV *)new_array);
