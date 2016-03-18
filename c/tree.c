@@ -144,7 +144,6 @@ LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
 /* *INDENT-ON* */
 
 MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
-                       bool merge_record_collisions,
                        MMDBW_merge_strategy merge_strategy)
 {
     MMDBW_tree_s *tree = checked_malloc(sizeof(MMDBW_tree_s));
@@ -153,7 +152,6 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     tree->ip_version = ip_version;
     /* XXX - check for 24, 28, or 32 */
     tree->record_size = record_size;
-    tree->merge_record_collisions = merge_record_collisions;
     tree->merge_strategy = merge_strategy;
     tree->data_table = NULL;
     tree->is_finalized = false;
@@ -203,7 +201,7 @@ LOCAL void insert_resolved_network(MMDBW_tree_s *tree, MMDBW_network_s *network,
     };
 
     insert_record_for_network(tree, network, &new_record,
-                              tree->merge_record_collisions
+                              tree->merge_strategy != MMDBW_MERGE_STRATEGY_NONE
                               && !force_overwrite);
 }
 
@@ -609,8 +607,8 @@ LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into)
     return newRV_noinc((SV *)hash_new);
 }
 
-// Important - unlike the other merge methods, this does _not_ overwrite
-// existing values.
+// Note: unlike the other merge functions, this does _not_ replace existing
+// values.
 LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to)
 {
     (void)hv_iterinit(from);
@@ -1015,7 +1013,6 @@ LOCAL SV *freeze_hash(HV *hash)
 
 MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
                         uint8_t ip_version, uint8_t record_size,
-                        bool merge_record_collisions,
                         MMDBW_merge_strategy merge_strategy)
 {
     int fd = open(filename, O_RDONLY, 0);
@@ -1036,8 +1033,7 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
 
     buffer += initial_offset;
 
-    MMDBW_tree_s *tree = new_tree(ip_version, record_size,
-                                  merge_record_collisions, merge_strategy);
+    MMDBW_tree_s *tree = new_tree(ip_version, record_size, merge_strategy);
 
     thawed_network_s *thawed;
     while (NULL != (thawed = thaw_network(tree, &buffer))) {
@@ -1051,7 +1047,7 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
             thawed->record->value.key = key;
         }
         insert_record_for_network(tree, thawed->network, thawed->record,
-                                  tree->merge_record_collisions);
+                                  tree->merge_strategy != MMDBW_MERGE_STRATEGY_NONE);
         free_network(thawed->network);
         free(thawed->network);
         free(thawed->record);

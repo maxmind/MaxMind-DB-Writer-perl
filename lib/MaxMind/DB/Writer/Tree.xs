@@ -156,15 +156,13 @@ BOOT:
     PERL_MATH_INT128_LOAD_OR_CROAK;
 
 MMDBW_tree_s *
-_create_tree(ip_version, record_size, merge_record_collisions, merge_strategy)
+_create_tree(ip_version, record_size, merge_strategy)
     uint8_t ip_version;
     uint8_t record_size;
-    bool merge_record_collisions;
     MMDBW_merge_strategy merge_strategy;
 
     CODE:
-        RETVAL = new_tree(ip_version, record_size, merge_record_collisions,
-                          merge_strategy);
+        RETVAL = new_tree(ip_version, record_size, merge_strategy);
 
     OUTPUT:
         RETVAL
@@ -274,16 +272,15 @@ _freeze_tree(self, filename, frozen_params, frozen_params_size)
         freeze_tree(tree_from_self(self), filename, frozen_params, frozen_params_size);
 
 MMDBW_tree_s *
-_thaw_tree(filename, initial_offset, ip_version, record_size, merge_record_collisions, merge_strategy)
+_thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy)
     char *filename;
     int initial_offset;
     int ip_version;
     int record_size;
-    bool merge_record_collisions;
     MMDBW_merge_strategy merge_strategy;
 
     CODE:
-    RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_record_collisions, merge_strategy);
+    RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy);
 
     OUTPUT:
         RETVAL

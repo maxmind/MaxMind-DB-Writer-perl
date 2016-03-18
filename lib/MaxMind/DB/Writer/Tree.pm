@@ -57,14 +57,16 @@ has ip_version => (
 }
 
 has merge_record_collisions => (
-    is       => 'ro',
-    isa      => 'Bool',
+    is      => 'ro',
+    isa     => 'Bool',
     default => 0,
 );
 
+my $MergeStrategyEnum = enum( [qw( none toplevel recurse )] );
+
 has merge_strategy => (
     is      => 'ro',
-    isa     => enum( [qw( none toplevel recurse )] ),
+    isa     => $MergeStrategyEnum,
     lazy    => 1,
     default => sub { $_[0]->merge_record_collisions ? 'toplevel' : 'none'; },
 );
@@ -173,8 +175,9 @@ sub _build_tree {
     my $self = shift;
 
     return _create_tree(
-        $self->ip_version,              $self->record_size,
-        $self->merge_record_collisions, $self->merge_strategy
+        $self->ip_version,
+        $self->record_size,
+        $self->merge_strategy
     );
 }
 
@@ -302,13 +305,18 @@ sub write_tree {
 
 sub new_from_frozen_tree {
     my $class = shift;
-    my ( $filename, $callback, $database_type, $description )
+    my (
+        $filename,                $callback, $database_type, $description,
+        $merge_record_collisions, $merge_strategy
+        )
         = validated_list(
         \@_,
-        filename              => { isa => 'Str' },
-        map_key_type_callback => { isa => 'CodeRef' },
-        database_type         => { isa => 'Str', optional => 1 },
-        description           => { isa => 'HashRef[Str]', optional => 1 },
+        filename                => { isa => 'Str' },
+        map_key_type_callback   => { isa => 'CodeRef' },
+        database_type           => { isa => 'Str', optional => 1 },
+        description             => { isa => 'HashRef[Str]', optional => 1 },
+        merge_record_collisions => { isa => 'Bool', optional => 1 },
+        merge_strategy => { isa => $MergeStrategyEnum, optional => 1 }
         );
 
     open my $fh, '<:raw', $filename;
@@ -326,12 +334,14 @@ sub new_from_frozen_tree {
 
     $params->{database_type} = $database_type if defined $database_type;
     $params->{description}   = $description   if defined $description;
+    $params->{merge_record_collisions} = $merge_record_collisions
+        if defined $merge_record_collisions;
+    $params->{merge_strategy} = $merge_strategy if defined $merge_strategy;
 
     my $tree = _thaw_tree(
         $filename,
         $params_size + 4,
-        map { $params->{$_} }
-            qw( ip_version record_size merge_record_collisions merge_strategy),
+        map { $params->{$_} } qw( ip_version record_size merge_strategy),
     );
 
     return $class->new(
@@ -748,6 +758,18 @@ This parameter is optional.
 
 Override the C<<description>> of the frozen tree. This accepts a hashref of
 the same form as the C<<new()>> constructor.
+
+This parameter is optional.
+
+=item * merge_record_collisions
+
+Override the C<<merge_record_collisions>> setting for the frozen tree.
+
+This parameter is optional.
+
+=item * merge_strategy
+
+Override the C<<merge_strategy>> setting for the frozen tree.
 
 This parameter is optional.
 
