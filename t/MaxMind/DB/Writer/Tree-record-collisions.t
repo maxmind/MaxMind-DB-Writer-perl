@@ -469,16 +469,17 @@ use Net::Works::Network;
         [
             Net::Works::Network->new_from_string( string => '1.0.0.0/31' ) =>
                 {
-                    first_in => 2,
-                    second_in => 2, },
+                first_in  => 2,
+                second_in => 2,
+                },
         ],
         [
             Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
                 {
-                    first_in => 3,
-                    second_in => 3,
-                    third_in => 3,
-                     },
+                first_in  => 3,
+                second_in => 3,
+                third_in  => 3,
+                },
         ],
     );
 
@@ -492,7 +493,7 @@ use Net::Works::Network;
                 third_in  => 3,
                 }
         ],
-       [
+        [
             Net::Works::Network->new_from_string( string => '1.0.0.1/32' ) =>
                 {
                 first_in  => 2,
@@ -586,7 +587,7 @@ use Net::Works::Network;
         ],
     );
 
-    my @expect = (
+    my @expect_recurse = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/31' ) =>
                 {
@@ -622,9 +623,49 @@ use Net::Works::Network;
 
     test_tree(
         \@pairs,
-        \@expect,
+        \@expect_recurse,
         'recurse merge strategy',
         { merge_record_collisions => 1, merge_strategy => 'recurse' },
+    );
+
+    my @expect_toplevel = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/31' ) =>
+                {
+                families => [
+                    {
+                        husband => 'Fred',
+                        wife    => 'Pearl',
+                    },
+                ],
+                year => 1960,
+                },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.2/32' ) =>
+                {
+                families => [
+                    {
+                        wife  => 'Wilma',
+                        child => 'Pebbles',
+                    },
+                    {
+                        husband => 'Barney',
+                        wife    => 'Betty',
+                        child   => 'Bamm-Bamm',
+                    },
+                ],
+                year    => 1960,
+                company => 'Hanna-Barbera Productions',
+                },
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect_toplevel,
+        'expect_toplevel merge strategy',
+        { merge_record_collisions => 1, merge_strategy => 'toplevel' },
     );
 }
 

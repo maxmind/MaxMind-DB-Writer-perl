@@ -57,15 +57,16 @@ has ip_version => (
 }
 
 has merge_record_collisions => (
-    is      => 'ro',
-    isa     => 'Bool',
+    is       => 'ro',
+    isa      => 'Bool',
     default => 0,
 );
 
 has merge_strategy => (
     is      => 'ro',
-    isa     => enum( [qw( toplevel recurse )] ),
-    default => 'toplevel',
+    isa     => enum( [qw( none toplevel recurse )] ),
+    lazy    => 1,
+    default => sub { $_[0]->merge_record_collisions ? 'toplevel' : 'none'; },
 );
 
 has node_count => (
@@ -140,6 +141,29 @@ has _build_epoch => (
     default => sub { time() },
 );
 
+around BUILDARGS => sub {
+    my $orig  = shift;
+    my $class = shift;
+    my $args  = $class->$orig(@_);
+
+    return $args unless exists $args->{merge_strategy};
+
+    unless ( exists $args->{merge_record_collisions} ) {
+        $args->{merge_record_collisions} = $args->{merge_strategy} ne 'none';
+        return $args;
+    }
+
+    unless ( $args->{merge_strategy} eq 'none'
+        xor $args->{merge_record_collisions} ) {
+        die sprintf(
+            'merge_strategy cannot be "%s" if merge_record_collisions is "%s"',
+            $args->{merge_strategy}, $args->{merge_record_collisions}
+        );
+    }
+
+    return $args;
+};
+
 # The XS code expects $self->{_tree} to be populated.
 sub BUILD {
     $_[0]->_tree();
@@ -148,8 +172,10 @@ sub BUILD {
 sub _build_tree {
     my $self = shift;
 
-    return _create_tree($self->ip_version, $self->record_size,
-        $self->merge_record_collisions, $self->merge_strategy);
+    return _create_tree(
+        $self->ip_version,              $self->record_size,
+        $self->merge_record_collisions, $self->merge_strategy
+    );
 }
 
 sub insert_network {
@@ -445,7 +471,8 @@ If this is set to true, then on a collision, the writer will merge the old
 data with the new data. The merge strategy employed is controlled by the
 C<merge_strategy> attribute, described below.
 
-This parameter is optional. It defaults to false.
+This parameter is optional. It defaults to false unless C<merge_strategy> is
+set to something other than C<none>.
 
 =item * merge_strategy
 
@@ -453,6 +480,11 @@ Controls what merge strategy is employed when C<merge_record_collisions> is
 enabled.
 
 =over 8
+
+=item * none
+
+No merging will be done. C<merge_record_collisions> must either be not set or
+set to false.
 
 =item * toplevel
 
@@ -462,7 +494,7 @@ potentially replacing any existing values for existing keys completely.
 
 =item * recurse
 
-Recursively merges the new data structure with the old data structure.  Hash
+Recursively merges the new data structure with the old data structure. Hash
 values and array elements are either - in the case of simple values - replaced
 with the new values, or - in the case of complex structures - have their values
 recursively merged.
