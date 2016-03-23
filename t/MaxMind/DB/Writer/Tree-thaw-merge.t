@@ -194,9 +194,9 @@ check_tree(
 ########################################################################
 
 check_tree(
-    'set mrc in constructor',
+    'set mrc in constructor, toplevel in thaw',
     [ merge_record_collisions => 1 ],
-    [ merge_record_collisions => 1 ],
+    [ merge_strategy          => 'toplevel' ],
     sub {
         my %args = @_;
 
@@ -406,75 +406,42 @@ check_tree(
 ########################################################################
 
 check_tree(
-    'set mrc only in thaw',
-    [],
-    [ merge_record_collisions => 1 ],
-    sub {
-        my %args = @_;
-
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
-            'thawed merge_record_collisons'
-        );
-        is(
-            $args{thawed_tree}->merge_strategy, 'toplevel',
-            'thawed merge_strategy'
-        );
-        is_deeply(
-            $args{original_record},
-            {
-                leet => 1337,
-            },
-            'check original record'
-        );
-        is_deeply(
-            $args{thawed_record},
-            {
-                value => 42,
-                leet  => 1337,
-            },
-            'check thawed record'
-        );
-    }
-);
-
-check_tree(
-    'set differing mrc only in thaw',
-    [ merge_record_collisions => 0 ],
-    [ merge_record_collisions => 1 ],
-    sub {
-        my %args = @_;
-
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
-            'thawed merge_record_collisons'
-        );
-        is(
-            $args{thawed_tree}->merge_strategy, 'toplevel',
-            'thawed merge_strategy'
-        );
-        is_deeply(
-            $args{original_record},
-            {
-                leet => 1337,
-            },
-            'check original record'
-        );
-        is_deeply(
-            $args{thawed_record},
-            {
-                value => 42,
-                leet  => 1337,
-            },
-            'check thawed record'
-        );
-    }
-);
-
-check_tree(
     'set toplevel only in thaw',
     [],
     [ merge_strategy => 'toplevel' ],
+    sub {
+        my %args = @_;
+
+        is(
+            $args{thawed_tree}->merge_record_collisions, 1,
+            'thawed merge_record_collisons'
+        );
+        is(
+            $args{thawed_tree}->merge_strategy, 'toplevel',
+            'thawed merge_strategy'
+        );
+        is_deeply(
+            $args{original_record},
+            {
+                leet => 1337,
+            },
+            'check original record'
+        );
+        is_deeply(
+            $args{thawed_record},
+            {
+                value => 42,
+                leet  => 1337,
+            },
+            'check thawed record'
+        );
+    }
+);
+
+check_tree(
+    'set mrc off in constructor, toplevel in thaw',
+    [ merge_record_collisions => 0 ],
+    [ merge_strategy          => 'toplevel' ],
     sub {
         my %args = @_;
 
@@ -541,6 +508,39 @@ check_tree(
     'set recurse only in thaw',
     [],
     [ merge_strategy => 'recurse' ],
+    sub {
+        my %args = @_;
+
+        is(
+            $args{thawed_tree}->merge_record_collisions, 1,
+            'thawed merge_record_collisons'
+        );
+        is(
+            $args{thawed_tree}->merge_strategy, 'recurse',
+            'thawed merge_strategy'
+        );
+        is_deeply(
+            $args{original_record},
+            {
+                leet => 1337,
+            },
+            'check original record'
+        );
+        is_deeply(
+            $args{thawed_record},
+            {
+                value => 42,
+                leet  => 1337,
+            },
+            'check thawed record'
+        );
+    }
+);
+
+check_tree(
+    'set mrc off in constructor, recurse in thaw',
+    [ merge_record_collisions => 0 ],
+    [ merge_strategy          => 'recurse' ],
     sub {
         my %args = @_;
 
