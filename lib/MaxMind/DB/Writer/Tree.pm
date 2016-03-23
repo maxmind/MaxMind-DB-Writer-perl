@@ -280,6 +280,7 @@ sub write_tree {
 {
     my %do_not_freeze = map { $_ => 1 } qw(
         map_key_type_callback
+        merge_record_collisions
         _tree
     );
 
@@ -305,18 +306,14 @@ sub write_tree {
 
 sub new_from_frozen_tree {
     my $class = shift;
-    my (
-        $filename,                $callback, $database_type, $description,
-        $merge_record_collisions, $merge_strategy
-        )
+    my ( $filename, $callback, $database_type, $description, $merge_strategy )
         = validated_list(
         \@_,
-        filename                => { isa => 'Str' },
-        map_key_type_callback   => { isa => 'CodeRef' },
-        database_type           => { isa => 'Str', optional => 1 },
-        description             => { isa => 'HashRef[Str]', optional => 1 },
-        merge_record_collisions => { isa => 'Bool', optional => 1 },
-        merge_strategy => { isa => $MergeStrategyEnum, optional => 1 }
+        filename              => { isa => 'Str' },
+        map_key_type_callback => { isa => 'CodeRef' },
+        database_type         => { isa => 'Str', optional => 1 },
+        description           => { isa => 'HashRef[Str]', optional => 1 },
+        merge_strategy        => { isa => $MergeStrategyEnum, optional => 1 }
         );
 
     open my $fh, '<:raw', $filename;
@@ -334,14 +331,12 @@ sub new_from_frozen_tree {
 
     $params->{database_type} = $database_type if defined $database_type;
     $params->{description}   = $description   if defined $description;
-    $params->{merge_record_collisions} = $merge_record_collisions
-        if defined $merge_record_collisions;
     $params->{merge_strategy} = $merge_strategy if defined $merge_strategy;
 
     my $tree = _thaw_tree(
         $filename,
         $params_size + 4,
-        map { $params->{$_} } qw( ip_version record_size merge_strategy),
+        map { $params->{$_} } qw( ip_version record_size merge_strategy ),
     );
 
     return $class->new(
@@ -483,6 +478,9 @@ C<merge_strategy> attribute, described below.
 
 This parameter is optional. It defaults to false unless C<merge_strategy> is
 set to something other than C<none>.
+
+This parameter is deprecated. New code should just set C<merge_strategy>
+directly.
 
 =item * merge_strategy
 
@@ -698,7 +696,11 @@ Returns the tree's record size, as passed to the constructor.
 =head2 $tree->merge_record_collisions()
 
 Returns a boolean indicating whether the tree will merge colliding records, as
-determined by the constructor parameter.
+determined by the merge strategy.
+
+=head2 $tree->merge_strategy()
+
+Returns the merge strategy used when two records collide.
 
 =head2 $tree->map_key_type_callback()
 
@@ -758,12 +760,6 @@ This parameter is optional.
 
 Override the C<<description>> of the frozen tree. This accepts a hashref of
 the same form as the C<<new()>> constructor.
-
-This parameter is optional.
-
-=item * merge_record_collisions
-
-Override the C<<merge_record_collisions>> setting for the frozen tree.
 
 This parameter is optional.
 

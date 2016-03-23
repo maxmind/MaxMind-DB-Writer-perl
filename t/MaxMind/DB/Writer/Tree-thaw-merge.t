@@ -100,8 +100,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 0,
+        ok(
+            !$args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -132,8 +132,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 0,
+        ok(
+            !$args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -164,8 +164,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 0,
+        ok(
+            !$args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -200,8 +200,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
+        ok(
+            $args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -234,8 +234,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
+        ok(
+            $args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -268,8 +268,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
+        ok(
+            $args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -306,8 +306,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
+        ok(
+            $args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -340,8 +340,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
+        ok(
+            $args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -374,8 +374,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
+        ok(
+            $args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -412,8 +412,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
+        ok(
+            $args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -445,8 +445,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
+        ok(
+            $args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -478,8 +478,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
+        ok(
+            $args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -511,8 +511,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
+        ok(
+            $args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
@@ -544,8 +544,8 @@ check_tree(
     sub {
         my %args = @_;
 
-        is(
-            $args{thawed_tree}->merge_record_collisions, 1,
+        ok(
+            $args{thawed_tree}->merge_record_collisions,
             'thawed merge_record_collisons'
         );
         is(
