@@ -220,7 +220,7 @@ sub test_freeze_thaw {
         description
         ip_version
         languages
-        merge_record_collisions
+        merge_strategy
         record_size
     );
 
