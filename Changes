@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.100007 2016-03-24
+
 - MaxMind::DB::Writer::Tree->new now accepts a merge_strategy parameter. When
   merge_record_collisions is set, the default merge strategy is "toplevel",
   which only merges the top level of the record hash. A new "recurse" merge
