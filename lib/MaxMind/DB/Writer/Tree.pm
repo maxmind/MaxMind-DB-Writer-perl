@@ -331,7 +331,16 @@ sub new_from_frozen_tree {
 
     $params->{database_type} = $database_type if defined $database_type;
     $params->{description}   = $description   if defined $description;
-    $params->{merge_strategy} = $merge_strategy if defined $merge_strategy;
+
+    if ( defined $merge_strategy ) {
+        $params->{merge_strategy} = $merge_strategy;
+    }
+    elsif ( $params->{merge_record_collisions} ) {
+
+        # This is for backwards compatibility with frozen trees created before
+        # "merge_strategy" was added.
+        $params->{merge_strategy} = 'toplevel';
+    }
 
     my $tree = _thaw_tree(
         $filename,
@@ -484,8 +493,7 @@ directly.
 
 =item * merge_strategy
 
-Controls what merge strategy is employed when C<merge_record_collisions> is
-enabled.
+Controls what merge strategy is employed.
 
 =over 8
 
@@ -553,7 +561,8 @@ Then querying within the range will produce the results:
 In all merge strategies attempting to merge two differing data structures
 causes an exception.
 
-This parameter is optional. It defaults to C<toplevel>.
+This parameter is optional. If C<merge_record_collisions> is true, this
+defaults to C<toplevel>; otherwise, it defaults to C<none>.
 
 =item * alias_ipv6_to_ipv4
 
