@@ -62,6 +62,15 @@ has merge_record_collisions => (
     default => 0,
 );
 
+my $MergeStrategyEnum = enum( [qw( none toplevel recurse )] );
+
+has merge_strategy => (
+    is      => 'ro',
+    isa     => $MergeStrategyEnum,
+    lazy    => 1,
+    default => sub { $_[0]->merge_record_collisions ? 'toplevel' : 'none'; },
+);
+
 has node_count => (
     is       => 'ro',
     init_arg => undef,
@@ -134,9 +143,42 @@ has _build_epoch => (
     default => sub { time() },
 );
 
+around BUILDARGS => sub {
+    my $orig  = shift;
+    my $class = shift;
+    my $args  = $class->$orig(@_);
+
+    return $args unless exists $args->{merge_strategy};
+
+    unless ( exists $args->{merge_record_collisions} ) {
+        $args->{merge_record_collisions} = $args->{merge_strategy} ne 'none';
+        return $args;
+    }
+
+    unless ( $args->{merge_strategy} eq 'none'
+        xor $args->{merge_record_collisions} ) {
+        die sprintf(
+            'merge_strategy cannot be "%s" if merge_record_collisions is "%s"',
+            $args->{merge_strategy}, $args->{merge_record_collisions}
+        );
+    }
+
+    return $args;
+};
+
 # The XS code expects $self->{_tree} to be populated.
 sub BUILD {
     $_[0]->_tree();
+}
+
+sub _build_tree {
+    my $self = shift;
+
+    return _create_tree(
+        $self->ip_version,
+        $self->record_size,
+        $self->merge_strategy
+    );
 }
 
 sub insert_network {
@@ -238,6 +280,7 @@ sub write_tree {
 {
     my %do_not_freeze = map { $_ => 1 } qw(
         map_key_type_callback
+        merge_record_collisions
         _tree
     );
 
@@ -263,13 +306,14 @@ sub write_tree {
 
 sub new_from_frozen_tree {
     my $class = shift;
-    my ( $filename, $callback, $database_type, $description )
+    my ( $filename, $callback, $database_type, $description, $merge_strategy )
         = validated_list(
         \@_,
         filename              => { isa => 'Str' },
         map_key_type_callback => { isa => 'CodeRef' },
         database_type         => { isa => 'Str', optional => 1 },
         description           => { isa => 'HashRef[Str]', optional => 1 },
+        merge_strategy        => { isa => $MergeStrategyEnum, optional => 1 }
         );
 
     open my $fh, '<:raw', $filename;
@@ -288,11 +332,20 @@ sub new_from_frozen_tree {
     $params->{database_type} = $database_type if defined $database_type;
     $params->{description}   = $description   if defined $description;
 
+    if ( defined $merge_strategy ) {
+        $params->{merge_strategy} = $merge_strategy;
+    }
+    elsif ( $params->{merge_record_collisions} ) {
+
+        # This is for backwards compatibility with frozen trees created before
+        # "merge_strategy" was added.
+        $params->{merge_strategy} = 'toplevel';
+    }
+
     my $tree = _thaw_tree(
         $filename,
         $params_size + 4,
-        map { $params->{$_} }
-            qw( ip_version record_size merge_record_collisions ),
+        map { $params->{$_} } qw( ip_version record_size merge_strategy ),
     );
 
     return $class->new(
@@ -429,10 +482,87 @@ By default, when an insert collides with a previous insert, the new data
 simply overwrites the old data where the two networks overlap.
 
 If this is set to true, then on a collision, the writer will merge the old
-data with the new data. This only works if both inserts provide a hashref for
-the data payload.
+data with the new data. The merge strategy employed is controlled by the
+C<merge_strategy> attribute, described below.
 
-This parameter is optional. It defaults to false.
+This parameter is optional. It defaults to false unless C<merge_strategy> is
+set to something other than C<none>.
+
+This parameter is deprecated. New code should just set C<merge_strategy>
+directly.
+
+=item * merge_strategy
+
+Controls what merge strategy is employed.
+
+=over 8
+
+=item * none
+
+No merging will be done. C<merge_record_collisions> must either be not set or
+set to false.
+
+=item * toplevel
+
+If both data structures are hashrefs then the data from the top level keys in
+the new data structure are copied over to the existing data structure,
+potentially replacing any existing values for existing keys completely.
+
+=item * recurse
+
+Recursively merges the new data structure with the old data structure. Hash
+values and array elements are either - in the case of simple values - replaced
+with the new values, or - in the case of complex structures - have their values
+recursively merged.
+
+For example if this data is originally inserted for an IP range:
+
+  {
+      families => [ {
+          husband => 'Fred',
+          wife    => 'Wilma',
+      }, ],
+      year => 1960,
+  }
+
+And then this subsequent data is inserted for a range covered by the previous
+IP range:
+
+    {
+        families => [ {
+            wife    => 'Wilma',
+            child   => 'Pebbles',
+        }, {
+            husband => 'Barney',
+            wife    => 'Betty',
+            child   => 'Bamm-Bamm',
+        }, ],
+        company => 'Hanna-Barbera Productions',
+    }
+
+Then querying within the range will produce the results:
+
+    {
+        families => [ {
+            husband => 'Fred',
+            wife    => 'Wilma',    # note replaced value
+            child   => 'Pebbles',
+        }, {
+            husband => 'Barney',
+            wife    => 'Betty',
+            child   => 'Bamm-Bamm',
+        }, ],
+        year => 1960,
+        company => 'Hanna-Barbera Productions',
+    }
+
+=back
+
+In all merge strategies attempting to merge two differing data structures
+causes an exception.
+
+This parameter is optional. If C<merge_record_collisions> is true, this
+defaults to C<toplevel>; otherwise, it defaults to C<none>.
 
 =item * alias_ipv6_to_ipv4
 
@@ -575,7 +705,11 @@ Returns the tree's record size, as passed to the constructor.
 =head2 $tree->merge_record_collisions()
 
 Returns a boolean indicating whether the tree will merge colliding records, as
-determined by the constructor parameter.
+determined by the merge strategy.
+
+=head2 $tree->merge_strategy()
+
+Returns the merge strategy used when two records collide.
 
 =head2 $tree->map_key_type_callback()
 
@@ -635,6 +769,12 @@ This parameter is optional.
 
 Override the C<<description>> of the frozen tree. This accepts a hashref of
 the same form as the C<<new()>> constructor.
+
+This parameter is optional.
+
+=item * merge_strategy
+
+Override the C<<merge_strategy>> setting for the frozen tree.
 
 This parameter is optional.
 

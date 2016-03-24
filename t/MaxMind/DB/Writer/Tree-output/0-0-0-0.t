@@ -52,9 +52,7 @@ sub _write_tree {
 
     $tree->insert_network(
         $subnet,
-        {
-            ip => '0.0.0.0'
-        },
+        { ip => '0.0.0.0' },
     );
 
     my $filename = $tempdir . "/Test-0-network.mmdb";
