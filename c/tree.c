@@ -678,7 +678,7 @@ LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into)
                             into_top_index ? from_top_index : into_top_index;
 
     AV *new_array = newAV();
-    for (SSize_t i = i; i <= new_top_index; i++) {
+    for (SSize_t i = 0; i <= new_top_index; i++) {
         SV * new_value = NULL;
         SV ** from_value = av_fetch(from_array, i, 0);
         SV ** into_value = av_fetch(into_array, i, 0);
