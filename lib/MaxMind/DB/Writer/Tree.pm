@@ -18,7 +18,6 @@ use MaxMind::DB::Metadata;
 use MaxMind::DB::Writer::Serializer;
 use MaxMind::DB::Writer::Util qw( key_for_data );
 use MooseX::Params::Validate qw( validated_list );
-use Net::Works 0.20;
 use Sereal::Decoder qw( decode_sereal );
 use Sereal::Encoder qw( encode_sereal );
 use Socket qw( AF_INET AF_INET6 );
@@ -187,19 +186,11 @@ sub insert_network {
     my $data            = shift;
     my $additional_args = shift // {};
 
-    if ( $network->version() != $self->ip_version() ) {
-        my $description = $network->as_string();
-        die 'You cannot insert an IPv'
-            . $network->version()
-            . " network ($description) into an IPv"
-            . $self->ip_version()
-            . " tree.\n";
-    }
+    my ( $ip_address, $prefix_length ) = split qr{/}, $network, 2;
 
     $self->_insert_network(
-        $network->version == 4 ? AF_INET : AF_INET6,
-        $network->first->as_binary,
-        $network->prefix_length(),
+        $ip_address,
+        $prefix_length,
         key_for_data($data),
         $data,
         $additional_args->{force_overwrite},
@@ -377,7 +368,6 @@ __END__
 =head1 SYNOPSIS
 
     use MaxMind::DB::Writer::Tree;
-    use Net::Works::Network;
 
     my %types = (
         color => 'utf8_string',
@@ -394,11 +384,8 @@ __END__
         map_key_type_callback => sub { $types{ $_[0] } },
     );
 
-    my $network
-        = Net::Works::Network->new_from_string( string => '2001:db8::/48' );
-
     $tree->insert_network(
-        $network,
+        '2001:db8::/48',
         {
             color => 'blue',
             dogs  => [ 'Fido', 'Ms. Pretty Paws' ],
@@ -592,9 +579,8 @@ This parameter is optional. It defaults to false.
 
 =head2 $tree->insert_network( $network, $data, $additional_args )
 
-This method expects two parameters. The first is a L<Net::Works::Network>
-object. The second can be any Perl data structure (except a coderef, glob, or
-filehandle).
+This method expects two parameters. The first is an IP in CIDR notation. The
+second can be any Perl data structure (except a coderef, glob, or filehandle).
 
 The C<$data> payload is encoded according to the L<MaxMind DB database format
 spec|http://maxmind.github.io/MaxMind-DB/>. The short overview is that

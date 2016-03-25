@@ -162,30 +162,21 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     return tree;
 }
 
-int insert_network(MMDBW_tree_s *tree, int family, char *ip,
+void insert_network(MMDBW_tree_s *tree, const char *const ipstr,
                    const uint8_t prefix_length, SV *key, SV *data,
                    bool force_overwrite)
 {
-    int byte_size = family == AF_INET ? 4 : 16;
-    uint8_t *bytes = checked_malloc(byte_size);
-    memcpy(bytes, ip, byte_size);
-
-    MMDBW_network_s network = {
-        .bytes         = bytes,
-        .prefix_length = prefix_length,
-        .max_depth0    = (family == AF_INET ? 31 : 127),
-    };
+    MMDBW_network_s network = resolve_network(tree, ipstr, prefix_length);
 
     if (tree->ip_version == 4 && NETWORK_IS_IPV6((&network))) {
         free_network(&network);
-        return -1;
+        croak("You cannot insert an IPv6 network (%s/%u) into an IPv4 tree.",
+          ipstr, prefix_length);
     }
 
     insert_resolved_network(tree, &network, key, data, force_overwrite);
 
     free_network(&network);
-
-    return 0;
 }
 
 LOCAL void insert_resolved_network(MMDBW_tree_s *tree, MMDBW_network_s *network,
