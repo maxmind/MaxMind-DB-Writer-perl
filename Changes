@@ -1,5 +1,25 @@
 {{$NEXT}}
 
+[ BACKWARDS INCOMPATIBILITIES ]
+
+- When calling $tree->write_tree(), this module now defaults to removing
+  reserved and private networks from the tree before writing the tree to the
+  filehandle. If you want to create a tree that contains private networks,
+  set the constructor parameter "remove_reserved_networks" to false. This
+  change of behavior was done to facilitate the moving of code that previously
+  used Net::Works::Network->range_as_subnets() to the new insert_range
+  functionality in this module.
+
+[ ENHANCEMENTS ]
+
+- This module no longer used Net::Works internally. This was done to improve
+  performance.
+- insert_range() was added to MaxMind::DB::Writer::Tree to provide a mechanism
+  for adding IP address ranges that are not well-defined networks.
+- remove_network() was added to MaxMind::DB::Writer::Tree to facilitate
+  removing a network from a tree.
+
+
 0.100007 2016-03-24
 
 - MaxMind::DB::Writer::Tree->new now accepts a merge_strategy parameter. When

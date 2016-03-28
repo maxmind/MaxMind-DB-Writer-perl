@@ -30,6 +30,7 @@ sub _test_search_tree {
             zh => 'Test Database Chinese',
         },
         map_key_type_callback => sub { 'utf8_string' },
+        remove_reserved_networks => 0,
     );
 
     my @subnets = map { Net::Works::Network->new_from_string( string => $_ ) }
@@ -239,6 +240,7 @@ sub _write_tree {
             zh => 'Test Database Chinese',
         },
         map_key_type_callback => sub { 'utf8_string' },
+        remove_reserved_networks => 0,
     );
 
     for my $subnet ( @{$subnets} ) {

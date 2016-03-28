@@ -43,6 +43,7 @@ sub _write_tree {
             zh => 'Test Database Chinese',
         },
         map_key_type_callback => sub { 'utf8_string' },
+        remove_reserved_networks => 0
     );
 
     my $subnet = Net::Works::Network->new_from_string(

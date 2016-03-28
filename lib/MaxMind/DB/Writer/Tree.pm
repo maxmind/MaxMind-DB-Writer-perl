@@ -300,6 +300,8 @@ sub write_tree {
     sub _maybe_remove_reserved_networks {
         my $self = shift;
 
+        return unless $self->remove_reserved_networks;
+
         my @reserved = @reserved_4;
         push @reserved, @reserved_6 if $self->ip_version == 6;
 
@@ -658,12 +660,19 @@ This is the 6to4 range
 
 This parameter is optional. It defaults to false.
 
+=item * remove_reserved_networks
+
+If this is true, reserved networks will be removed from the database by
+C<write_tree()> before the tree is written to the file handle. The default is
+true.
+
 =back
 
 =head2 $tree->insert_network( $network, $data, $additional_args )
 
-This method expects two parameters. The first is an IP in CIDR notation. The
-second can be any Perl data structure (except a coderef, glob, or filehandle).
+This method expects two parameters. The first is an network in CIDR notation.
+The second can be any Perl data structure (except a coderef, glob, or
+filehandle).
 
 The C<$data> payload is encoded according to the L<MaxMind DB database format
 spec|http://maxmind.github.io/MaxMind-DB/>. The short overview is that
@@ -698,6 +707,19 @@ the C<1.2.3.255/32> network will end up with its data plus the data provided
 for the C<1.2.3.0/24> network, while C<1.2.3.0 - 1.2.3.254> will have the
 expected data. This can be disabled on a per-insert basis by using the
 C<force_overwrite> argument when inserting a network as discussed above.
+
+=head2 $tree->insert_range( $first_ip, $last_ip, $data, $additional_args )
+
+This method is similar to C<insert_network()>, except that it takes an IP
+range rather than a network. The first parameter is the first IP address in
+the range. The second is the last IP address in the range. The third is a
+Perl data structure containing the data to be inserted. The final parameter
+are additional arguments, as outlined for C<insert_network()>.
+
+=head2 $tree->remove_network( $network )
+
+This method removes the network from the database. It takes one parameter, the
+network in CIDR notation.
 
 =head2 $tree->write_tree($fh)
 
