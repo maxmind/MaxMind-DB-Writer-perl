@@ -199,6 +199,24 @@ sub insert_network {
     return;
 }
 
+sub insert_range {
+    my $self             = shift;
+    my $start_ip_address = shift;
+    my $end_ip_address   = shift;
+    my $data             = shift;
+    my $additional_args  = shift // {};
+
+    $self->_insert_range(
+        $start_ip_address,
+        $end_ip_address,
+        key_for_data($data),
+        $data,
+        $additional_args->{force_overwrite},
+    );
+
+    return;
+}
+
 sub _build_serializer {
     my $self = shift;
 

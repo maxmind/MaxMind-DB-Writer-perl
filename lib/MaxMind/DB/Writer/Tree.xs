@@ -180,6 +180,18 @@ _insert_network(self, ip_address, prefix_length, key, data, force_overwrite)
         insert_network(tree_from_self(self), ip_address, prefix_length, key, data, force_overwrite);
 
 void
+_insert_range(self, start_ip_address, end_ip_address, key, data, force_overwrite)
+    SV *self;
+    char *start_ip_address;
+    char *end_ip_address;
+    SV *key;
+    SV *data;
+    bool force_overwrite;
+
+    CODE:
+        insert_range(tree_from_self(self), start_ip_address, end_ip_address, key, data, force_overwrite);
+
+void
 _write_search_tree(self, output, alias_ipv6, root_data_type, serializer)
     SV *self;
     SV *output;

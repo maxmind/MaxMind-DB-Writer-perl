@@ -108,11 +108,12 @@ for my $record_size ( 24, 28, 32 ) {
     close $fh;
 
     my $tree = make_tree_from_pairs(
+        'network',
         $records,
         {
             root_data_type     => 'utf8_string',
             alias_ipv6_to_ipv4 => 1,
-        }
+        },
     );
 
     subtest(

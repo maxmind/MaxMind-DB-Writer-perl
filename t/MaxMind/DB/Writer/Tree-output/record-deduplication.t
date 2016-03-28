@@ -27,6 +27,7 @@ my $data2 = {
 };
 
 my $tree = make_tree_from_pairs(
+    'network',
     [
         [ '1.0.0.0/24' => $data1 ],
         [ '2.0.0.0/24' => $data1 ],
