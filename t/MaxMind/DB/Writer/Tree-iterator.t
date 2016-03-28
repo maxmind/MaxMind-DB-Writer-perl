@@ -101,8 +101,6 @@ my $basic_tree = make_tree_from_pairs('network', $insert);
         { alias_ipv6_to_ipv4 => 1 },
     );
 
-    $tree->_create_ipv4_aliases();
-
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);
     $tree->iterate($iterator);
 

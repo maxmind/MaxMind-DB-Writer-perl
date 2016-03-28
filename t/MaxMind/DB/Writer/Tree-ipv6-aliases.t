@@ -86,7 +86,5 @@ sub _write_tree {
         );
     }
 
-    $tree->_create_ipv4_aliases();
-
     return $tree;
 }

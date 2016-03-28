@@ -75,6 +75,7 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
 LOCAL void resolve_ip(int tree_ip_version, const char *const ipstr,
                       uint8_t *bytes);
 LOCAL void free_network(MMDBW_network_s *network);
+LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree);
 LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                                      MMDBW_network_s *network,
                                      MMDBW_record_s *new_record,
@@ -152,7 +153,8 @@ LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
 /* *INDENT-ON* */
 
 MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
-                       MMDBW_merge_strategy merge_strategy)
+                       MMDBW_merge_strategy merge_strategy,
+                       const bool alias_ipv6)
 {
     MMDBW_tree_s *tree = checked_malloc(sizeof(MMDBW_tree_s));
 
@@ -166,6 +168,10 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     tree->is_aliased = false;
     tree->root_node = new_node(tree);
     tree->node_count = 0;
+
+    if (alias_ipv6) {
+        alias_ipv4_networks(tree);
+    }
 
     return tree;
 }
@@ -431,9 +437,19 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
 
     resolve_ip(tree->ip_version, ipstr, bytes);
 
-    if (tree->ip_version == 6 && NULL == strchr(ipstr, ':')) {
-        // Inserting IPv4 network into an IPv6 tree
-        prefix_length += 96;
+    if (NULL == strchr(ipstr, ':')) {
+        // IPv4
+        if (prefix_length > 32) {
+            croak("Prefix length greater than 32 on an IPv4 network (%s/%d)",
+                  ipstr, prefix_length);
+        }
+        if (tree->ip_version == 6) {
+            // Inserting IPv4 network into an IPv6 tree
+            prefix_length += 96;
+        }
+    } else if (prefix_length > 128) {
+        croak("Prefix length greater than 128 on an IPv6 network (%s/%d)",
+              ipstr, prefix_length);
     }
 
     MMDBW_network_s network = {
@@ -511,7 +527,7 @@ static struct network ipv4_aliases[] = {
     }
 };
 
-void alias_ipv4_networks(MMDBW_tree_s *tree)
+LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
 {
     if (tree->ip_version == 4) {
         return;
@@ -522,21 +538,28 @@ void alias_ipv4_networks(MMDBW_tree_s *tree)
 
     MMDBW_network_s ipv4_root_network = resolve_network(tree, "::0.0.0.0", 96);
 
+    // We create an empty record for the aliases to point to initially. We
+    // do not simply use /96, as all of the alias requires that the node it
+    // aliases to be a MMDBW_RECORD_TYPE_NODE. This is gross and confusing
+    // and should be fixed at some point.
+    remove_network(tree, "::0.0.0.0", 97);
+
     uint8_t current_bit;
     MMDBW_node_s *ipv4_root_node_parent =
         find_node_for_network(tree, &ipv4_root_network, &current_bit,
                               &return_null);
     /* If the current_bit is not 32 then we found some node further up the
-     * tree that would eventually lead to that network. This means that there
-     * are no IPv4 addresses in the tree, so there's nothing to alias. */
+     * tree that would eventually lead to that network. This means that
+     * something went wrong. */
     if (32 != current_bit) {
         free_network(&ipv4_root_network);
-        return;
+        croak("current_bit for IPv4 root network is %u != 32", current_bit);
     }
 
     if (MMDBW_RECORD_TYPE_NODE != ipv4_root_node_parent->left_record.type) {
         free_network(&ipv4_root_network);
-        return;
+        croak("Unexpected record type for IPv4 root node: %s",
+              record_type_name(ipv4_root_node_parent->left_record.type));
     }
 
     MMDBW_node_s *ipv4_root_node =
@@ -1176,7 +1199,8 @@ LOCAL SV *freeze_hash(HV *hash)
 
 MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
                         uint8_t ip_version, uint8_t record_size,
-                        MMDBW_merge_strategy merge_strategy)
+                        MMDBW_merge_strategy merge_strategy,
+                        const bool alias_ipv6)
 {
     int fd = open(filename, O_RDONLY, 0);
     if (-1 == fd) {
@@ -1196,7 +1220,8 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
 
     buffer += initial_offset;
 
-    MMDBW_tree_s *tree = new_tree(ip_version, record_size, merge_strategy);
+    MMDBW_tree_s *tree = new_tree(ip_version, record_size, merge_strategy,
+                                  alias_ipv6);
 
     thawed_network_s *thawed;
     while (NULL != (thawed = thaw_network(tree, &buffer))) {
@@ -1380,13 +1405,8 @@ LOCAL HV *thaw_data_hash(SV *data_to_decode)
 }
 
 void write_search_tree(MMDBW_tree_s *tree, SV *output,
-                       const bool alias_ipv6,
                        SV *root_data_type, SV *serializer)
 {
-    if (alias_ipv6) {
-        alias_ipv4_networks(tree);
-    }
-
     finalize_tree(tree);
 
     /* This is a gross way to get around the fact that with C function

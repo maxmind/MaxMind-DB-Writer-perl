@@ -182,7 +182,8 @@ sub _build_tree {
     return _create_tree(
         $self->ip_version,
         $self->record_size,
-        $self->merge_strategy
+        $self->merge_strategy,
+        $self->alias_ipv6_to_ipv4,
     );
 }
 
@@ -252,7 +253,6 @@ sub write_tree {
 
     $self->_write_search_tree(
         $output,
-        $self->alias_ipv6_to_ipv4(),
         $self->_root_data_type(),
         $self->_serializer(),
     );
@@ -421,7 +421,14 @@ sub new_from_frozen_tree {
     my $tree = _thaw_tree(
         $filename,
         $params_size + 4,
-        map { $params->{$_} } qw( ip_version record_size merge_strategy ),
+        @{$params}{
+            qw(
+                ip_version
+                record_size
+                merge_strategy
+                alias_ipv6_to_ipv4
+                )
+        },
     );
 
     return $class->new(

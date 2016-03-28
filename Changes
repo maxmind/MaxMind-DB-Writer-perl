@@ -19,6 +19,13 @@
 - remove_network() was added to MaxMind::DB::Writer::Tree to facilitate
   removing a network from a tree.
 
+[ BUGFIXES ]
+
+- Previously inserting IPv6-mapped IPv4 addresses into a IPv6 tree with IPv4
+  aliasing enabled could result in a corrupt search tree unless the deprecated
+  "::a.b.c.d" mapping was used. This happened as the IPv4 aliasing was only
+  set up after all of the data had been inserted.
+
 
 0.100007 2016-03-24
 

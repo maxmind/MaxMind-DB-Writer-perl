@@ -65,6 +65,7 @@ sub _write_tree {
         },
         alias_ipv6_to_ipv4    => 1,
         map_key_type_callback => sub { 'utf8_string' },
+        remove_reserved_networks => 0,
     );
 
     # Note: we don't want all of the alias nodes (::ffff:0.0.0.0 and 2002::)

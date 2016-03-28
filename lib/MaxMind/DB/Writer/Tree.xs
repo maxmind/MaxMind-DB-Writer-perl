@@ -156,13 +156,14 @@ BOOT:
     PERL_MATH_INT128_LOAD_OR_CROAK;
 
 MMDBW_tree_s *
-_create_tree(ip_version, record_size, merge_strategy)
+_create_tree(ip_version, record_size, merge_strategy, alias_ipv6)
     uint8_t ip_version;
     uint8_t record_size;
     MMDBW_merge_strategy merge_strategy;
+    bool alias_ipv6;
 
     CODE:
-        RETVAL = new_tree(ip_version, record_size, merge_strategy);
+        RETVAL = new_tree(ip_version, record_size, merge_strategy, alias_ipv6);
 
     OUTPUT:
         RETVAL
@@ -201,15 +202,14 @@ _remove_network(self, ip_address, prefix_length)
         remove_network(tree_from_self(self), ip_address, prefix_length);
 
 void
-_write_search_tree(self, output, alias_ipv6, root_data_type, serializer)
+_write_search_tree(self, output, root_data_type, serializer)
     SV *self;
     SV *output;
-    bool alias_ipv6;
     SV *root_data_type;
     SV *serializer;
 
     CODE:
-        write_search_tree(tree_from_self(self), output, alias_ipv6, root_data_type, serializer);
+        write_search_tree(tree_from_self(self), output, root_data_type, serializer);
 
 uint32_t
 _build_node_count(self)
@@ -263,13 +263,6 @@ iterate(self, object)
 
         start_iteration(tree, true, (void *)&args, &call_perl_object);
 
-void
-_create_ipv4_aliases(self)
-    SV *self;
-
-    CODE:
-        alias_ipv4_networks(tree_from_self(self));
-
 SV *
 lookup_ip_address(self, address)
     SV *self;
@@ -292,15 +285,16 @@ _freeze_tree(self, filename, frozen_params, frozen_params_size)
         freeze_tree(tree_from_self(self), filename, frozen_params, frozen_params_size);
 
 MMDBW_tree_s *
-_thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy)
+_thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6)
     char *filename;
     int initial_offset;
     int ip_version;
     int record_size;
     MMDBW_merge_strategy merge_strategy;
+    bool alias_ipv6;
 
     CODE:
-    RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy);
+    RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6);
 
     OUTPUT:
         RETVAL
