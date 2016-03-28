@@ -77,6 +77,12 @@ has node_count => (
     builder  => '_build_node_count',
 );
 
+has remove_reserved_networks => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 1,
+);
+
 has _tree => (
     is        => 'ro',
     lazy      => 1,
@@ -217,6 +223,19 @@ sub insert_range {
     return;
 }
 
+sub remove_network {
+    my $self    = shift;
+    my $network = shift;
+    my ( $ip_address, $prefix_length ) = split qr{/}, $network, 2;
+
+    $self->_remove_network(
+        $ip_address,
+        $prefix_length,
+    );
+
+    return;
+}
+
 sub _build_serializer {
     my $self = shift;
 
@@ -228,6 +247,8 @@ sub _build_serializer {
 sub write_tree {
     my $self   = shift;
     my $output = shift;
+
+    $self->_maybe_remove_reserved_networks;
 
     $self->_write_search_tree(
         $output,
@@ -242,6 +263,50 @@ sub write_tree {
         METADATA_MARKER,
         $self->_encoded_metadata(),
     );
+}
+
+{
+    my @reserved_4 = qw(
+        0.0.0.0/8
+        10.0.0.0/8
+        100.64.0.0/10
+        127.0.0.0/8
+        169.254.0.0/16
+        172.16.0.0/12
+        192.0.0.0/29
+        192.0.2.0/24
+        192.88.99.0/24
+        192.168.0.0/16
+        198.18.0.0/15
+        198.51.100.0/24
+        203.0.113.0/24
+        224.0.0.0/4
+        240.0.0.0/4
+    );
+
+    # ::/128 and ::1/128 are reserved under IPv6 but these are already covered
+    # under 0.0.0.0/8
+    my @reserved_6 = (
+        @reserved_4, qw(
+            100::/64
+            2001::/23
+            2001:db8::/32
+            fc00::/7
+            fe80::/10
+            ff00::/8
+            )
+    );
+
+    sub _maybe_remove_reserved_networks {
+        my $self = shift;
+
+        my @reserved = @reserved_4;
+        push @reserved, @reserved_6 if $self->ip_version == 6;
+
+        for my $network (@reserved) {
+            $self->remove_network($network);
+        }
+    }
 }
 
 {

@@ -117,10 +117,105 @@ subtest 'IPv4 overlapping ranges' => sub {
     );
 };
 
+{
+    my @empty_ipv4_addresses = qw(
+        0.0.0.0
+        0.0.0.255
+        10.0.0.0
+        10.0.0.255
+        100.64.0.0
+        127.0.0.0
+        169.254.0.0
+        172.16.0.0
+        192.0.0.0
+        192.0.2.0
+        192.88.99.0
+        192.168.0.0
+        198.18.0.0
+        198.51.100.0
+        203.0.113.0
+        224.0.0.0
+        240.0.0.0
+        255.255.255.255
+    );
+
+    subtest 'IPv4 remove reserved networks' => sub {
+        my $tree = _make_tree(4);
+
+        my $data_0   = { start_ip => '0.0.0.0' };
+        my $data_128 = { start_ip => '128.0.0.0' };
+
+        _test_ranges(
+            $tree,
+            [
+                [ '0.0.0.0', '127.255.255.255' ],
+
+                # XXX - We are inserting this as two separate ranges due to
+                # https://github.com/maxmind/MaxMind-DB-Writer-perl/issues/55
+                [ '128.0.0.0', '255.255.255.255' ],
+            ],
+            {
+                (
+                    map { $_ => $data_0 }
+                        ( '1.0.0.0', '126.0.2.255', '11.1.1.11' )
+                ),
+                (
+                    map { $_ => $data_128 }
+                        ( '128.101.101.101', '193.0.0.4', )
+                )
+            },
+            \@empty_ipv4_addresses,
+            0
+        );
+
+    };
+
+    subtest 'IPv6 remove reserved networks' => sub {
+        my $tree = _make_tree(6);
+
+        my $data_0    = { start_ip => '::' };
+        my $data_8000 = { start_ip => '8000::' };
+
+        _test_ranges(
+            $tree,
+            [
+                [ '::', '7FFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF' ],
+
+                # XXX - We are inserting this as two separate ranges due to
+                # https://github.com/maxmind/MaxMind-DB-Writer-perl/issues/55
+                [ '8000::', 'FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF' ],
+            ],
+            {
+                (
+                    map { $_ => $data_0 } (
+                        '1.0.0.0', '126.0.2.255', '11.1.1.11', '193.0.0.4',
+                        '2002::',
+                    )
+                ),
+                (
+                    map { $_ => $data_8000 } ( '8000::',, 'a000::', 'efff::' )
+                )
+            },
+            [
+                @empty_ipv4_addresses,
+                '100::',
+                '2001::',
+                '2001:db8::',
+                'fc00::',
+                'fe80::',
+                'ff00::',
+            ],
+            0
+        );
+
+    };
+
+}
 done_testing();
 
 sub _make_tree {
     my $ip_version = shift;
+    my %args       = @_;
 
     return MaxMind::DB::Writer::Tree->new(
         ip_version            => $ip_version,
@@ -145,6 +240,8 @@ sub _test_ranges {
         $tree->insert_range( $start_ip, $end_ip, { start_ip => $start_ip } );
         @expected{ $start_ip, $end_ip } = ($data) x 2 if $test_endpoints;
     }
+
+    $tree->_maybe_remove_reserved_networks;
 
     for my $ip ( sort keys %expected ) {
         is_deeply(

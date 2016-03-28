@@ -192,6 +192,15 @@ _insert_range(self, start_ip_address, end_ip_address, key, data, force_overwrite
         insert_range(tree_from_self(self), start_ip_address, end_ip_address, key, data, force_overwrite);
 
 void
+_remove_network(self, ip_address, prefix_length)
+    SV *self;
+    char *ip_address;
+    uint8_t prefix_length;
+
+    CODE:
+        remove_network(tree_from_self(self), ip_address, prefix_length);
+
+void
 _write_search_tree(self, output, alias_ipv6, root_data_type, serializer)
     SV *self;
     SV *output;

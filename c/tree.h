@@ -114,6 +114,8 @@ typedef struct MMDBW_network_s {
     extern void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
                              const char *end_ipstr, SV *key_sv, SV *data_sv,
                              bool force_overwrite);
+    extern void remove_network(MMDBW_tree_s *tree, const char *ipstr,
+                               const uint8_t prefix_length);
     extern void alias_ipv4_networks(MMDBW_tree_s *tree);
     extern SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
                                      const char *const key_into, MMDBW_network_s *network);

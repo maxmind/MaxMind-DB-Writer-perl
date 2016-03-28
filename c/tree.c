@@ -71,7 +71,7 @@ LOCAL void decrement_data_reference_count(MMDBW_tree_s *tree,
                                           const char *const key);
 LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
                                       const char *const ipstr,
-                                      const uint8_t prefix_length);
+                                      uint8_t prefix_length);
 LOCAL void resolve_ip(int tree_ip_version, const char *const ipstr,
                       uint8_t *bytes);
 LOCAL void free_network(MMDBW_network_s *network);
@@ -281,6 +281,11 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
         data->reference_count++;
 
         start_ip = (start_ip | reverse_mask) + 1;
+
+        // The +1 caused an overflow and we are done.
+        if (start_ip == 0) {
+            break;
+        }
     }
     // store_data_in_tree starts at a reference count of 1, so we need to
     // decrement in order to account for that.
@@ -325,6 +330,22 @@ LOCAL void ip_bytes_for_integer(int tree_ip_version, uint128_t ip,
         bytes[bytes_length - i] = 0xFF & ip;
         ip >>= 8;
     }
+}
+
+void remove_network(MMDBW_tree_s *tree, const char *ipstr,
+                    const uint8_t prefix_length)
+{
+    verify_ip(tree, ipstr);
+
+    MMDBW_network_s network = resolve_network(tree, ipstr, prefix_length);
+
+    MMDBW_record_s new_record = {
+        .type = MMDBW_RECORD_TYPE_EMPTY
+    };
+
+    insert_record_for_network(tree, &network, &new_record, false);
+
+    free_network(&network);
 }
 
 LOCAL const char *store_data_in_tree(MMDBW_tree_s *tree,
@@ -404,11 +425,16 @@ LOCAL void decrement_data_reference_count(MMDBW_tree_s *tree,
 /* XXX - this is mostly copied from libmaxminddb - can we somehow share this code? */
 LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
                                       const char *const ipstr,
-                                      const uint8_t prefix_length)
+                                      uint8_t prefix_length)
 {
     uint8_t *bytes = checked_malloc(tree->ip_version == 6 ? 16 : 4);
 
     resolve_ip(tree->ip_version, ipstr, bytes);
+
+    if (tree->ip_version == 6 && NULL == strchr(ipstr, ':')) {
+        // Inserting IPv4 network into an IPv6 tree
+        prefix_length += 96;
+    }
 
     MMDBW_network_s network = {
         .bytes         = bytes,
@@ -834,11 +860,12 @@ LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into)
 
 SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
 {
-    if (tree->ip_version == 4 && NULL != strchr(ipstr, ':')) {
+    bool is_ipv6_address = NULL != strchr(ipstr, ':');
+    if (tree->ip_version == 4 && is_ipv6_address) {
         return &PL_sv_undef;
     }
     MMDBW_network_s network =
-        resolve_network(tree, ipstr, tree->ip_version == 6 ? 128 : 32);
+        resolve_network(tree, ipstr, is_ipv6_address ? 128 : 32);
 
     uint8_t current_bit;
     MMDBW_node_s *node_for_address =
