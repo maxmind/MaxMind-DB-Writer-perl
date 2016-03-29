@@ -676,7 +676,7 @@ true.
 
 =head2 $tree->insert_network( $network, $data, $additional_args )
 
-This method expects two parameters. The first is an network in CIDR notation.
+This method expects two parameters. The first is a network in CIDR notation.
 The second can be any Perl data structure (except a coderef, glob, or
 filehandle).
 
