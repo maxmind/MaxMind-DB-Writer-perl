@@ -54,8 +54,8 @@ LOCAL void insert_resolved_network(MMDBW_tree_s *tree, MMDBW_network_s *network,
                                    SV *key_sv, SV *data, bool force_overwrite);
 LOCAL int128_t ip_string_to_integer(const char *ipstr, int family);
 LOCAL int128_t ip_bytes_to_integer(uint8_t *bytes, int family);
-LOCAL void ip_bytes_for_integer(int tree_ip_version, uint128_t ip,
-                                uint8_t *bytes);
+LOCAL void integer_to_ip_bytes(int tree_ip_version, uint128_t ip,
+                               uint8_t *bytes);
 LOCAL int prefix_length_for_largest_subnet(uint128_t start_ip,
                                            uint128_t end_ip, int family,
                                            uint128_t *reverse_mask);
@@ -252,7 +252,7 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
             prefix_length_for_largest_subnet(start_ip, end_ip, tree->ip_version,
                                              &reverse_mask);
 
-        ip_bytes_for_integer(tree->ip_version, start_ip, bytes);
+        integer_to_ip_bytes(tree->ip_version, start_ip, bytes);
 
         MMDBW_network_s network = {
             .bytes         = bytes,
@@ -298,8 +298,8 @@ LOCAL int128_t ip_bytes_to_integer(uint8_t *bytes, int family)
     return ipint;
 }
 
-LOCAL void ip_bytes_for_integer(int tree_ip_version, uint128_t ip,
-                                uint8_t *bytes)
+LOCAL void integer_to_ip_bytes(int tree_ip_version, uint128_t ip,
+                               uint8_t *bytes)
 {
     int bytes_length = tree_ip_version == 6 ? 16 : 4;
     for (int i = 1; i <= bytes_length; i++) {
