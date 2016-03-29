@@ -427,7 +427,6 @@ LOCAL void decrement_data_reference_count(MMDBW_tree_s *tree,
     }
 }
 
-
 /* XXX - this is mostly copied from libmaxminddb - can we somehow share this code? */
 LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
                                       const char *const ipstr,
