@@ -20,7 +20,6 @@ use MaxMind::DB::Writer::Util qw( key_for_data );
 use MooseX::Params::Validate qw( validated_list );
 use Sereal::Decoder qw( decode_sereal );
 use Sereal::Encoder qw( encode_sereal );
-use Socket qw( AF_INET AF_INET6 );
 
 use Moose;
 use Moose::Util::TypeConstraints;
