@@ -4,12 +4,11 @@ MaxMind::DB::Writer - Create MaxMind DB database files
 
 # VERSION
 
-version 0.100007
+version 0.100008
 
 # SYNOPSIS
 
     use MaxMind::DB::Writer::Tree;
-    use Net::Works::Network;
 
     my %types = (
         color => 'utf8_string',
@@ -26,11 +25,8 @@ version 0.100007
         map_key_type_callback => sub { $types{ $_[0] } },
     );
 
-    my $network
-        = Net::Works::Network->new_from_string( string => '2001:db8::/48' );
-
     $tree->insert_network(
-        $network,
+        '2001:db8::/48',
         {
             color => 'blue',
             dogs  => [ 'Fido', 'Ms. Pretty Paws' ],

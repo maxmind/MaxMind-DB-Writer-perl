@@ -16,7 +16,6 @@ __END__
 =head1 SYNOPSIS
 
     use MaxMind::DB::Writer::Tree;
-    use Net::Works::Network;
 
     my %types = (
         color => 'utf8_string',
@@ -33,11 +32,8 @@ __END__
         map_key_type_callback => sub { $types{ $_[0] } },
     );
 
-    my $network
-        = Net::Works::Network->new_from_string( string => '2001:db8::/48' );
-
     $tree->insert_network(
-        $network,
+        '2001:db8::/48',
         {
             color => 'blue',
             dogs  => [ 'Fido', 'Ms. Pretty Paws' ],

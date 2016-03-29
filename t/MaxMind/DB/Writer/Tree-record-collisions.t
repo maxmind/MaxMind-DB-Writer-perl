@@ -4,8 +4,7 @@ use warnings;
 use lib 't/lib';
 
 use Test::Fatal;
-use Test::MaxMind::DB::Writer
-    qw( make_tree_from_pairs ranges_to_data test_tree );
+use Test::MaxMind::DB::Writer qw( test_tree );
 use Test::More;
 
 use MaxMind::DB::Writer::Tree;

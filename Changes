@@ -1,5 +1,32 @@
 {{$NEXT}}
 
+[ BACKWARDS INCOMPATIBILITIES ]
+
+- When calling $tree->write_tree(), this module now defaults to removing
+  reserved and private networks from the tree before writing the tree to the
+  filehandle. If you want to create a tree that contains private networks, set
+  the constructor parameter "remove_reserved_networks" to false. This change
+  of behavior was done to allow code that previously used
+  Net::Works::Network->range_as_subnets() to the new insert_range() method
+  added in this release.
+
+[ ENHANCEMENTS ]
+
+- This module no longer used Net::Works internally. This was done to improve
+  performance.
+- Added MaxMind::DB::Writer::Tree->insert_range() method to provide a
+  mechanism for adding IP address ranges that are not well-defined networks.
+- Added MaxMind::DB::Writer::Tree->remove_network() to allow for removing a
+  network from a tree.
+
+[ BUGFIXES ]
+
+- Previously, inserting IPv6-mapped IPv4 addresses into a IPv6 tree with IPv4
+  aliasing enabled could result in a corrupt search tree unless the deprecated
+  "::a.b.c.d" mapping was used. This happened because the IPv4 aliasing was
+  only done after all of the data had been inserted.
+
+
 0.100007 2016-03-24
 
 - MaxMind::DB::Writer::Tree->new now accepts a merge_strategy parameter. When

@@ -18,10 +18,8 @@ use MaxMind::DB::Metadata;
 use MaxMind::DB::Writer::Serializer;
 use MaxMind::DB::Writer::Util qw( key_for_data );
 use MooseX::Params::Validate qw( validated_list );
-use Net::Works 0.20;
 use Sereal::Decoder qw( decode_sereal );
 use Sereal::Encoder qw( encode_sereal );
-use Socket qw( AF_INET AF_INET6 );
 
 use Moose;
 use Moose::Util::TypeConstraints;
@@ -76,6 +74,12 @@ has node_count => (
     init_arg => undef,
     lazy     => 1,
     builder  => '_build_node_count',
+);
+
+has remove_reserved_networks => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 1,
 );
 
 has _tree => (
@@ -177,7 +181,8 @@ sub _build_tree {
     return _create_tree(
         $self->ip_version,
         $self->record_size,
-        $self->merge_strategy
+        $self->merge_strategy,
+        $self->alias_ipv6_to_ipv4,
     );
 }
 
@@ -187,22 +192,45 @@ sub insert_network {
     my $data            = shift;
     my $additional_args = shift // {};
 
-    if ( $network->version() != $self->ip_version() ) {
-        my $description = $network->as_string();
-        die 'You cannot insert an IPv'
-            . $network->version()
-            . " network ($description) into an IPv"
-            . $self->ip_version()
-            . " tree.\n";
-    }
+    my ( $ip_address, $prefix_length ) = split qr{/}, $network, 2;
 
     $self->_insert_network(
-        $network->version == 4 ? AF_INET : AF_INET6,
-        $network->first->as_binary,
-        $network->prefix_length(),
+        $ip_address,
+        $prefix_length,
         key_for_data($data),
         $data,
         $additional_args->{force_overwrite},
+    );
+
+    return;
+}
+
+sub insert_range {
+    my $self             = shift;
+    my $start_ip_address = shift;
+    my $end_ip_address   = shift;
+    my $data             = shift;
+    my $additional_args  = shift // {};
+
+    $self->_insert_range(
+        $start_ip_address,
+        $end_ip_address,
+        key_for_data($data),
+        $data,
+        $additional_args->{force_overwrite},
+    );
+
+    return;
+}
+
+sub remove_network {
+    my $self    = shift;
+    my $network = shift;
+    my ( $ip_address, $prefix_length ) = split qr{/}, $network, 2;
+
+    $self->_remove_network(
+        $ip_address,
+        $prefix_length,
     );
 
     return;
@@ -220,9 +248,10 @@ sub write_tree {
     my $self   = shift;
     my $output = shift;
 
+    $self->_maybe_remove_reserved_networks;
+
     $self->_write_search_tree(
         $output,
-        $self->alias_ipv6_to_ipv4(),
         $self->_root_data_type(),
         $self->_serializer(),
     );
@@ -233,6 +262,52 @@ sub write_tree {
         METADATA_MARKER,
         $self->_encoded_metadata(),
     );
+}
+
+{
+    my @reserved_4 = qw(
+        0.0.0.0/8
+        10.0.0.0/8
+        100.64.0.0/10
+        127.0.0.0/8
+        169.254.0.0/16
+        172.16.0.0/12
+        192.0.0.0/29
+        192.0.2.0/24
+        192.88.99.0/24
+        192.168.0.0/16
+        198.18.0.0/15
+        198.51.100.0/24
+        203.0.113.0/24
+        224.0.0.0/4
+        240.0.0.0/4
+    );
+
+    # ::/128 and ::1/128 are reserved under IPv6 but these are already covered
+    # under 0.0.0.0/8
+    my @reserved_6 = (
+        @reserved_4, qw(
+            100::/64
+            2001::/23
+            2001:db8::/32
+            fc00::/7
+            fe80::/10
+            ff00::/8
+            )
+    );
+
+    sub _maybe_remove_reserved_networks {
+        my $self = shift;
+
+        return unless $self->remove_reserved_networks;
+
+        my @reserved = @reserved_4;
+        push @reserved, @reserved_6 if $self->ip_version == 6;
+
+        for my $network (@reserved) {
+            $self->remove_network($network);
+        }
+    }
 }
 
 {
@@ -345,7 +420,14 @@ sub new_from_frozen_tree {
     my $tree = _thaw_tree(
         $filename,
         $params_size + 4,
-        map { $params->{$_} } qw( ip_version record_size merge_strategy ),
+        @{$params}{
+            qw(
+                ip_version
+                record_size
+                merge_strategy
+                alias_ipv6_to_ipv4
+                )
+        },
     );
 
     return $class->new(
@@ -377,7 +459,6 @@ __END__
 =head1 SYNOPSIS
 
     use MaxMind::DB::Writer::Tree;
-    use Net::Works::Network;
 
     my %types = (
         color => 'utf8_string',
@@ -394,11 +475,8 @@ __END__
         map_key_type_callback => sub { $types{ $_[0] } },
     );
 
-    my $network
-        = Net::Works::Network->new_from_string( string => '2001:db8::/48' );
-
     $tree->insert_network(
-        $network,
+        '2001:db8::/48',
         {
             color => 'blue',
             dogs  => [ 'Fido', 'Ms. Pretty Paws' ],
@@ -588,12 +666,18 @@ This is the 6to4 range
 
 This parameter is optional. It defaults to false.
 
+=item * remove_reserved_networks
+
+If this is true, reserved networks will be removed from the database by
+C<write_tree()> before the tree is written to the file handle. The default is
+true.
+
 =back
 
 =head2 $tree->insert_network( $network, $data, $additional_args )
 
-This method expects two parameters. The first is a L<Net::Works::Network>
-object. The second can be any Perl data structure (except a coderef, glob, or
+This method expects two parameters. The first is a network in CIDR notation.
+The second can be any Perl data structure (except a coderef, glob, or
 filehandle).
 
 The C<$data> payload is encoded according to the L<MaxMind DB database format
@@ -629,6 +713,19 @@ the C<1.2.3.255/32> network will end up with its data plus the data provided
 for the C<1.2.3.0/24> network, while C<1.2.3.0 - 1.2.3.254> will have the
 expected data. This can be disabled on a per-insert basis by using the
 C<force_overwrite> argument when inserting a network as discussed above.
+
+=head2 $tree->insert_range( $first_ip, $last_ip, $data, $additional_args )
+
+This method is similar to C<insert_network()>, except that it takes an IP
+range rather than a network. The first parameter is the first IP address in
+the range. The second is the last IP address in the range. The third is a
+Perl data structure containing the data to be inserted. The final parameter
+are additional arguments, as outlined for C<insert_network()>.
+
+=head2 $tree->remove_network( $network )
+
+This method removes the network from the database. It takes one parameter, the
+network in CIDR notation.
 
 =head2 $tree->write_tree($fh)
 

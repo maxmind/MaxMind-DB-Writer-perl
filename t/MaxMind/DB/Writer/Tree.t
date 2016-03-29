@@ -3,8 +3,12 @@ use warnings;
 
 use lib 't/lib';
 
-use Test::MaxMind::DB::Writer
-    qw( make_tree_from_pairs ranges_to_data test_tree );
+use Test::MaxMind::DB::Writer qw(
+    insert_for_type
+    make_tree_from_pairs
+    ranges_to_data
+    test_tree
+);
 use Test::More;
 
 use MaxMind::DB::Writer::Tree;
@@ -180,34 +184,37 @@ use Net::Works::Network;
         = Net::Works::Network->new_from_string( string => '128.0.0.0/1' )
         ->split;
 
-    for my $split_count ( 2 ... 8 ) {
-        my $tree = _create_and_insert_duplicates(
-            $split_count,
-            \@distinct_subnets
-        );
-
-        is(
-            $tree->node_count(), 2,
-            'duplicates merged for split count of ' . $split_count
-        );
-
-        for my $ip ( '0.1.2.3', '13.1.0.0', '126.255.255.255' ) {
-            my $address
-                = Net::Works::Address->new_from_string( string => $ip );
-            is(
-                $tree->lookup_ip_address($address), 'duplicate',
-                qq{$address data value is 'duplicate' for split count $split_count}
+    for my $type ( 'network', 'range' ) {
+        for my $split_count ( 2 ... 8 ) {
+            my $tree = _create_and_insert_duplicates(
+                $type,
+                $split_count,
+                \@distinct_subnets
             );
-        }
 
-        for my $subnet (@distinct_subnets) {
-            my $first = $subnet->first();
-            my $value = $first->as_string();
-            for my $address ( $first, $first->next_ip() ) {
+            is(
+                $tree->node_count(), 2,
+                'duplicates merged for split count of ' . $split_count
+            );
+
+            for my $ip ( '0.1.2.3', '13.1.0.0', '126.255.255.255' ) {
+                my $address
+                    = Net::Works::Address->new_from_string( string => $ip );
                 is(
-                    $tree->lookup_ip_address($address), $value,
-                    qq{$address data value is $value for split count of $split_count}
+                    $tree->lookup_ip_address($address), 'duplicate',
+                    qq{$address data value is 'duplicate' for split count $split_count}
                 );
+            }
+
+            for my $subnet (@distinct_subnets) {
+                my $first = $subnet->first();
+                my $value = $first->as_string();
+                for my $address ( $first, $first->next_ip() ) {
+                    is(
+                        $tree->lookup_ip_address($address), $value,
+                        qq{$address data value is $value for split count of $split_count}
+                    );
+                }
             }
         }
     }
@@ -297,11 +304,14 @@ sub _subnet_as_v6 {
 }
 
 sub _create_and_insert_duplicates {
+    my $type             = shift;
     my $split_count      = shift;
     my $distinct_subnets = shift;
 
     my $tree = make_tree_from_pairs(
-        [ map { [ $_, $_->as_string() ] } @{$distinct_subnets} ] );
+        $type,
+        [ map { [ $_, $_->as_string() ] } @{$distinct_subnets} ]
+    );
 
     my @duplicate_data_subnets
         = ( Net::Works::Network->new_from_string( string => '0.0.0.0/1' ) );
@@ -310,11 +320,11 @@ sub _create_and_insert_duplicates {
         for ( 1 .. $split_count );
 
     for my $subnet (@duplicate_data_subnets) {
-        $tree->insert_network( $subnet, 'duplicate' );
+        insert_for_type( $tree, $type, $subnet, 'duplicate' );
     }
 
     for my $subnet (@$distinct_subnets) {
-        $tree->insert_network( $subnet, $subnet->first()->as_string() );
+        insert_for_type( $tree, $type, $subnet, $subnet->first->as_string );
     }
 
     return $tree;

@@ -156,40 +156,60 @@ BOOT:
     PERL_MATH_INT128_LOAD_OR_CROAK;
 
 MMDBW_tree_s *
-_create_tree(ip_version, record_size, merge_strategy)
+_create_tree(ip_version, record_size, merge_strategy, alias_ipv6)
     uint8_t ip_version;
     uint8_t record_size;
     MMDBW_merge_strategy merge_strategy;
+    bool alias_ipv6;
 
     CODE:
-        RETVAL = new_tree(ip_version, record_size, merge_strategy);
+        RETVAL = new_tree(ip_version, record_size, merge_strategy, alias_ipv6);
 
     OUTPUT:
         RETVAL
 
 void
-_insert_network(self, family, network, prefix_length, key, data, force_overwrite)
+_insert_network(self, ip_address, prefix_length, key, data, force_overwrite)
     SV *self;
-    int family;
-    char *network;
+    char *ip_address;
     uint8_t prefix_length;
     SV *key;
     SV *data;
     bool force_overwrite;
 
     CODE:
-        insert_network(tree_from_self(self), family, network, prefix_length, key, data, force_overwrite);
+        insert_network(tree_from_self(self), ip_address, prefix_length, key, data, force_overwrite);
 
 void
-_write_search_tree(self, output, alias_ipv6, root_data_type, serializer)
+_insert_range(self, start_ip_address, end_ip_address, key, data, force_overwrite)
+    SV *self;
+    char *start_ip_address;
+    char *end_ip_address;
+    SV *key;
+    SV *data;
+    bool force_overwrite;
+
+    CODE:
+        insert_range(tree_from_self(self), start_ip_address, end_ip_address, key, data, force_overwrite);
+
+void
+_remove_network(self, ip_address, prefix_length)
+    SV *self;
+    char *ip_address;
+    uint8_t prefix_length;
+
+    CODE:
+        remove_network(tree_from_self(self), ip_address, prefix_length);
+
+void
+_write_search_tree(self, output, root_data_type, serializer)
     SV *self;
     SV *output;
-    bool alias_ipv6;
     SV *root_data_type;
     SV *serializer;
 
     CODE:
-        write_search_tree(tree_from_self(self), output, alias_ipv6, root_data_type, serializer);
+        write_search_tree(tree_from_self(self), output, root_data_type, serializer);
 
 uint32_t
 _build_node_count(self)
@@ -243,13 +263,6 @@ iterate(self, object)
 
         start_iteration(tree, true, (void *)&args, &call_perl_object);
 
-void
-_create_ipv4_aliases(self)
-    SV *self;
-
-    CODE:
-        alias_ipv4_networks(tree_from_self(self));
-
 SV *
 lookup_ip_address(self, address)
     SV *self;
@@ -272,15 +285,16 @@ _freeze_tree(self, filename, frozen_params, frozen_params_size)
         freeze_tree(tree_from_self(self), filename, frozen_params, frozen_params_size);
 
 MMDBW_tree_s *
-_thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy)
+_thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6)
     char *filename;
     int initial_offset;
     int ip_version;
     int record_size;
     MMDBW_merge_strategy merge_strategy;
+    bool alias_ipv6;
 
     CODE:
-    RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy);
+    RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6);
 
     OUTPUT:
         RETVAL

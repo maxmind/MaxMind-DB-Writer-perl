@@ -15,6 +15,7 @@ use Scalar::Util qw( blessed );
 
 use Exporter qw( import );
 our @EXPORT_OK = qw(
+    insert_for_type
     make_tree_from_pairs
     ranges_to_data
     test_iterator_sanity
@@ -29,25 +30,31 @@ sub test_tree {
     my $desc         = shift;
     my $args         = shift;
 
-    my $tree = make_tree_from_pairs( $insert_pairs, $args );
+    for my $type (qw( network range )) {
 
-    _test_expected_data( $tree, $expect_pairs, $desc );
+        subtest "$desc - insert_$type " => sub {
+            my $tree = make_tree_from_pairs( $type, $insert_pairs, $args );
 
-    for my $raw (qw( 1.1.1.33 8.9.10.11 ffff::1 )) {
-        my $address = Net::Works::Address->new_from_string(
-            string  => $raw,
-            version => ( $raw =~ /::/ ? 6 : 4 ),
-        );
+            _test_expected_data( $tree, $expect_pairs, $desc );
 
-        is(
-            $tree->lookup_ip_address($address),
-            undef,
-            "The address $address is not in the tree - $desc"
-        );
+            for my $raw (qw( 1.1.1.33 8.9.10.11 ffff::1 )) {
+                my $address = Net::Works::Address->new_from_string(
+                    string  => $raw,
+                    version => ( $raw =~ /::/ ? 6 : 4 ),
+                );
+
+                is(
+                    $tree->lookup_ip_address($address),
+                    undef,
+                    "The address $address is not in the tree - $desc"
+                );
+            }
+        };
     }
 }
 
 sub make_tree_from_pairs {
+    my $type  = shift;
     my $pairs = shift;
     my $args  = shift;
 
@@ -63,13 +70,26 @@ sub make_tree_from_pairs {
 
     for my $pair ( @{$pairs} ) {
         my ( $network, @insert_args ) = @{$pair};
-        $network = Net::Works::Network->new_from_string( string => $network )
-            unless blessed $network;
 
-        $tree->insert_network( $network, @insert_args );
+        insert_for_type( $tree, $type, $network, @insert_args );
     }
 
     return $tree;
+}
+
+sub insert_for_type {
+    my $tree        = shift;
+    my $type        = shift;
+    my $network     = shift;
+    my @insert_args = @_;
+
+    if ( $type eq 'network' ) {
+        $tree->insert_network( $network, @insert_args );
+        return;
+    }
+    $network = Net::Works::Network->new_from_string( string => $network )
+        unless blessed $network;
+    $tree->insert_range( $network->first, $network->last, @insert_args );
 }
 
 sub _test_expected_data {

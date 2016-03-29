@@ -7,11 +7,6 @@ use Test::More;
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
 
-my $ipv4_network
-    = Net::Works::Network->new_from_string( string => '1.1.1.0/24' );
-my $ipv6_network
-    = Net::Works::Network->new_from_string( string => '::2/128' );
-
 {
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version            => 4,
@@ -22,29 +17,19 @@ my $ipv6_network
         map_key_type_callback => sub { },
     );
 
-    $tree->insert_network( $ipv4_network, 'foo' );
-    like(
-        exception { $tree->insert_network( $ipv6_network, 'foo' ) },
-        qr{You cannot insert an IPv6 network [(]::(?:0[.]0[.]0[.])?2/128[)] into an IPv4 tree.},
-        q{Cannot insert an IPv6 network after we've already inserted an IPv4 network}
-    );
-}
+    my $expected
+        = qr{You cannot insert an IPv6 address [(]::(?:0[.]0[.]0[.])?2[)] into an IPv4 tree.};
 
-{
-    my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version            => 6,
-        record_size           => 24,
-        database_type         => 'Test',
-        languages             => ['en'],
-        description           => { en => 'Test tree' },
-        map_key_type_callback => sub { },
+    like(
+        exception { $tree->insert_network( '::2/128', 'foo' ) },
+        $expected,
+        q{Cannot insert an IPv6 network into an IPv4 tree}
     );
 
-    $tree->insert_network( $ipv6_network, 'foo' );
     like(
-        exception { $tree->insert_network( $ipv4_network, 'foo' ) },
-        qr{\QYou cannot insert an IPv4 network (1.1.1.0/24) into an IPv6 tree.},
-        q{Cannot insert an IPv4 network after we've already inserted an IPv6 network}
+        exception { $tree->insert_range( '::2', '::3', 'foo' ) },
+        $expected,
+        q{Cannot insert an IPv6 range into an IPv4 tree}
     );
 }
 

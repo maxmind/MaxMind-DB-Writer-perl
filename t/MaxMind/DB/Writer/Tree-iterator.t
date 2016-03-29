@@ -18,7 +18,7 @@ my ( $insert, $expect ) = ranges_to_data(
     ],
 );
 
-my $basic_tree = make_tree_from_pairs($insert);
+my $basic_tree = make_tree_from_pairs('network', $insert);
 
 {
     like(
@@ -91,6 +91,7 @@ my $basic_tree = make_tree_from_pairs($insert);
 
 {
     my $tree = make_tree_from_pairs(
+        'network',
         [
             map {
                 [ Net::Works::Network->new_from_string( string => $_ ) =>
@@ -99,8 +100,6 @@ my $basic_tree = make_tree_from_pairs($insert);
         ],
         { alias_ipv6_to_ipv4 => 1 },
     );
-
-    $tree->_create_ipv4_aliases();
 
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);
     $tree->iterate($iterator);

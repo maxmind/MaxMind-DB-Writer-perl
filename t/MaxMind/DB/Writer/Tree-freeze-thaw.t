@@ -34,6 +34,7 @@ for my $record_size ( 24, 28, 32 ) {
             description             => { en => 'Test tree' },
             merge_record_collisions => 1,
             map_key_type_callback   => sub { 'uint32' },
+            remove_reserved_networks => 0,
         );
 
         my $count = 2**8;
@@ -70,6 +71,7 @@ for my $record_size ( 24, 28, 32 ) {
                 description             => { en => 'Test tree' },
                 merge_record_collisions => 1,
                 map_key_type_callback   => $cb,
+                remove_reserved_networks => 0,
             );
 
             my $count       = 2**14;
@@ -108,11 +110,12 @@ for my $record_size ( 24, 28, 32 ) {
     close $fh;
 
     my $tree = make_tree_from_pairs(
+        'network',
         $records,
         {
             root_data_type     => 'utf8_string',
             alias_ipv6_to_ipv4 => 1,
-        }
+        },
     );
 
     subtest(
@@ -165,6 +168,7 @@ for my $record_size ( 24, 28, 32 ) {
         description             => { en => 'Test tree' },
         merge_record_collisions => 1,
         map_key_type_callback   => sub {'uint32'},
+        remove_reserved_networks => 0,
     );
 
     $tree->insert_network(
