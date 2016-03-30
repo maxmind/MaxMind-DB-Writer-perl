@@ -220,6 +220,14 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
     verify_ip(tree, start_ipstr);
     verify_ip(tree, end_ipstr);
 
+    uint128_t start_ip = ip_string_to_integer(start_ipstr, tree->ip_version);
+    uint128_t end_ip = ip_string_to_integer(end_ipstr, tree->ip_version);
+
+    if (end_ip < start_ip) {
+        croak("First IP (%s) in range comes before last IP (%s)", start_ipstr,
+              end_ipstr);
+    }
+
     const char *const key =
         store_data_in_tree(tree, SvPVbyte_nolen(key_sv), data_sv);
     MMDBW_record_s new_record = {
@@ -228,9 +236,6 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
             .key = key
         }
     };
-
-    uint128_t start_ip = ip_string_to_integer(start_ipstr, tree->ip_version);
-    uint128_t end_ip = ip_string_to_integer(end_ipstr, tree->ip_version);
 
     uint8_t bytes[tree->ip_version == 6 ? 16 : 4];
 
@@ -473,7 +478,9 @@ LOCAL void resolve_ip(int tree_ip_version, const char *const ipstr,
         memset(bytes, 0, 12);
         bytes += 12;
     }
-    inet_pton(family, ipstr, bytes);
+    if (!inet_pton(family, ipstr, bytes)) {
+        croak("Invalid IP address: %s", ipstr);
+    }
 }
 
 LOCAL void free_network(MMDBW_network_s *network)

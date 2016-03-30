@@ -9,6 +9,7 @@ use Test::MaxMind::DB::Writer qw(
     ranges_to_data
     test_tree
 );
+use Test::Fatal;
 use Test::More;
 
 use MaxMind::DB::Writer::Tree;
@@ -219,6 +220,45 @@ use Net::Works::Network;
         }
     }
 }
+
+subtest 'Inserting invalid neworks and ranges' => sub {
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version              => 6,
+        record_size             => 24,
+        database_type           => 'Test',
+        languages               => ['en'],
+        description             => { en => 'Test tree' },
+        merge_record_collisions => 1,
+        map_key_type_callback   => sub { 'utf8_string' },
+        alias_ipv6_to_ipv4      => 1,
+    );
+
+
+    like(
+        exception { $tree->insert_range( '2002::', '2001::', {} ) },
+        qr/in range comes before last IP /, 'First IP after last IP in range'
+    );
+
+    like(
+        exception { $tree->insert_range( '2001:', '2002:', {} ) },
+        qr/Invalid IP/, 'invalid IP in range'
+    );
+
+    like(
+        exception { $tree->insert_network( '2001:/129', {} ) },
+        qr/Invalid network/, 'prefix length too large'
+    );
+
+    like(
+        exception { $tree->insert_network( '2001:/-1', {} ) },
+        qr/Invalid network/, 'negative prefix length'
+    );
+
+    like(
+        exception { $tree->insert_network( '2001:/1', {} ) },
+        qr/Invalid IP/, 'invalid IP in network'
+    );
+};
 
 done_testing();
 

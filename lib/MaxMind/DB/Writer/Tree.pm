@@ -194,6 +194,13 @@ sub insert_network {
 
     my ( $ip_address, $prefix_length ) = split qr{/}, $network, 2;
 
+    if (  !defined $prefix_length
+        || int($prefix_length) != $prefix_length
+        || $prefix_length < 0
+        || $prefix_length > 128 ) {
+        die "Invalid network inserted: $network";
+    }
+
     $self->_insert_network(
         $ip_address,
         $prefix_length,

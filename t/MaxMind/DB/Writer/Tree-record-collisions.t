@@ -746,11 +746,11 @@ subtest 'Test merging into aliased nodes' => sub {
         1.0.0.0/24
         ::/1
         ::ffff:1.0.0.0/104
-        2001:/31
+        2001::/31
     );
 
     for my $network (@networks) {
-        _insert_network($tree, $network);
+        _insert_network( $tree, $network );
     }
 
     my @aliased_networks = qw(
@@ -760,7 +760,7 @@ subtest 'Test merging into aliased nodes' => sub {
     );
     for my $network (@aliased_networks) {
         like(
-            exception { _insert_network($tree, $network) },
+            exception { _insert_network( $tree, $network ) },
             qr/Tried to overwrite an alias record/,
             "Exception when trying to overwrite alias at $network"
         );
