@@ -12,6 +12,7 @@ use MaxMind::DB::Writer::Tree;
 use Net::Works::Address;
 use Net::Works::Network;
 use Scalar::Util qw( blessed );
+use Test::HexDifferences qw( eq_or_dump_diff );
 
 use Exporter qw( import );
 our @EXPORT_OK = qw(
@@ -228,8 +229,8 @@ sub test_freeze_thaw {
     $tree2->write_tree($fh);
     close $fh;
 
-    ok(
-        $tree1_output eq $tree2_output,
+    eq_or_dump_diff(
+        $tree1_output, $tree2_output,
         'output for tree is the same after freeze/thaw'
     );
 

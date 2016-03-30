@@ -105,7 +105,7 @@ typedef struct MMDBW_network_s {
                                   MMDBW_merge_strategy merge_strategy,
                                   const bool alias_ipv6);
     extern void insert_network(MMDBW_tree_s *tree, const char *ipstr,
-                               const uint8_t prefix_length, SV *key, SV *data,
+                               const uint8_t prefix_length, SV *key_sv, SV *data,
                                bool force_overwrite);
     extern void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
                              const char *end_ipstr, SV *key_sv, SV *data_sv,
