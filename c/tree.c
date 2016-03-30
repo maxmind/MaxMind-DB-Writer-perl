@@ -19,10 +19,6 @@
 #  define UNUSED(x) UNUSED_ ## x
 #endif
 
-#define NETWORK_BIT_VALUE(network, current_bit)                    \
-    (network)->bytes[((network)->max_depth0 - (current_bit)) >> 3] \
-    & (1U << (~((network)->max_depth0 - (current_bit)) & 7))
-
 /* This is also defined in MaxMind::DB::Common but we don't want to have to
  * fetch it every time we need it. */
 #define DATA_SECTION_SEPARATOR_SIZE (16)
@@ -84,6 +80,9 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
                          MMDBW_network_s *network,
                          MMDBW_record_s *new_record,
                          MMDBW_record_s *record_to_set);
+LOCAL int network_bit_value(MMDBW_tree_s *tree, MMDBW_network_s *network,
+                            uint8_t current_bit);
+LOCAL int tree_depth0(MMDBW_tree_s *tree);
 LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into);
 LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to);
 LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into);
@@ -158,9 +157,15 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
 {
     MMDBW_tree_s *tree = checked_malloc(sizeof(MMDBW_tree_s));
 
-    /* XXX - check for 4 or 6 */
+    if (ip_version != 4 && ip_version != 6) {
+        croak("Unexpected IP version of %u", ip_version);
+    }
     tree->ip_version = ip_version;
-    /* XXX - check for 24, 28, or 32 */
+
+    if (record_size != 24 && record_size != 28 && record_size != 32) {
+        croak("Only record sizes of 24, 28, and 32 are supported. Received %u.",
+              record_size);
+    }
     tree->record_size = record_size;
     tree->merge_strategy = merge_strategy;
     tree->data_table = NULL;
@@ -257,7 +262,6 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
         MMDBW_network_s network = {
             .bytes         = bytes,
             .prefix_length = prefix_length,
-            .max_depth0    = (tree->ip_version == 4 ? 31 : 127),
         };
 
         insert_record_for_network(
@@ -427,7 +431,6 @@ LOCAL void decrement_data_reference_count(MMDBW_tree_s *tree,
     }
 }
 
-/* XXX - this is mostly copied from libmaxminddb - can we somehow share this code? */
 LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
                                       const char *const ipstr,
                                       uint8_t prefix_length)
@@ -454,7 +457,6 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
     MMDBW_network_s network = {
         .bytes         = bytes,
         .prefix_length = prefix_length,
-        .max_depth0    = (tree->ip_version == 4 ? 31 : 127),
     };
 
     return network;
@@ -463,42 +465,20 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
 LOCAL void resolve_ip(int tree_ip_version, const char *const ipstr,
                       uint8_t *bytes)
 {
-    struct addrinfo ai_hints;
-    ai_hints.ai_socktype = 0;
-    ai_hints.ai_protocol = 0;
-    if (tree_ip_version == 6) {
-        ai_hints.ai_flags = AI_NUMERICHOST | AI_V4MAPPED;
-        ai_hints.ai_family = AF_INET6;
-    } else {
-        ai_hints.ai_flags = AI_NUMERICHOST;
-        ai_hints.ai_family = AF_INET;
+    bool is_ipv4_address = NULL == strchr(ipstr, ':');
+    int family = is_ipv4_address ? AF_INET : AF_INET6;
+    if (tree_ip_version == 6 && is_ipv4_address) {
+        // We are inserting/looking up an IPv4 address in an IPv6 tree.
+        // The canonical location for this in our database is ::a.b.c.d.
+        // To get this address, we zero out the first 12 bytes of bytes
+        // and then put the IPv4 address in the remaining 4. The reason to
+        // not use getaddrinfo with AI_V4MAPPED is that it gives us
+        // ::FFFF:a.b.c.d and AI_V4MAPPED doesn't work on all platforms.
+        // See GitHub #7 and #51.
+        memset(bytes, 0, 12);
+        bytes += 12;
     }
-
-    struct addrinfo *addresses;
-    int status = getaddrinfo(ipstr, NULL, &ai_hints, &addresses);
-    if (status) {
-        croak("Bad IP address: %s - %s\n", ipstr, gai_strerror(status));
-    }
-
-    int family = addresses->ai_addr->sa_family;
-
-    if ((tree_ip_version == 6) != (family == AF_INET6)) {
-        freeaddrinfo(addresses);
-        croak("Received an unexpect IP address family %u with tree of type %u",
-              family,
-              tree_ip_version);
-    }
-    if (tree_ip_version == 6) {
-        memcpy(
-            bytes,
-            ((struct sockaddr_in6 *)addresses->ai_addr)->sin6_addr.s6_addr,
-            16);
-    } else {
-        memcpy(bytes,
-               &((struct sockaddr_in *)addresses->ai_addr)->sin_addr.s_addr,
-               4);
-    }
-    freeaddrinfo(addresses);
+    inet_pton(family, ipstr, bytes);
 }
 
 LOCAL void free_network(MMDBW_network_s *network)
@@ -538,8 +518,8 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
     MMDBW_network_s ipv4_root_network = resolve_network(tree, "::0.0.0.0", 96);
 
     // We create an empty record for the aliases to point to initially. We
-    // do not simply use /96, as all of the alias requires that the node it
-    // aliases to be a MMDBW_RECORD_TYPE_NODE. This is gross and confusing
+    // do not simply use /96, as all of the alias code requires that the node
+    // aliased to be a MMDBW_RECORD_TYPE_NODE. This is gross and confusing
     // and should be fixed at some point.
     remove_network(tree, "::0.0.0.0", 97);
 
@@ -570,7 +550,7 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
 
         MMDBW_node_s *last_node_for_alias = find_node_for_network(
             tree, &alias_network, &current_bit, &new_node_from_record);
-        if (NETWORK_BIT_VALUE(&alias_network, current_bit)) {
+        if (network_bit_value(tree, &alias_network, current_bit)) {
             free_record_value(tree, &(last_node_for_alias->right_record));
             last_node_for_alias->right_record.type = MMDBW_RECORD_TYPE_ALIAS;
             last_node_for_alias->right_record.value.node = ipv4_root_node;
@@ -597,7 +577,7 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                               &new_node_from_record);
 
     MMDBW_record_s *record_to_set, *other_record;
-    if (NETWORK_BIT_VALUE(network, current_bit)) {
+    if (network_bit_value(tree, network, current_bit)) {
         record_to_set = &(node_to_set->right_record);
         other_record = &(node_to_set->left_record);
     } else {
@@ -636,7 +616,6 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
             MMDBW_network_s parent_network = {
                 .bytes         = bytes,
                 .prefix_length = parent_prefix_length,
-                .max_depth0    = network->max_depth0,
             };
 
             /* We don't need to merge record collisions in this insert as
@@ -667,10 +646,10 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
                          MMDBW_record_s *new_record,
                          MMDBW_record_s *record_to_set)
 {
-    if (MMDBW_RECORD_TYPE_NODE == record_to_set->type ||
-        MMDBW_RECORD_TYPE_ALIAS == record_to_set->type) {
+    int max_depth0 = tree_depth0(tree);
 
-        if (network->prefix_length > network->max_depth0) {
+    if (MMDBW_RECORD_TYPE_NODE == record_to_set->type) {
+        if (network->prefix_length > max_depth0) {
             croak("Something is very wrong. Prefix length is too long.");
         }
 
@@ -682,7 +661,6 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
         MMDBW_network_s left = {
             .bytes         = network->bytes,
             .prefix_length = new_prefix_length,
-            .max_depth0    = network->max_depth0,
         };
 
         MMDBW_record_s new_left_record = {
@@ -699,12 +677,11 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
         memcpy(&right_bytes, network->bytes, bytes_length);
 
         right_bytes[ (new_prefix_length - 1) / 8]
-            |= 1 << ((network->max_depth0 + 1 - new_prefix_length) % 8);
+            |= 1 << ((max_depth0 + 1 - new_prefix_length) % 8);
 
         MMDBW_network_s right = {
             .bytes         = (const uint8_t *const)&right_bytes,
             .prefix_length = new_prefix_length,
-            .max_depth0    = network->max_depth0,
         };
 
         MMDBW_record_s new_right_record = {
@@ -743,6 +720,19 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
     }
 
     return false;
+}
+
+LOCAL int network_bit_value(MMDBW_tree_s *tree, MMDBW_network_s *network,
+                            uint8_t current_bit)
+{
+    int max_depth0 = tree_depth0(tree);
+    return network->bytes[(max_depth0 - current_bit) >> 3]
+           & (1U << (~(max_depth0 - current_bit) & 7));
+}
+
+LOCAL int tree_depth0(MMDBW_tree_s *tree)
+{
+    return tree->ip_version == 6 ? 127 : 31;
 }
 
 SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
@@ -894,7 +884,7 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
         find_node_for_network(tree, &network, &current_bit, &return_null);
 
     MMDBW_record_s record_for_address;
-    if (NETWORK_BIT_VALUE(&network, current_bit)) {
+    if (network_bit_value(tree, &network, current_bit)) {
         record_for_address = node_for_address->right_record;
     } else {
         record_for_address = node_for_address->left_record;
@@ -924,12 +914,13 @@ LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                               MMDBW_record_s *record))
 {
     MMDBW_node_s *node = tree->root_node;
-    uint8_t last_bit = network->max_depth0 - (network->prefix_length - 1);
+    int max_depth0 = tree_depth0(tree);
+    uint8_t last_bit = max_depth0 - (network->prefix_length - 1);
 
-    for (*current_bit = network->max_depth0; *current_bit > last_bit;
+    for (*current_bit = max_depth0; *current_bit > last_bit;
          (*current_bit)--) {
 
-        int next_is_right = NETWORK_BIT_VALUE(network, *current_bit);
+        int next_is_right = network_bit_value(tree, network, *current_bit);
         MMDBW_record_s *record =
             next_is_right
             ? &(node->right_record)
@@ -1089,7 +1080,6 @@ LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
 {
     freeze_args_s *args = (freeze_args_s *)void_args;
 
-    const uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
     const uint8_t next_depth = depth + 1;
 
     if (MMDBW_RECORD_TYPE_DATA == node->left_record.type) {
@@ -1099,7 +1089,7 @@ LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
 
     if (MMDBW_RECORD_TYPE_DATA == node->right_record.type) {
         uint128_t right_network =
-            FLIP_NETWORK_BIT(network, max_depth0, depth);
+            flip_network_bit(tree, network, depth);
         freeze_data_record(tree, right_network, next_depth,
                            node->right_record.value.key, args);
     }
@@ -1320,7 +1310,6 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
     MMDBW_network_s network = {
         .bytes         = bytes,
         .prefix_length = prefix_length,
-        .max_depth0    = 4 == tree->ip_version ? 31 : 127,
     };
 
     thawed->network = checked_malloc(sizeof(MMDBW_network_s));
@@ -1567,7 +1556,7 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                        SHA1_KEY_LENGTH, value, 0);
     }
 
-    if (record_value > MAX_RECORD_VALUE(tree->record_size)) {
+    if (record_value > max_record_value(tree)) {
         croak(
             "Node value of %" PRIu32 " exceeds the record size of %" PRIu8
             " bits",
@@ -1575,6 +1564,12 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
     }
 
     return record_value;
+}
+
+uint32_t max_record_value(MMDBW_tree_s *tree)
+{
+    uint8_t record_size = tree->record_size;
+    return record_size == 32 ? UINT32_MAX : (uint32_t)(1 << record_size) - 1;
 }
 
 void start_iteration(MMDBW_tree_s *tree,
@@ -1630,16 +1625,20 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
         callback(tree, node, network, depth, args);
     }
 
-    const uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
     if (MMDBW_RECORD_TYPE_NODE == node->right_record.type) {
         iterate_tree(tree,
                      node->right_record.value.node,
-                     FLIP_NETWORK_BIT(network, max_depth0, depth),
+                     flip_network_bit(tree, network, depth),
                      depth + 1,
                      depth_first,
                      args,
                      callback);
     }
+}
+
+uint128_t flip_network_bit(MMDBW_tree_s *tree, uint128_t network, uint8_t depth)
+{
+    return network | ((uint128_t)1 << (tree_depth0(tree) - depth));
 }
 
 LOCAL SV *key_for_data(SV * data)

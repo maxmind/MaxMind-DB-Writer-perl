@@ -664,6 +664,12 @@ This is the 6to4 range
 
 =back
 
+Aliased nodes are I<not> followed when merging nodes. Only merges into the
+original IPv4 location, ::/96, will be followed. This only affects insertions
+of networks containing the complete aliased network. Insertions within the
+aliased network will be merged, whether they use the original location or any
+of the aliases.
+
 This parameter is optional. It defaults to false.
 
 =item * remove_reserved_networks
