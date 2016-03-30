@@ -592,7 +592,6 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         MMDBW_record_type type = new_record->type;
         free_record_value(tree, new_record);
         if (type == MMDBW_RECORD_TYPE_DATA && is_internal_insert) {
-            // free_record_value(tree, new_record);
             return;
         }
         bool is_ipv6 = tree->ip_version == 6;
