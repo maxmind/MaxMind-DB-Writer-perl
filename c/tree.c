@@ -519,9 +519,9 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
 
     MMDBW_network_s ipv4_root_network = resolve_network(tree, "::0.0.0.0", 96);
 
-    // We create an empty record for the aliases to point to initially. We
-    // do not simply use /96, as all of the alias code requires that the node
-    // aliased to be a MMDBW_RECORD_TYPE_NODE. This is gross and confusing
+    // We create an empty record for the aliases to point to initially. We do
+    // not simply use /96, as all of the alias code requires that the node be
+    // aliased to a MMDBW_RECORD_TYPE_NODE node. This is gross and confusing
     // and should be fixed at some point.
     remove_network(tree, "::0.0.0.0", 97);
 
