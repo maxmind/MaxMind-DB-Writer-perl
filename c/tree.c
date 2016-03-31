@@ -230,21 +230,8 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
 
     const char *const key =
         store_data_in_tree(tree, SvPVbyte_nolen(key_sv), data_sv);
-    MMDBW_record_s new_record = {
-        .type    = MMDBW_RECORD_TYPE_DATA,
-        .value   = {
-            .key = key
-        }
-    };
 
     uint8_t bytes[tree->ip_version == 6 ? 16 : 4];
-
-    // We retrieve the data so that we can increment data->reference_count
-    // directly without calling store_data_in_tree or
-    // increment_data_reference_count every iteration. Both are relatively
-    // expensive.
-    MMDBW_data_hash_s *data = NULL;
-    HASH_FIND(hh, tree->data_table, key, SHA1_KEY_LENGTH, data);
 
     // Eventually we could change the code to walk the tree and break up the
     // range at the same time, saving some unnecessary computation. However,
@@ -263,14 +250,21 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
             .prefix_length = prefix_length,
         };
 
+        const char *const new_key = increment_data_reference_count(tree, key);
+
+        MMDBW_record_s new_record = {
+            .type    = MMDBW_RECORD_TYPE_DATA,
+            .value   = {
+                .key = new_key
+            }
+        };
+
         insert_record_for_network(
             tree, &network, &new_record,
             tree->merge_strategy !=
             MMDBW_MERGE_STRATEGY_NONE
             && !force_overwrite,
             false);
-
-        data->reference_count++;
 
         start_ip = (start_ip | reverse_mask) + 1;
 
@@ -281,7 +275,7 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
     }
     // store_data_in_tree starts at a reference count of 1, so we need to
     // decrement in order to account for that.
-    data->reference_count--;
+    decrement_data_reference_count(tree, key);
 }
 
 LOCAL int128_t ip_string_to_integer(const char *ipstr, int family)
