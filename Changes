@@ -9,6 +9,9 @@
   of behavior was done to allow code that previously used
   Net::Works::Network->range_as_subnets() to the new insert_range() method
   added in this release.
+- When recursively merging a subtree, alias nodes are no longer followed.
+  Although this is a behavior change, it should not affect most users are
+  previously aliasing was done when the tree was written.
 
 [ ENHANCEMENTS ]
 

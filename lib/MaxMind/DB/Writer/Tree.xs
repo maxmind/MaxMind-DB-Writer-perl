@@ -111,7 +111,6 @@ void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
 
     SV *right_method = method_for_record_type(args, node->right_record.type);
     if (NULL != right_method) {
-        const uint8_t max_depth0 = tree->ip_version == 6 ? 127 : 31;
         call_iteration_method(tree,
                               args,
                               right_method,
@@ -119,7 +118,7 @@ void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               &(node->right_record),
                               node_ip_num,
                               node_prefix_length,
-                              FLIP_NETWORK_BIT(node_ip_num, max_depth0,
+                              flip_network_bit(tree, node_ip_num,
                                                node_prefix_length),
                               node_prefix_length + 1,
                               true);
@@ -218,7 +217,7 @@ _build_node_count(self)
     CODE:
         MMDBW_tree_s *tree = tree_from_self(self);
         finalize_tree(tree);
-        if (tree->node_count > MAX_RECORD_VALUE(tree->record_size)) {
+        if (tree->node_count > max_record_value(tree)) {
             croak("Node count of %u exceeds record size limit of %u bits",
                 tree->node_count, tree->record_size);
         }

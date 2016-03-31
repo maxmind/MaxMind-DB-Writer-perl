@@ -224,6 +224,7 @@ sub _make_tree {
         languages             => ['en'],
         description           => { en => 'Test tree' },
         map_key_type_callback => sub { },
+        alias_ipv6_to_ipv4    => 1,
     );
 }
 

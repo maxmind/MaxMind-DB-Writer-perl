@@ -4,7 +4,7 @@ use warnings;
 use lib 't/lib';
 
 use Test::Fatal;
-use Test::MaxMind::DB::Writer qw( test_tree );
+use Test::MaxMind::DB::Writer qw( test_tree test_freeze_thaw );
 use Test::More;
 
 use MaxMind::DB::Writer::Tree;
@@ -727,6 +727,58 @@ use Net::Works::Network;
         },
         qr{\QCannot merge data records unless both records are hashes - inserting 1.0.0.0/28},
         'cannot merge records on collision when the data is not a hash - larger record data is an array'
+    );
+}
+
+subtest 'Test merging into aliased nodes' => sub {
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version              => 6,
+        record_size             => 24,
+        database_type           => 'Test',
+        languages               => ['en'],
+        description             => { en => 'Test tree' },
+        merge_record_collisions => 1,
+        map_key_type_callback   => sub { 'utf8_string' },
+        alias_ipv6_to_ipv4      => 1,
+    );
+
+    my @networks = qw(
+        1.0.0.0/24
+        ::/1
+        ::ffff:1.0.0.0/104
+        2001::/31
+    );
+
+    for my $network (@networks) {
+        _insert_network( $tree, $network );
+    }
+
+    my @aliased_networks = qw(
+        2001::/32
+        2002::/16
+        ::ffff:0:0/96
+    );
+    for my $network (@aliased_networks) {
+        like(
+            exception { _insert_network( $tree, $network ) },
+            qr/Tried to overwrite an alias record/,
+            "Exception when trying to overwrite alias at $network"
+        );
+    }
+
+    test_freeze_thaw($tree);
+};
+
+sub _insert_network {
+    my $tree    = shift;
+    my $network = shift;
+
+    $tree->insert_network(
+        $network,
+        {
+            value    => $network,
+            $network => 1,
+        },
     );
 }
 

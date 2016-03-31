@@ -194,6 +194,13 @@ sub insert_network {
 
     my ( $ip_address, $prefix_length ) = split qr{/}, $network, 2;
 
+    if (  !defined $prefix_length
+        || int($prefix_length) != $prefix_length
+        || $prefix_length < 0
+        || $prefix_length > 128 ) {
+        die "Invalid network inserted: $network";
+    }
+
     $self->_insert_network(
         $ip_address,
         $prefix_length,
@@ -663,6 +670,12 @@ Teredo server's IPv4 address, not the client's IPv4.
 This is the 6to4 range
 
 =back
+
+Aliased nodes are I<not> followed when merging nodes. Only merges into the
+original IPv4 location, ::/96, will be followed. This only affects insertions
+of networks containing the complete aliased network. Insertions within the
+aliased network will be merged, whether they use the original location or any
+of the aliases.
 
 This parameter is optional. It defaults to false.
 

@@ -5,17 +5,6 @@
 #include <stdint.h>
 #include <uthash.h>
 
-#define MMDBW_RECORD_TYPE_EMPTY (0)
-#define MMDBW_RECORD_TYPE_DATA (1)
-#define MMDBW_RECORD_TYPE_NODE (2)
-#define MMDBW_RECORD_TYPE_ALIAS (3)
-
-#define FLIP_NETWORK_BIT(network, max_depth0, depth) \
-    ((network) | ((uint128_t)1 << ((max_depth0) - (depth))))
-
-#define MAX_RECORD_VALUE(record_size) \
-    (record_size == 32 ? UINT32_MAX : (uint32_t)(1 << record_size) - 1)
-
 #ifdef INT64_T
 #define HAVE_INT64
 #endif
@@ -61,6 +50,13 @@ typedef uint128_t uint128_t_a8 __attribute__ ((aligned(8)));
 #include "perl_math_int128.h"
 
 typedef enum {
+    MMDBW_RECORD_TYPE_EMPTY,
+    MMDBW_RECORD_TYPE_DATA,
+    MMDBW_RECORD_TYPE_NODE,
+    MMDBW_RECORD_TYPE_ALIAS,
+} MMDBW_record_type;
+
+typedef enum {
     MMDBW_MERGE_STRATEGY_NONE,
     MMDBW_MERGE_STRATEGY_TOPLEVEL,
     MMDBW_MERGE_STRATEGY_RECURSE
@@ -71,7 +67,7 @@ typedef struct MMDBW_record_s {
         const char *key;
         struct MMDBW_node_s *node;
     } value;
-    uint8_t type;
+    MMDBW_record_type type;
 } MMDBW_record_s;
 
 typedef struct MMDBW_node_s {
@@ -101,7 +97,6 @@ typedef struct MMDBW_tree_s {
 typedef struct MMDBW_network_s {
     const uint8_t *const bytes;
     const uint8_t prefix_length;
-    const uint8_t max_depth0;
 } MMDBW_network_s;
 
     /* *INDENT-OFF* */
@@ -110,7 +105,7 @@ typedef struct MMDBW_network_s {
                                   MMDBW_merge_strategy merge_strategy,
                                   const bool alias_ipv6);
     extern void insert_network(MMDBW_tree_s *tree, const char *ipstr,
-                               const uint8_t prefix_length, SV *key, SV *data,
+                               const uint8_t prefix_length, SV *key_sv, SV *data,
                                bool force_overwrite);
     extern void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
                              const char *end_ipstr, SV *key_sv, SV *data_sv,
@@ -130,6 +125,7 @@ typedef struct MMDBW_network_s {
                                    const bool alias_ipv6);
     extern void write_search_tree(MMDBW_tree_s *tree, SV *output,
                                   SV *root_data_type, SV *serializer);
+    extern uint32_t max_record_value(MMDBW_tree_s *tree);
     extern void start_iteration(MMDBW_tree_s *tree,
                                 bool depth_first,
                                 void *args,
@@ -138,6 +134,7 @@ typedef struct MMDBW_network_s {
                                                 uint128_t network,
                                                 uint8_t depth,
                                                 void *args));
+    extern uint128_t flip_network_bit(MMDBW_tree_s *tree, uint128_t network, uint8_t depth);
     extern SV *data_for_key(MMDBW_tree_s *tree, const char *const key);
     extern void free_tree(MMDBW_tree_s *tree);
     extern const char *record_type_name(int record_type);
