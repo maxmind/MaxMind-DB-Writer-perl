@@ -9,7 +9,7 @@
   filehandle. If you want to create a tree that contains private networks, set
   the constructor parameter "remove_reserved_networks" to false. This change
   of behavior was done to allow code that previously used
-  Net::Works::Network->range_as_subnets() to the new insert_range() method
+  Net::Works::Network->range_as_subnets() to use the new insert_range() method
   added in this release.
 - When recursively merging a subtree, alias nodes are no longer followed.
   Although this is a behavior change, it should not affect most users are
