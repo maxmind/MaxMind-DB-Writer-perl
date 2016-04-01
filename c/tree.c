@@ -50,6 +50,8 @@ LOCAL int128_t ip_string_to_integer(const char *ipstr, int family);
 LOCAL int128_t ip_bytes_to_integer(uint8_t *bytes, int family);
 LOCAL void integer_to_ip_bytes(int tree_ip_version, uint128_t ip,
                                uint8_t *bytes);
+LOCAL void integer_to_ip_string(int tree_ip_version, uint128_t ip,
+                                char *dst, int dst_length);
 LOCAL int prefix_length_for_largest_subnet(uint128_t start_ip,
                                            uint128_t end_ip, int family,
                                            uint128_t *reverse_mask);
@@ -303,6 +305,18 @@ LOCAL void integer_to_ip_bytes(int tree_ip_version, uint128_t ip,
     for (int i = 1; i <= bytes_length; i++) {
         bytes[bytes_length - i] = 0xFF & ip;
         ip >>= 8;
+    }
+}
+
+LOCAL void integer_to_ip_string(int tree_ip_version, uint128_t ip,
+                                char *dst, int dst_length)
+{
+    uint8_t bytes[tree_ip_version == 6 ? 16 : 4];
+    integer_to_ip_bytes(tree_ip_version, ip, bytes);
+
+    if (NULL == inet_ntop(tree_ip_version == 6 ? AF_INET6 : AF_INET,
+                          bytes, dst, dst_length) ) {
+        croak("Error converting IP integer to string");
     }
 }
 
@@ -1618,8 +1632,11 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                                         void *args))
 {
     if (depth > 127) {
+        char ip[INET6_ADDRSTRLEN];
+        integer_to_ip_string(tree->ip_version, network, ip, sizeof(ip));
         croak(
-            "Depth during iteration is greater than 127! The tree is wonky.\n");
+            "Depth during iteration is greater than 127 (depth: %u, "
+            "start IP: %s)! The tree is wonky.\n", depth, ip);
     }
 
     if (!depth_first) {
