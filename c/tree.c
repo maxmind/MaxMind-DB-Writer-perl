@@ -72,11 +72,11 @@ LOCAL void resolve_ip(int tree_ip_version, const char *const ipstr,
                       uint8_t *bytes);
 LOCAL void free_network(MMDBW_network_s *network);
 LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree);
-LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
-                                     MMDBW_network_s *network,
-                                     MMDBW_record_s *new_record,
-                                     bool merge_record_collisions,
-                                     bool is_internal_insert);
+LOCAL MMDBW_status insert_record_for_network(MMDBW_tree_s *tree,
+                                             MMDBW_network_s *network,
+                                             MMDBW_record_s *new_record,
+                                             bool merge_record_collisions,
+                                             bool is_internal_insert);
 LOCAL bool merge_records(MMDBW_tree_s *tree,
                          MMDBW_network_s *network,
                          MMDBW_record_s *new_record,
@@ -150,6 +150,7 @@ LOCAL void checked_perlio_read(PerlIO * io, void *buffer,
                                SSize_t size);
 LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
                                char *op);
+LOCAL char *status_error_message(MMDBW_status status);
 /* --prototypes end - don't remove this comment-- */
 /* *INDENT-ON* */
 
@@ -200,12 +201,18 @@ void insert_network(MMDBW_tree_s *tree, const char *ipstr,
         }
     };
 
-    insert_record_for_network(tree, &network, &new_record,
-                              tree->merge_strategy != MMDBW_MERGE_STRATEGY_NONE
-                              && !force_overwrite,
-                              false);
+    MMDBW_status status = insert_record_for_network(
+        tree, &network, &new_record,
+        tree->merge_strategy !=
+        MMDBW_MERGE_STRATEGY_NONE
+        && !force_overwrite,
+        false);
 
     free_network(&network);
+
+    if (MMDBW_SUCCESS != status) {
+        croak("%s (%s)", status_error_message(status), ipstr);
+    }
 }
 
 LOCAL void verify_ip(MMDBW_tree_s *tree, const char *ipstr)
@@ -236,6 +243,8 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
 
     uint8_t bytes[tree->ip_version == 6 ? 16 : 4];
 
+    MMDBW_status status = MMDBW_SUCCESS;
+
     // Eventually we could change the code to walk the tree and break up the
     // range at the same time, saving some unnecessary computation. However,
     // that would require more significant refactoring of the insertion and
@@ -262,12 +271,15 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
             }
         };
 
-        insert_record_for_network(
+        status = insert_record_for_network(
             tree, &network, &new_record,
             tree->merge_strategy !=
             MMDBW_MERGE_STRATEGY_NONE
             && !force_overwrite,
             false);
+        if (MMDBW_SUCCESS != status) {
+            break;
+        }
 
         start_ip = (start_ip | reverse_mask) + 1;
 
@@ -279,6 +291,11 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
     // store_data_in_tree starts at a reference count of 1, so we need to
     // decrement in order to account for that.
     decrement_data_reference_count(tree, key);
+
+    if (MMDBW_SUCCESS != status) {
+        croak("%s (%s - %s)", status_error_message(status), start_ipstr,
+            end_ipstr);
+    }
 }
 
 LOCAL int128_t ip_string_to_integer(const char *ipstr, int family)
@@ -362,9 +379,14 @@ void remove_network(MMDBW_tree_s *tree, const char *ipstr,
         .type = MMDBW_RECORD_TYPE_EMPTY
     };
 
-    insert_record_for_network(tree, &network, &new_record, false, false);
+    MMDBW_status status =
+        insert_record_for_network(tree, &network, &new_record, false,
+                                  false);
 
     free_network(&network);
+    if (MMDBW_SUCCESS != status) {
+        croak(status_error_message(status));
+    }
 }
 
 LOCAL const char *store_data_in_tree(MMDBW_tree_s *tree,
@@ -451,6 +473,7 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
     if (NULL == strchr(ipstr, ':')) {
         // IPv4
         if (prefix_length > 32) {
+            free(bytes);
             croak("Prefix length greater than 32 on an IPv4 network (%s/%d)",
                   ipstr, prefix_length);
         }
@@ -459,6 +482,7 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
             prefix_length += 96;
         }
     } else if (prefix_length > 128) {
+        free(bytes);
         croak("Prefix length greater than 128 on an IPv6 network (%s/%d)",
               ipstr, prefix_length);
     }
@@ -540,7 +564,7 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
                               false,
                               &return_null);
     if (NULL == ipv4_root_node_parent) {
-      croak("Unable to find IPv4 root node when setting up aliases");
+        croak("Unable to find IPv4 root node when setting up aliases");
     }
     /* If the current_bit is not 32 then we found some node further up the
      * tree that would eventually lead to that network. This means that
@@ -585,11 +609,11 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
     free_network(&ipv4_root_network);
 }
 
-LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
-                                     MMDBW_network_s *network,
-                                     MMDBW_record_s *new_record,
-                                     bool merge_record_collisions,
-                                     bool is_internal_insert)
+LOCAL MMDBW_status insert_record_for_network(MMDBW_tree_s *tree,
+                                             MMDBW_network_s *network,
+                                             MMDBW_record_s *new_record,
+                                             bool merge_record_collisions,
+                                             bool is_internal_insert)
 {
     uint8_t current_bit;
     MMDBW_node_s *node_to_set =
@@ -597,9 +621,8 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
                               false,
                               &new_node_from_record);
     if (NULL == node_to_set) {
-        // XXX - we really need to propagate errors up as there is stuff to
-        // be freed
-        croak("Error finding network in search tree. Did you try inserting into an alias?");
+        free_record_value(tree, new_record);
+        return MMDBW_FINDING_NODE_ERROR;
     }
 
     MMDBW_record_s *record_to_set, *other_record;
@@ -615,24 +638,17 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         MMDBW_record_type type = new_record->type;
         free_record_value(tree, new_record);
         if (type == MMDBW_RECORD_TYPE_DATA && is_internal_insert) {
-            return;
+            // Possibly change return value in future
+            return MMDBW_SUCCESS;
         }
-        bool is_ipv6 = tree->ip_version == 6;
-        char address_string[ is_ipv6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN];
-        inet_ntop(is_ipv6 ? AF_INET6 : AF_INET,
-                  network->bytes,
-                  address_string,
-                  sizeof(address_string));
-        croak(
-            "Tried to overwrite an alias record with a %s record while inserting %s/%u",
-            record_type_name(type), address_string, network->prefix_length);
+        return MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR;
     }
 
     if (merge_record_collisions &&
         MMDBW_RECORD_TYPE_DATA == new_record->type) {
 
         if (merge_records(tree, network, new_record, record_to_set)) {
-            return;
+            return MMDBW_SUCCESS;
         }
     }
 
@@ -665,10 +681,12 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
              * we have already merged the new record with the existing
              * record
              */
-            insert_record_for_network(tree, &parent_network, new_record, false,
-                                      true);
+            MMDBW_status status =
+                insert_record_for_network(tree, &parent_network, new_record,
+                                          false,
+                                          true);
             free_network(&parent_network);
-            return;
+            return status;
         }
     }
 
@@ -682,7 +700,7 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
         record_to_set->value.node = new_record->value.node;
     }
 
-    return;
+    return MMDBW_SUCCESS;
 }
 
 LOCAL bool merge_records(MMDBW_tree_s *tree,
@@ -714,10 +732,16 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
             }
         };
 
-        insert_record_for_network(tree, &left, &new_left_record, true, true);
+        MMDBW_status status =
+            insert_record_for_network(tree, &left, &new_left_record, true,
+                                      true);
+        if (MMDBW_SUCCESS != status) {
+            return status;
+        }
 
-        size_t bytes_length = tree->ip_version ? 16 : 4;
+        size_t bytes_length = tree->ip_version == 6 ? 16 : 4;
         uint8_t right_bytes[bytes_length];
+
         memcpy(&right_bytes, network->bytes, bytes_length);
 
         right_bytes[ (new_prefix_length - 1) / 8]
@@ -735,7 +759,12 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
             }
         };
 
-        insert_record_for_network(tree, &right, &new_right_record, true, true);
+        status =
+            insert_record_for_network(tree, &right, &new_right_record, true,
+                                      true);
+        if (MMDBW_SUCCESS != status) {
+            return status;
+        }
 
         /* There's no need continuing with the original record as the relevant
          * data has already been inserted further down the tree by the code
@@ -1278,13 +1307,16 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
             thawed->record->value.key = key;
         }
         // We should never need to merge when thawing a tree.
-        insert_record_for_network(
+        MMDBW_status status = insert_record_for_network(
             tree, thawed->network, thawed->record,
             false, true);
         free_network(thawed->network);
         free(thawed->network);
         free(thawed->record);
         free(thawed);
+        if (MMDBW_SUCCESS != status) {
+            croak(status_error_message(status));
+        }
     }
 
     STRLEN frozen_data_size = thaw_strlen(&buffer);
@@ -1851,4 +1883,20 @@ LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
             "%s operation wrote %zd bytes when we expected to write %zd",
             op, result, expected);
     }
+}
+
+
+LOCAL char *status_error_message(MMDBW_status status)
+{
+    switch (status) {
+    case MMDBW_SUCCESS:
+        return "Success";
+    case MMDBW_FINDING_NODE_ERROR:
+        return
+            "Error finding node. Did you try inserting into an aliased network?";
+    case MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR:
+        return "Attempted to overwrite an alised network.";
+    }
+    // We should get a compile time warning if an enum is missing
+    return "Unknown error";
 }
