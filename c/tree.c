@@ -91,6 +91,7 @@ LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into);
 LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                           MMDBW_network_s *network,
                                           uint8_t *current_bit,
+                                          bool follow_aliases,
                                           MMDBW_node_s *(if_not_node)(
                                               MMDBW_tree_s *tree,
                                               MMDBW_record_s *record));
@@ -536,7 +537,11 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
     uint8_t current_bit;
     MMDBW_node_s *ipv4_root_node_parent =
         find_node_for_network(tree, &ipv4_root_network, &current_bit,
+                              false,
                               &return_null);
+    if (NULL == ipv4_root_node_parent) {
+      croak("Unable to find IPv4 root node when setting up aliases");
+    }
     /* If the current_bit is not 32 then we found some node further up the
      * tree that would eventually lead to that network. This means that
      * something went wrong. */
@@ -559,7 +564,11 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
                             ipv4_aliases[i].prefix_length);
 
         MMDBW_node_s *last_node_for_alias = find_node_for_network(
-            tree, &alias_network, &current_bit, &new_node_from_record);
+            tree, &alias_network, &current_bit, true,
+            &new_node_from_record);
+        if (NULL == last_node_for_alias) {
+            croak("Unexpected NULL when searching for last node for alias");
+        }
         if (network_bit_value(tree, &alias_network, current_bit)) {
             free_record_value(tree, &(last_node_for_alias->right_record));
             last_node_for_alias->right_record.type = MMDBW_RECORD_TYPE_ALIAS;
@@ -585,7 +594,13 @@ LOCAL void insert_record_for_network(MMDBW_tree_s *tree,
     uint8_t current_bit;
     MMDBW_node_s *node_to_set =
         find_node_for_network(tree, network, &current_bit,
+                              false,
                               &new_node_from_record);
+    if (NULL == node_to_set) {
+        // XXX - we really need to propagate errors up as there is stuff to
+        // be freed
+        croak("Error finding network in search tree. Did you try inserting into an alias?");
+    }
 
     MMDBW_record_s *record_to_set, *other_record;
     if (network_bit_value(tree, network, current_bit)) {
@@ -910,7 +925,12 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
 
     uint8_t current_bit;
     MMDBW_node_s *node_for_address =
-        find_node_for_network(tree, &network, &current_bit, &return_null);
+        find_node_for_network(tree, &network, &current_bit, true, &return_null);
+
+    if (NULL == node_for_address) {
+        free_network(&network);
+        croak("Received an unexpected NULL when looking up %s", ipstr);
+    }
 
     MMDBW_record_s record_for_address;
     if (network_bit_value(tree, &network, current_bit)) {
@@ -938,6 +958,7 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
 LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
                                           MMDBW_network_s *network,
                                           uint8_t *current_bit,
+                                          bool follow_aliases,
                                           MMDBW_node_s *(if_not_node)(
                                               MMDBW_tree_s *tree,
                                               MMDBW_record_s *record))
@@ -954,6 +975,10 @@ LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
             next_is_right
             ? &(node->right_record)
             : &(node->left_record);
+
+        if (MMDBW_RECORD_TYPE_ALIAS == record->type && !follow_aliases) {
+            return NULL;
+        }
 
         MMDBW_node_s *next_node;
         if (MMDBW_RECORD_TYPE_NODE == record->type ||
