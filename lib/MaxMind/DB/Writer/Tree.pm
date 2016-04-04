@@ -5,7 +5,7 @@ use warnings;
 use namespace::autoclean;
 use autodie;
 
-our $VERSION = '0.200001';
+our $VERSION = '0.200002';
 
 use IO::Handle;
 use Math::Int64 0.51;
