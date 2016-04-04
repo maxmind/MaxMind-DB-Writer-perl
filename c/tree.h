@@ -49,6 +49,13 @@ typedef uint128_t uint128_t_a8 __attribute__ ((aligned(8)));
 #include "perl_math_int64.h"
 #include "perl_math_int128.h"
 
+
+typedef enum {
+    MMDBW_SUCCESS,
+    MMDBW_FINDING_NODE_ERROR,
+    MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR,
+} MMDBW_status;
+
 typedef enum {
     MMDBW_RECORD_TYPE_EMPTY,
     MMDBW_RECORD_TYPE_DATA,

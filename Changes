@@ -1,5 +1,20 @@
 {{$NEXT}}
 
+[ BACKWARDS INCOMPATIBILITIES ]
+
+- Inserts into IPv4 aliased subtrees are no longer allowed when
+  alias_ipv6_to_ipv4 is enabled. When using an aliased tree, you will only be
+  able to insert IPv4 networks into ::0.0.0.0/96. If you are inserting these
+  addresses using IPv4 notation, not IPv6, this is the default location and
+  the change will not affect you. The reason for this is that inserting into
+  the aliased subnets leads to complications in determining the correct tree
+  depth for the insert and could also cause unintentional overwriting of data.
+
+[ BUGFIXES ]
+
+* Some memory leaks when throwing an exception were fixed.
+
+
 0.200000 2016-03-31
 
 [ BACKWARDS INCOMPATIBILITIES ]

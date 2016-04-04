@@ -233,7 +233,6 @@ subtest 'Inserting invalid neworks and ranges' => sub {
         alias_ipv6_to_ipv4      => 1,
     );
 
-
     like(
         exception { $tree->insert_range( '2002::', '2001::', {} ) },
         qr/in range comes before last IP /, 'First IP after last IP in range'
@@ -257,6 +256,12 @@ subtest 'Inserting invalid neworks and ranges' => sub {
     like(
         exception { $tree->insert_network( '2001:/1', {} ) },
         qr/Invalid IP/, 'invalid IP in network'
+    );
+
+    like(
+        exception { $tree->insert_network( '2002:0101:0101:0101::/64', {} ) },
+        qr/Did you try inserting into an alias/,
+        'Received exception when inserting into alias'
     );
 };
 

@@ -742,15 +742,19 @@ subtest 'Test merging into aliased nodes' => sub {
         alias_ipv6_to_ipv4      => 1,
     );
 
+    _insert_network( $tree, $_ ) for qw( 1.0.0.0/24 ::/1 2001::/31 );
+
     my @networks = qw(
-        1.0.0.0/24
-        ::/1
         ::ffff:1.0.0.0/104
-        2001::/31
+        2002:0101:0101:0101::/64
     );
 
     for my $network (@networks) {
-        _insert_network( $tree, $network );
+        like(
+            exception { _insert_network( $tree, $network ) },
+            qr/Did you try inserting into an aliased network/,
+            "Exception when inserting into aliased network $network",
+        );
     }
 
     my @aliased_networks = qw(
@@ -761,7 +765,7 @@ subtest 'Test merging into aliased nodes' => sub {
     for my $network (@aliased_networks) {
         like(
             exception { _insert_network( $tree, $network ) },
-            qr/Tried to overwrite an alias record/,
+            qr/Attempted to overwrite an alised network./,
             "Exception when trying to overwrite alias at $network"
         );
     }

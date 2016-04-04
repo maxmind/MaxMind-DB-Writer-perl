@@ -671,11 +671,12 @@ This is the 6to4 range
 
 =back
 
+When aliasing is enabled, insertions into the aliased locations will throw an
+exception. To insert an IPv4 address, insert it using IPv4 notation or insert
+directly into ::/96.
+
 Aliased nodes are I<not> followed when merging nodes. Only merges into the
-original IPv4 location, ::/96, will be followed. This only affects insertions
-of networks containing the complete aliased network. Insertions within the
-aliased network will be merged, whether they use the original location or any
-of the aliases.
+original IPv4 location, ::/96, will be followed.
 
 This parameter is optional. It defaults to false.
 
