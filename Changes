@@ -1,5 +1,13 @@
 {{$NEXT}}
 
+- The in-memory tree now has a root record rather than a root node. This fixes
+  the insertion of a /0 network (GitHub #55) and a segmentation found when
+  merging two /1 networks into a /0 network (GitHub #58). Although insertions
+  of /0 are allowed (e.g., to create a default record for the database),
+  writing, iterating, and freezing a database that only contains a single /0
+  data record are currently forbidden.
+
+
 0.200001 2016-04-04
 
 [ BACKWARDS INCOMPATIBILITIES ]
@@ -14,7 +22,7 @@
 
 [ BUGFIXES ]
 
-* Some memory leaks when throwing an exception were fixed.
+- Some memory leaks when throwing an exception were fixed.
 
 
 0.200000 2016-03-31

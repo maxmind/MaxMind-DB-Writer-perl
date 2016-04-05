@@ -186,6 +186,7 @@ sub _should_cache_value {
         return 1;
     }
     else {
+        ## no critic (ProhibitCallsToUnexportedSubs)
         $self->_debug_string(
             "Space needed for $type $data",
             bytes::length $data
@@ -201,6 +202,7 @@ sub _store_data {
     my $data        = shift;
     my $member_type = shift;
 
+    ## no critic (ProhibitCallsToUnexportedSubs)
     my $current_position = bytes::length ${ $self->buffer() };
 
     my $method = '_encode_' . $type;
@@ -213,8 +215,8 @@ sub _store_data {
 
 my @pointer_thresholds = (
     {
-    cutoff => 2**11,
-    offset => 0,
+        cutoff => 2**11,
+        offset => 0,
     }
 );
 push @pointer_thresholds,
@@ -233,6 +235,7 @@ push @pointer_thresholds,
     offset => 0,
     };
 
+## no critic (ProhibitUnusedPrivateSubroutines)
 sub _encode_pointer {
     my $self  = shift;
     my $value = shift;
@@ -356,7 +359,7 @@ sub _encode_array {
     my $array      = shift;
     my $value_type = shift;
 
-    die "No value type for array!" unless defined $value_type;
+    die 'No value type for array!' unless defined $value_type;
 
     $self->_write_encoded_data(
         $self->_control_bytes( $TypeNameToNum{array}, scalar @{$array} ) );
@@ -454,6 +457,7 @@ sub _encode_unsigned_int {
         $encoded_value,
     );
 }
+## use critic
 
 {
     my %Max = (

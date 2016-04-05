@@ -42,7 +42,7 @@ for my $record_size ( 24, 28, 32 ) {
         for my $i ( 1 .. $count ) {
             my $ipv4 = Net::Works::Network->new_from_integer(
                 integer       => $i,
-                prefix_length => $i % 32,
+                prefix_length => 32,
                 version       => 4,
             );
             $tree->insert_network( $ipv4, { i => $i } );
@@ -172,12 +172,12 @@ for my $record_size ( 24, 28, 32 ) {
     );
 
     $tree->insert_network(
-        Net::Works::Network->new_from_string( string => '::0/0' ),
+        Net::Works::Network->new_from_string( string => '::0/1' ),
         { value => 42 },
     );
 
     subtest(
-        'Tree with only one network - ::0/0',
+        'Tree with only one network - ::0/1',
         sub {
             test_freeze_thaw($tree);
             test_freeze_thaw_optional_params($tree);
