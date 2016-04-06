@@ -1,7 +1,7 @@
 {{$NEXT}}
 
 - The in-memory tree now has a root record rather than a root node. This fixes
-  the insertion of a /0 network (GitHub #55) and a segmentation found when
+  the insertion of a /0 network (GitHub #55) and a segmentation fault when
   merging two /1 networks into a /0 network (GitHub #58). Although insertions
   of /0 are allowed (e.g., to create a default record for the database),
   writing, iterating, and freezing a database that only contains a single /0
