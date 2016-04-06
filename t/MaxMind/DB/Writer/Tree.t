@@ -177,6 +177,18 @@ use Net::Works::Network;
     );
 }
 
+subtest '::/0 insertion' => sub {
+    my $data = { ip => '::' };
+
+    my $tree = make_tree_from_pairs( 'network', [ [ '::/0' => $data ] ] );
+
+    is_deeply( $tree->lookup_ip_address('::'), $data, ':: is in tree' );
+    is_deeply(
+        $tree->lookup_ip_address('9000::'), $data,
+        '9000:: is in tree'
+    );
+};
+
 # Tests handling of inserting multiple networks that all have the same data -
 # if we end up with a node that has two identical data records, we want to
 # remove that node entirely and move the data record up to the parent.
@@ -263,6 +275,33 @@ subtest 'Inserting invalid neworks and ranges' => sub {
         qr/Did you try inserting into an alias/,
         'Received exception when inserting into alias'
     );
+};
+
+subtest 'Recording merging at /0' => sub {
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version              => 6,
+        record_size             => 24,
+        database_type           => 'Test',
+        languages               => ['en'],
+        description             => { en => 'Test tree' },
+        merge_record_collisions => 1,
+        map_key_type_callback   => sub { 'utf8_string' },
+
+        # These are 0 to as enabling them will create more than one network
+        alias_ipv6_to_ipv4       => 0,
+        remove_reserved_networks => 0,
+    );
+
+    my $data = { data => 1 };
+    $tree->insert_network( '::/1',     $data );
+    $tree->insert_network( '8000::/1', $data );
+
+    for my $ip ( '::', '2000::', '8000::', '9000::' ) {
+        is_deeply(
+            $tree->lookup_ip_address($ip), $data,
+            "expected data for $ip"
+        );
+    }
 };
 
 done_testing();

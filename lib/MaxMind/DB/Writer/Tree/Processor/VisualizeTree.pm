@@ -2,6 +2,7 @@ package MaxMind::DB::Writer::Tree::Processor::VisualizeTree;
 
 use strict;
 use warnings;
+use namespace::autoclean;
 
 our $VERSION = '0.200002';
 

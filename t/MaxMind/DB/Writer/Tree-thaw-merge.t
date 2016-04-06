@@ -24,7 +24,7 @@ use Net::Works::Network;
 ########################################################################
 
 # this is the IP range we'll be testing and an IP within it
-my $NETWORK = Net::Works::Network->new_from_string( string => '::0/0' );
+my $NETWORK = Net::Works::Network->new_from_string( string => '::0/1' );
 my $IP_ADDRESS = '::123.123.123.123';
 
 sub check_tree {

@@ -88,13 +88,15 @@ LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into);
 LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to);
 LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into);
 LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into);
-LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
-                                          MMDBW_network_s *network,
-                                          uint8_t *current_bit,
-                                          bool follow_aliases,
-                                          MMDBW_node_s *(if_not_node)(
-                                              MMDBW_tree_s *tree,
-                                              MMDBW_record_s *record));
+LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
+                                           MMDBW_network_s *network,
+                                           bool follow_aliases,
+                                           MMDBW_node_s *(if_not_node)(
+                                               MMDBW_tree_s *tree,
+                                               MMDBW_record_s *record),
+                                           MMDBW_record_s **record,
+                                           MMDBW_record_s **sibling_record
+                                           );
 LOCAL MMDBW_node_s *return_null(
     MMDBW_tree_s *UNUSED(tree), MMDBW_record_s *UNUSED(record));
 LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
@@ -105,6 +107,7 @@ LOCAL void assign_node_numbers(MMDBW_tree_s *tree);
 LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               uint128_t UNUSED(network),
                               uint8_t UNUSED(depth), void *UNUSED(args));
+LOCAL void freeze_search_tree(MMDBW_tree_s *tree, freeze_args_s *args);
 LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
                        uint128_t network, uint8_t depth, void *void_args);
 LOCAL void freeze_data_record(MMDBW_tree_s *UNUSED(tree),
@@ -131,16 +134,12 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                                       MMDBW_record_s *record,
                                       encode_args_s * args);
 LOCAL void iterate_tree(MMDBW_tree_s *tree,
-                        MMDBW_node_s *node,
+                        MMDBW_record_s *record,
                         uint128_t network,
                         const uint8_t depth,
                         bool depth_first,
                         void *args,
-                        void(callback) (MMDBW_tree_s *tree,
-                                        MMDBW_node_s *node,
-                                        uint128_t network,
-                                        const uint8_t depth,
-                                        void *args));
+                        MMDBW_iterator_callback callback);
 LOCAL SV *key_for_data(SV * data);
 LOCAL void dwarn(SV *thing);
 LOCAL void *checked_malloc(size_t size);
@@ -174,7 +173,9 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     tree->data_table = NULL;
     tree->is_finalized = false;
     tree->is_aliased = false;
-    tree->root_node = new_node(tree);
+    tree->root_record = (MMDBW_record_s) {
+        .type = MMDBW_RECORD_TYPE_EMPTY,
+    };
     tree->node_count = 0;
 
     if (alias_ipv6) {
@@ -294,7 +295,7 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
 
     if (MMDBW_SUCCESS != status) {
         croak("%s (%s - %s)", status_error_message(status), start_ipstr,
-            end_ipstr);
+              end_ipstr);
     }
 }
 
@@ -558,55 +559,42 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
     // and should be fixed at some point.
     remove_network(tree, "::0.0.0.0", 97);
 
-    uint8_t current_bit;
-    MMDBW_node_s *ipv4_root_node_parent =
-        find_node_for_network(tree, &ipv4_root_network, &current_bit,
-                              false,
-                              &return_null);
-    if (NULL == ipv4_root_node_parent) {
+    MMDBW_record_s *ipv4_root_record;
+    MMDBW_status status = find_record_for_network(tree, &ipv4_root_network,
+                                                  false,
+                                                  &return_null,
+                                                  &ipv4_root_record,
+                                                  NULL);
+    free_network(&ipv4_root_network);
+    if (status != MMDBW_SUCCESS) {
         croak("Unable to find IPv4 root node when setting up aliases");
     }
-    /* If the current_bit is not 32 then we found some node further up the
-     * tree that would eventually lead to that network. This means that
-     * something went wrong. */
-    if (32 != current_bit) {
-        free_network(&ipv4_root_network);
-        croak("current_bit for IPv4 root network is %u != 32", current_bit);
-    }
 
-    if (MMDBW_RECORD_TYPE_NODE != ipv4_root_node_parent->left_record.type) {
-        free_network(&ipv4_root_network);
-        croak("Unexpected record type for IPv4 root node: %s",
-              record_type_name(ipv4_root_node_parent->left_record.type));
+    if (MMDBW_RECORD_TYPE_NODE != ipv4_root_record->type) {
+        croak("Unexpected type for IPv4 root record: %s",
+              record_type_name(ipv4_root_record->type));
     }
 
     MMDBW_node_s *ipv4_root_node =
-        ipv4_root_node_parent->left_record.value.node;
+        ipv4_root_record->value.node;
     for (int i = 0; i <= 2; i++) {
         MMDBW_network_s alias_network =
             resolve_network(tree, ipv4_aliases[i].ipstr,
                             ipv4_aliases[i].prefix_length);
 
-        MMDBW_node_s *last_node_for_alias = find_node_for_network(
-            tree, &alias_network, &current_bit, true,
-            &new_node_from_record);
-        if (NULL == last_node_for_alias) {
-            croak("Unexpected NULL when searching for last node for alias");
-        }
-        if (network_bit_value(tree, &alias_network, current_bit)) {
-            free_record_value(tree, &(last_node_for_alias->right_record));
-            last_node_for_alias->right_record.type = MMDBW_RECORD_TYPE_ALIAS;
-            last_node_for_alias->right_record.value.node = ipv4_root_node;
-        } else {
-            free_record_value(tree, &(last_node_for_alias->left_record));
-            last_node_for_alias->left_record.type = MMDBW_RECORD_TYPE_ALIAS;
-            last_node_for_alias->left_record.value.node = ipv4_root_node;
-        }
+        MMDBW_record_s *record_for_alias;
+        MMDBW_status status = find_record_for_network(
+            tree, &alias_network, true,
+            &new_node_from_record, &record_for_alias, NULL);
 
         free_network(&alias_network);
-    }
 
-    free_network(&ipv4_root_network);
+        if (MMDBW_SUCCESS != status) {
+            croak("Unexpected NULL when searching for last node for alias");
+        }
+        record_for_alias->type = MMDBW_RECORD_TYPE_ALIAS;
+        record_for_alias->value.node = ipv4_root_node;
+    }
 }
 
 LOCAL MMDBW_status insert_record_for_network(MMDBW_tree_s *tree,
@@ -615,23 +603,15 @@ LOCAL MMDBW_status insert_record_for_network(MMDBW_tree_s *tree,
                                              bool merge_record_collisions,
                                              bool is_internal_insert)
 {
-    uint8_t current_bit;
-    MMDBW_node_s *node_to_set =
-        find_node_for_network(tree, network, &current_bit,
-                              false,
-                              &new_node_from_record);
-    if (NULL == node_to_set) {
+    MMDBW_record_s *record_to_set, *other_record;
+    MMDBW_status status =
+        find_record_for_network(tree, network,
+                                false,
+                                &new_node_from_record,
+                                &record_to_set, &other_record);
+    if (MMDBW_SUCCESS != status) {
         free_record_value(tree, new_record);
         return MMDBW_FINDING_NODE_ERROR;
-    }
-
-    MMDBW_record_s *record_to_set, *other_record;
-    if (network_bit_value(tree, network, current_bit)) {
-        record_to_set = &(node_to_set->right_record);
-        other_record = &(node_to_set->left_record);
-    } else {
-        record_to_set = &(node_to_set->left_record);
-        other_record = &(node_to_set->right_record);
     }
 
     if (record_to_set->type == MMDBW_RECORD_TYPE_ALIAS) {
@@ -658,6 +638,7 @@ LOCAL MMDBW_status insert_record_for_network(MMDBW_tree_s *tree,
      * inserting the new record for the parent network, which we can calculate
      * quite easily by subtracting 1 from this network's prefix length. */
     if (MMDBW_RECORD_TYPE_DATA == new_record->type
+        && NULL != other_record
         && MMDBW_RECORD_TYPE_DATA == other_record->type
         ) {
 
@@ -952,81 +933,88 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
     MMDBW_network_s network =
         resolve_network(tree, ipstr, is_ipv6_address ? 128 : 32);
 
-    uint8_t current_bit;
-    MMDBW_node_s *node_for_address =
-        find_node_for_network(tree, &network, &current_bit, true, &return_null);
-
-    if (NULL == node_for_address) {
-        free_network(&network);
-        croak("Received an unexpected NULL when looking up %s", ipstr);
-    }
-
-    MMDBW_record_s record_for_address;
-    if (network_bit_value(tree, &network, current_bit)) {
-        record_for_address = node_for_address->right_record;
-    } else {
-        record_for_address = node_for_address->left_record;
-    }
+    MMDBW_record_s *record_for_address;
+    MMDBW_status status =
+        find_record_for_network(tree, &network, true, &return_null,
+                                &record_for_address,
+                                NULL);
 
     free_network(&network);
 
-    if (MMDBW_RECORD_TYPE_NODE == record_for_address.type ||
-        MMDBW_RECORD_TYPE_ALIAS == record_for_address.type) {
+    if (MMDBW_SUCCESS != status) {
+        croak("Received an unexpected NULL when looking up %s: %s", ipstr,
+              status_error_message(status));
+    }
+
+    if (MMDBW_RECORD_TYPE_NODE == record_for_address->type ||
+        MMDBW_RECORD_TYPE_ALIAS == record_for_address->type) {
         croak(
-            "WTF - found a node or alias record for an address lookup - %s - current_bit = %"
+            "WTF - found a node or alias record for an address lookup - %s"
             PRIu8,
-            ipstr, current_bit);
+            ipstr);
         return &PL_sv_undef;
-    } else if (MMDBW_RECORD_TYPE_EMPTY == record_for_address.type) {
+    } else if (MMDBW_RECORD_TYPE_EMPTY == record_for_address->type) {
         return &PL_sv_undef;
     } else {
-        return newSVsv(data_for_key(tree, record_for_address.value.key));
+        return newSVsv(data_for_key(tree, record_for_address->value.key));
     }
 }
 
-LOCAL MMDBW_node_s *find_node_for_network(MMDBW_tree_s *tree,
-                                          MMDBW_network_s *network,
-                                          uint8_t *current_bit,
-                                          bool follow_aliases,
-                                          MMDBW_node_s *(if_not_node)(
-                                              MMDBW_tree_s *tree,
-                                              MMDBW_record_s *record))
+LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
+                                           MMDBW_network_s *network,
+                                           bool follow_aliases,
+                                           MMDBW_node_s *(if_not_node)(
+                                               MMDBW_tree_s *tree,
+                                               MMDBW_record_s *record),
+                                           MMDBW_record_s **record,
+                                           MMDBW_record_s **sibling_record
+                                           )
 {
-    MMDBW_node_s *node = tree->root_node;
+    if (NULL != sibling_record) {
+        *sibling_record = NULL;
+    }
+
+    *record = &(tree->root_record);
+
     int max_depth0 = tree_depth0(tree);
     uint8_t last_bit = max_depth0 - (network->prefix_length - 1);
 
-    for (*current_bit = max_depth0; *current_bit > last_bit;
-         (*current_bit)--) {
+    for (int current_bit = max_depth0; current_bit >= last_bit;
+         current_bit--) {
 
-        int next_is_right = network_bit_value(tree, network, *current_bit);
-        MMDBW_record_s *record =
-            next_is_right
-            ? &(node->right_record)
-            : &(node->left_record);
-
-        if (MMDBW_RECORD_TYPE_ALIAS == record->type && !follow_aliases) {
-            return NULL;
+        if (MMDBW_RECORD_TYPE_ALIAS == (*record)->type && !follow_aliases) {
+            return MMDBW_FINDING_NODE_ERROR;
         }
 
-        MMDBW_node_s *next_node;
-        if (MMDBW_RECORD_TYPE_NODE == record->type ||
-            MMDBW_RECORD_TYPE_ALIAS == record->type) {
-            next_node = record->value.node;
+        MMDBW_node_s *node;
+        if (MMDBW_RECORD_TYPE_NODE == (*record)->type ||
+            MMDBW_RECORD_TYPE_ALIAS == (*record)->type) {
+            node = (*record)->value.node;
         } else {
-            next_node = if_not_node(tree, record);
-            if (NULL == next_node) {
-                return node;
+            node = if_not_node(tree, *record);
+            if (NULL == node) {
+                break;
             }
 
-            record->type = MMDBW_RECORD_TYPE_NODE;
-            record->value.node = next_node;
+            (*record)->type = MMDBW_RECORD_TYPE_NODE;
+            (*record)->value.node = node;
         }
 
-        node = next_node;
+
+        if (network_bit_value(tree, network, current_bit)) {
+            *record = &(node->right_record);
+            if (NULL != sibling_record) {
+                *sibling_record = &(node->left_record);
+            }
+        } else {
+            *record = &(node->left_record);
+            if (NULL != sibling_record) {
+                *sibling_record = &(node->right_record);
+            }
+        }
     }
 
-    return node;
+    return MMDBW_SUCCESS;
 }
 
 LOCAL MMDBW_node_s *return_null(
@@ -1127,8 +1115,6 @@ LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
 void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
                  size_t frozen_params_size)
 {
-    finalize_tree(tree);
-
     int fd = open(filename, O_CREAT | O_TRUNC | O_RDWR, (mode_t)0644);
     if (-1 == fd) {
         croak("Could not open file %s: %s", filename, strerror(errno));
@@ -1142,7 +1128,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
     freeze_to_fd(&args, &frozen_params_size, 4);
     freeze_to_fd(&args, frozen_params, frozen_params_size);
 
-    start_iteration(tree, false, (void *)&args, &freeze_node);
+    freeze_search_tree(tree, &args);
 
     freeze_to_fd(&args, SEVENTEEN_NULLS, 17);
     freeze_to_fd(&args, FREEZE_SEPARATOR, FREEZE_SEPARATOR_LENGTH);
@@ -1157,6 +1143,23 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
      * so we don't need to mess with them. */
     SvREFCNT_dec((SV *)args.data_hash);
 }
+
+LOCAL void freeze_search_tree(MMDBW_tree_s *tree, freeze_args_s *args)
+{
+    if (MMDBW_RECORD_TYPE_DATA == tree->root_record.type) {
+        croak("A tree that only contains a data record for /0 cannot be "
+              "frozen");
+    }
+
+    if (MMDBW_RECORD_TYPE_NODE == tree->root_record.type) {
+        start_iteration(tree, false, (void *)args, &freeze_node);
+        return;
+    }
+
+    croak("Unexected root record type when freezing tree: %s",
+          record_type_name(tree->root_record.type));
+}
+
 
 LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
                        uint128_t network, uint8_t depth, void *void_args)
@@ -1661,34 +1664,33 @@ uint32_t max_record_value(MMDBW_tree_s *tree)
 void start_iteration(MMDBW_tree_s *tree,
                      bool depth_first,
                      void *args,
-                     void(callback) (MMDBW_tree_s *tree,
-                                     MMDBW_node_s *node,
-                                     uint128_t network,
-                                     uint8_t depth,
-                                     void *args))
+                     MMDBW_iterator_callback callback)
 {
     uint128_t network = 0;
     uint8_t depth = 0;
 
-    iterate_tree(tree, tree->root_node, network, depth, depth_first,
-                 args, callback);
+    // We disallow this as the callback is based on nodes rather than records,
+    // and changing that is a rabbit hole that I don't want to go down
+    // currently. (I stuck my head in and regretted it.)
+    if (MMDBW_RECORD_TYPE_NODE != tree->root_record.type) {
+        croak("Iteration is not currently allowed in trees with no nodes.");
+    }
+
+    iterate_tree(tree, &tree->root_record, network, depth, depth_first, args,
+                 callback);
 
     return;
 }
 
 LOCAL void iterate_tree(MMDBW_tree_s *tree,
-                        MMDBW_node_s *node,
+                        MMDBW_record_s *record,
                         uint128_t network,
                         const uint8_t depth,
                         bool depth_first,
                         void *args,
-                        void(callback) (MMDBW_tree_s *tree,
-                                        MMDBW_node_s *node,
-                                        uint128_t network,
-                                        const uint8_t depth,
-                                        void *args))
+                        MMDBW_iterator_callback callback)
 {
-    if (depth > 127) {
+    if (depth > tree_depth0(tree) + 1) {
         char ip[INET6_ADDRSTRLEN];
         integer_to_ip_string(tree->ip_version, network, ip, sizeof(ip));
         croak(
@@ -1696,27 +1698,27 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
             "start IP: %s)! The tree is wonky.\n", depth, ip);
     }
 
-    if (!depth_first) {
-        callback(tree, node, network, depth, args);
-    }
+    if (MMDBW_RECORD_TYPE_NODE == record->type) {
+        MMDBW_node_s *node = record->value.node;
 
-    if (MMDBW_RECORD_TYPE_NODE == node->left_record.type) {
+        if (!depth_first) {
+            callback(tree, node, network, depth, args);
+        }
+
         iterate_tree(tree,
-                     node->left_record.value.node,
+                     &node->left_record,
                      network,
                      depth + 1,
                      depth_first,
                      args,
                      callback);
-    }
 
-    if (depth_first) {
-        callback(tree, node, network, depth, args);
-    }
+        if (depth_first) {
+            callback(tree, node, network, depth, args);
+        }
 
-    if (MMDBW_RECORD_TYPE_NODE == node->right_record.type) {
         iterate_tree(tree,
-                     node->right_record.value.node,
+                     &node->right_record,
                      flip_network_bit(tree, network, depth),
                      depth + 1,
                      depth_first,
@@ -1774,7 +1776,7 @@ SV *data_for_key(MMDBW_tree_s *tree, const char *const key)
 
 void free_tree(MMDBW_tree_s *tree)
 {
-    free_node_and_subnodes(tree, tree->root_node);
+    free_record_value(tree, &tree->root_record);
 
     int hash_count = HASH_COUNT(tree->data_table);
     if (0 != hash_count) {

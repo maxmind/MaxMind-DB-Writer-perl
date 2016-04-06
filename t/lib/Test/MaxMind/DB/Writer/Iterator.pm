@@ -1,5 +1,8 @@
 package Test::MaxMind::DB::Writer::Iterator;
 
+use strict;
+use warnings;
+
 sub new {
     my $class      = shift;
     my $ip_version = shift;
