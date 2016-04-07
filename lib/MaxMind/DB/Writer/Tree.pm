@@ -69,13 +69,6 @@ has merge_strategy => (
     default => sub { $_[0]->merge_record_collisions ? 'toplevel' : 'none'; },
 );
 
-has node_count => (
-    is       => 'ro',
-    init_arg => undef,
-    lazy     => 1,
-    builder  => '_build_node_count',
-);
-
 has remove_reserved_networks => (
     is      => 'ro',
     isa     => 'Bool',

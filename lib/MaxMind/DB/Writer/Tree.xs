@@ -211,12 +211,12 @@ _write_search_tree(self, output, root_data_type, serializer)
         write_search_tree(tree_from_self(self), output, root_data_type, serializer);
 
 uint32_t
-_build_node_count(self)
+node_count(self)
     SV * self;
 
     CODE:
         MMDBW_tree_s *tree = tree_from_self(self);
-        finalize_tree(tree);
+        assign_node_numbers(tree);
         if (tree->node_count > max_record_value(tree)) {
             croak("Node count of %u exceeds record size limit of %u bits",
                 tree->node_count, tree->record_size);
@@ -233,7 +233,7 @@ iterate(self, object)
 
     CODE:
         MMDBW_tree_s *tree = tree_from_self(self);
-        finalize_tree(tree);
+        assign_node_numbers(tree);
         HV *package;
         /* It's a blessed object */
         if (sv_isobject(object)) {
