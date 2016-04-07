@@ -103,7 +103,6 @@ LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
                                          MMDBW_record_s *record);
 LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node);
 LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record);
-LOCAL void assign_node_numbers(MMDBW_tree_s *tree);
 LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               uint128_t UNUSED(network),
                               uint8_t UNUSED(depth), void *UNUSED(args));
@@ -171,7 +170,6 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     tree->record_size = record_size;
     tree->merge_strategy = merge_strategy;
     tree->data_table = NULL;
-    tree->is_finalized = false;
     tree->is_aliased = false;
     tree->root_record = (MMDBW_record_s) {
         .type = MMDBW_RECORD_TYPE_EMPTY,
@@ -1026,7 +1024,7 @@ LOCAL MMDBW_node_s *return_null(
 LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
                                          MMDBW_record_s *record)
 {
-    MMDBW_node_s *node = new_node(tree);
+    MMDBW_node_s *node = new_node();
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
         /* We only need to increment the reference count once as we are
            replacing the parent record */
@@ -1042,14 +1040,12 @@ LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
     return node;
 }
 
-MMDBW_node_s *new_node(MMDBW_tree_s *tree)
+MMDBW_node_s *new_node()
 {
     MMDBW_node_s *node = checked_malloc(sizeof(MMDBW_node_s));
 
     node->number = 0;
     node->left_record.type = node->right_record.type = MMDBW_RECORD_TYPE_EMPTY;
-
-    tree->is_finalized = false;
 
     return node;
 }
@@ -1075,18 +1071,7 @@ LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record)
     /* We do not follow MMDBW_RECORD_TYPE_ALIAS nodes */
 }
 
-
-void finalize_tree(MMDBW_tree_s *tree)
-{
-    if (tree->is_finalized) {
-        return;
-    }
-
-    assign_node_numbers(tree);
-    tree->is_finalized = true;
-}
-
-LOCAL void assign_node_numbers(MMDBW_tree_s *tree)
+void assign_node_numbers(MMDBW_tree_s *tree)
 {
     tree->node_count = 0;
     start_iteration(tree, false, (void *)NULL, &assign_node_number);
@@ -1339,8 +1324,6 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
 
     SvREFCNT_dec((SV *)data_hash);
 
-    finalize_tree(tree);
-
     return tree;
 }
 
@@ -1484,7 +1467,7 @@ LOCAL HV *thaw_data_hash(SV *data_to_decode)
 void write_search_tree(MMDBW_tree_s *tree, SV *output,
                        SV *root_data_type, SV *serializer)
 {
-    finalize_tree(tree);
+    assign_node_numbers(tree);
 
     /* This is a gross way to get around the fact that with C function
      * pointers we can't easily pass different params to different

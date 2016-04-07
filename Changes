@@ -6,7 +6,10 @@
   of /0 are allowed (e.g., to create a default record for the database),
   writing, iterating, and freezing a database that only contains a single /0
   data record are currently forbidden.
-
+- Fixed a bug where an incorrect node_count could be written to the database,
+  causing invalid metadata errors when reading it.
+- The node_count() method on the Tree object now always recalculates the node
+  count rather than using a possibly incorrect cached value.
 
 0.200001 2016-04-04
 
