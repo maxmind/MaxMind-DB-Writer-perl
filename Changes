@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.200002 2016-04-07
+
 - The in-memory tree now has a root record rather than a root node. This fixes
   the insertion of a /0 network (GitHub #55) and a segmentation fault when
   merging two /1 networks into a /0 network (GitHub #58). Although insertions
