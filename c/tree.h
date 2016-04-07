@@ -97,7 +97,6 @@ typedef struct MMDBW_tree_s {
     MMDBW_data_hash_s *data_table;
     MMDBW_record_s root_record;
     uint32_t node_count;
-    bool is_finalized;
     bool is_aliased;
 } MMDBW_tree_s;
 
@@ -128,8 +127,8 @@ typedef void (MMDBW_iterator_callback)(MMDBW_tree_s *tree,
     extern SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
                                      const char *const key_into, MMDBW_network_s *network);
     extern SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr);
-    extern MMDBW_node_s *new_node(MMDBW_tree_s *tree);
-    extern void finalize_tree(MMDBW_tree_s *tree);
+    extern MMDBW_node_s *new_node();
+    extern void assign_node_numbers(MMDBW_tree_s *tree);
     extern void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
                             size_t frozen_params_size);
     extern MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
