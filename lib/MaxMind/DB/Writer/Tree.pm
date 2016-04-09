@@ -37,22 +37,20 @@ has ip_version => (
     required => 1,
 );
 
-{
-    #<<<
-    my $size_type = subtype
-        as 'Int',
-        where { ( $_ % 4 == 0 ) && $_ >= 24 && $_ <= 128 },
-        message {
-            'The record size must be a number from 24-128 that is divisible by 4';
-        };
-    #>>>
+#<<<
+my $RecordSizeType = subtype
+    as 'Int',
+    where { ( $_ % 4 == 0 ) && $_ >= 24 && $_ <= 128 },
+    message {
+        'The record size must be a number from 24-128 that is divisible by 4';
+    };
+#>>>
 
-    has record_size => (
-        is       => 'ro',
-        isa      => $size_type,
-        required => 1,
-    );
-}
+has record_size => (
+    is       => 'ro',
+    isa      => $RecordSizeType,
+    required => 1,
+);
 
 has merge_record_collisions => (
     is      => 'ro',
@@ -390,14 +388,18 @@ sub write_tree {
 
 sub new_from_frozen_tree {
     my $class = shift;
-    my ( $filename, $callback, $database_type, $description, $merge_strategy )
+    my (
+        $filename, $callback, $database_type, $description, $merge_strategy,
+        $record_size
+        )
         = validated_list(
         \@_,
         filename              => { isa => 'Str' },
         map_key_type_callback => { isa => 'CodeRef' },
         database_type         => { isa => 'Str', optional => 1 },
         description           => { isa => 'HashRef[Str]', optional => 1 },
-        merge_strategy        => { isa => $MergeStrategyEnum, optional => 1 }
+        merge_strategy        => { isa => $MergeStrategyEnum, optional => 1 },
+        record_size           => { isa => $RecordSizeType, optional => 1 },
         );
 
     open my $fh, '<:raw', $filename;
@@ -415,6 +417,7 @@ sub new_from_frozen_tree {
 
     $params->{database_type} = $database_type if defined $database_type;
     $params->{description}   = $description   if defined $description;
+    $params->{record_size}   = $record_size   if defined $record_size;
 
     if ( defined $merge_strategy ) {
         $params->{merge_strategy} = $merge_strategy;

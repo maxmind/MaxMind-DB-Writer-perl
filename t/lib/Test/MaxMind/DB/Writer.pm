@@ -265,11 +265,13 @@ sub test_freeze_thaw_optional_params {
 
     my $description = { en => 'A tree in the forest' };
     my $type        = 'TreeDB';
+    my $record_size = 32;
     my $tree2       = MaxMind::DB::Writer::Tree->new_from_frozen_tree(
         filename              => $file,
         map_key_type_callback => $tree1->map_key_type_callback(),
         description           => $description,
         database_type         => $type,
+        record_size           => $record_size,
     );
 
     is(
@@ -279,6 +281,10 @@ sub test_freeze_thaw_optional_params {
     is_deeply(
         $tree2->description, $description,
         'description passed to constructor overrides frozen description'
+    );
+    is_deeply(
+        $tree2->record_size, $record_size,
+        'record_size passed to constructor overrides frozen record_size'
     );
 }
 
