@@ -40,7 +40,7 @@ sub test_tree {
 
             for my $raw (qw( 1.1.1.33 8.9.10.11 ffff::1 )) {
                 my $address = Net::Works::Address->new_from_string(
-                    string  => $raw,
+                    string => $raw,
                     version => ( $raw =~ /::/ ? 6 : 4 ),
                 );
 
@@ -263,13 +263,17 @@ sub test_freeze_thaw_optional_params {
     my $file = "$dir/frozen-tree-params";
     $tree1->freeze_tree($file);
 
-    my $description = { en => 'A tree in the forest' };
-    my $type        = 'TreeDB';
-    my $tree2       = MaxMind::DB::Writer::Tree->new_from_frozen_tree(
+    my $description    = { en => 'A tree in the forest' };
+    my $type           = 'TreeDB';
+    my $merge_strategy = 'recurse';
+    my $record_size    = 32;
+    my $tree2          = MaxMind::DB::Writer::Tree->new_from_frozen_tree(
         filename              => $file,
         map_key_type_callback => $tree1->map_key_type_callback(),
         description           => $description,
         database_type         => $type,
+        merge_strategy        => $merge_strategy,
+        record_size           => $record_size,
     );
 
     is(
@@ -279,6 +283,14 @@ sub test_freeze_thaw_optional_params {
     is_deeply(
         $tree2->description, $description,
         'description passed to constructor overrides frozen description'
+    );
+    is_deeply(
+        $tree2->merge_strategy, $merge_strategy,
+        'merge_strategy passed to constructor overrides frozen merge_strategy'
+    );
+    is_deeply(
+        $tree2->record_size, $record_size,
+        'record_size passed to constructor overrides frozen record_size'
     );
 }
 

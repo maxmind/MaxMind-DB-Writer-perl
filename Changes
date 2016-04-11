@@ -5,7 +5,7 @@
   aliased to the IPv4 range when "alias_ipv6_to_ipv4" is enabled. Previously
   this alias would be removed if both "alias_ipv6_to_ipv4" and
   "remove_reserved_networks" were enabled.
-
+- Allow changing the record size when unfreezing a frozen tree
 
 0.200002 2016-04-07
 
