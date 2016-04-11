@@ -284,11 +284,20 @@ sub write_tree {
     );
 
     # ::/128 and ::1/128 are reserved under IPv6 but these are already covered
-    # under 0.0.0.0/8
+    # under 0.0.0.0/8. We include all of 2001::/23 except 2001::/32 as the
+    # latter is Teredo, which is globally routable.
     my @reserved_6 = (
         @reserved_4, qw(
             100::/64
-            2001::/23
+            2001:1::/32
+            2001:2::/31
+            2001:4::/30
+            2001:8::/29
+            2001:10::/28
+            2001:20::/27
+            2001:40::/26
+            2001:80::/25
+            2001:100::/24
             2001:db8::/32
             fc00::/7
             fe80::/10
@@ -676,8 +685,9 @@ This parameter is optional. It defaults to false.
 =item * remove_reserved_networks
 
 If this is true, reserved networks will be removed from the database by
-C<write_tree()> before the tree is written to the file handle. The default is
-true.
+C<write_tree()> before the tree is written to the file handle. Reserved
+networks that are globally routable to an individual device, such as Teredo,
+are I<not> removed. The default is true.
 
 =back
 
