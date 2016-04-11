@@ -199,7 +199,7 @@ subtest 'IPv4 overlapping ranges' => sub {
             [
                 @empty_ipv4_addresses,
                 '100::',
-                '2001::',
+                '2001:1::',
                 '2001:db8::',
                 'fc00::',
                 'fe80::',

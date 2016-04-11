@@ -1,5 +1,12 @@
 {{$NEXT}}
 
+- The Teredo range is no longer removed from the database when
+  "remove_reserved_networks" is enabled. This range is globally routable and
+  aliased to the IPv4 range when "alias_ipv6_to_ipv4" is enabled. Previously
+  this alias would be removed if both "alias_ipv6_to_ipv4" and
+  "remove_reserved_networks" were enabled.
+
+
 0.200002 2016-04-07
 
 - The in-memory tree now has a root record rather than a root node. This fixes
@@ -12,6 +19,7 @@
   causing invalid metadata errors when reading it.
 - The node_count() method on the Tree object now always recalculates the node
   count rather than using a possibly incorrect cached value.
+
 
 0.200001 2016-04-04
 
