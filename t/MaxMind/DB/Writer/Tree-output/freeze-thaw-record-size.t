@@ -60,6 +60,18 @@ my $tempdir = tempdir( CLEANUP => 1 );
     my $metadata = $mmdb->metadata;
 
     is( $metadata->record_size, 32, 'record size' );
+
+    # check that we can still read those IPs correctly
+    is_deeply(
+        $mmdb->record_for_address('1.64.22.123'),
+        { answer => 42 },
+        'ip address lookup check 1/2'
+    );
+    is_deeply(
+        $mmdb->record_for_address('1.64.23.123'),
+        { ncc => 1701 },
+        'ip address lookup check 2/2'
+    );
 }
 
 done_testing();
