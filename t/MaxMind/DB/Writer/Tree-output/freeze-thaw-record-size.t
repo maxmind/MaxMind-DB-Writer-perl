@@ -64,5 +64,3 @@ my $tempdir = tempdir( CLEANUP => 1 );
 
 done_testing();
 
-__DATA__
-
