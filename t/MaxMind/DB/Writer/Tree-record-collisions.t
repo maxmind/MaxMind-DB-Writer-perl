@@ -11,7 +11,7 @@ use MaxMind::DB::Writer::Tree;
 
 use Net::Works::Network;
 
-{
+subtest 'simple IPv6 merge' => sub {
     my %asn = (
         autonomous_system_number       => 21928,
         autonomous_system_organization => 'T-Mobile USA, Inc.',
@@ -56,9 +56,9 @@ use Net::Works::Network;
         'data hashes for records are merged on collision - ipv6',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'merge - small net, large net, small net' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '5.0.0.0/32' ) =>
@@ -97,9 +97,9 @@ use Net::Works::Network;
         'data hashes for records are merged on collision - small net, large net, small net',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'merge  - large net, small net, large net' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
@@ -132,9 +132,9 @@ use Net::Works::Network;
         'data hashes for records are merged on collision - large net, small net, large net',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'merge - same network' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
@@ -162,9 +162,9 @@ use Net::Works::Network;
         'data hashes for records are merged on collision - same network',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'merge - overlapping network, larger net first' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/23' ) =>
@@ -196,9 +196,9 @@ use Net::Works::Network;
         'data hashes for records are merged on collision - overlapping network, larger net first',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'merge - overlapping network, smaller net first' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/24' ) =>
@@ -230,9 +230,9 @@ use Net::Works::Network;
         'data hashes for records are merged on collision - overlapping network, smaller net first',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'merge - smaller nets first' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
@@ -276,9 +276,9 @@ use Net::Works::Network;
         'data hashes for records are merged on collision - smaller nets first',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'merge - smaller net first' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '1.0.0.0/24' ) =>
@@ -357,9 +357,9 @@ use Net::Works::Network;
         'data hashes for records are merged on collision - smaller net first',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'merge - larger net first' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '1.0.0.0/24' ) =>
@@ -398,9 +398,9 @@ use Net::Works::Network;
         'data hashes for records are merged on collision - larger net first',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'merge - larger net first' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '1.0.0.0/24' ) =>
@@ -457,9 +457,9 @@ use Net::Works::Network;
         'data hashes for records are merged on repeated collision - larger net first',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'last in value wins when overwriting' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
@@ -507,9 +507,9 @@ use Net::Works::Network;
         'last in value wins when overwriting',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'force_overwrite with merge_record_collisions' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
@@ -551,9 +551,121 @@ use Net::Works::Network;
         'force_overwrite overwrites record even when merge_record_collisions is enabled',
         { merge_record_collisions => 1 },
     );
-}
+};
 
-{
+subtest 'merge subrecord only if parent exists - hashes' => sub {
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { parent => { sibling => { child => 1 } } },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
+                { non_parent => { non_subling => 1 } },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/31' ) =>
+                {
+                parent => {
+                    sibling => { child => 2 },
+                    self    => 0
+                }
+                },
+            { merge_subrecord_only_if_parent_exists => 1 },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { parent => { sibling => { child => 2 }, self => 0 } },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
+                { non_parent => { non_subling => 1 } },
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'merge hashes merge_subrecord_only_if_parent_exists inserts correctly',
+        { merge_record_collisions => 1, merge_strategy => 'recurse' },
+    );
+};
+
+subtest 'merge subrecord only if parent exists - arrays' => sub {
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                {
+                grandparent => [    { sibling => 1 } ],
+                scalars     => [ 1, 2 ],
+                },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
+                { grandparent => [], scalars => [], },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/31' ) =>
+                {
+                grandparent => [ { self => 0 } ],
+                scalars     => [3],
+                },
+            { merge_subrecord_only_if_parent_exists => 1 },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                {
+                grandparent => [    { sibling => 1, self => 0 } ],
+                scalars     => [ 3, 2 ],
+                },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
+                { grandparent => [], scalars => [3] },
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'merge arrays merge_subrecord_only_if_parent_exists inserts correctly',
+        { merge_record_collisions => 1, merge_strategy => 'recurse' },
+    );
+};
+
+subtest
+    'merge_subrecord_only_if_parent_exists requires merge_strategy => recurse'
+    => sub {
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version            => 4,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        merge_strategy        => 'toplevel',
+        map_key_type_callback => sub { },
+    );
+
+    like(
+        exception {
+            $tree->insert_network(
+                '1.0.0.0/24',
+                { a                                     => { b => 1 } },
+                { merge_subrecord_only_if_parent_exists => 1 },
+                )
+        },
+        qr/Merge strategy must be "recurse" to use merge_subrecord_only_if_parent_exists/,
+        'received expected exception'
+    );
+    };
+
+subtest 'merge strategies' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
@@ -666,9 +778,9 @@ use Net::Works::Network;
         'expect_toplevel merge strategy',
         { merge_record_collisions => 1, merge_strategy => 'toplevel' },
     );
-}
+};
 
-{
+subtest 'merge error on hash mismatch' => sub {
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version              => 4,
         record_size             => 24,
@@ -698,9 +810,9 @@ use Net::Works::Network;
             "cannot merge records on collision when the data is not a hash - data = $data"
         );
     }
-}
+};
 
-{
+subtest 'merge error on hash-array mismatch' => sub {
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version              => 4,
         record_size             => 24,
@@ -728,7 +840,7 @@ use Net::Works::Network;
         qr{\QCannot merge data records unless both records are hashes - inserting 1.0.0.0/28},
         'cannot merge records on collision when the data is not a hash - larger record data is an array'
     );
-}
+};
 
 subtest 'Test merging into aliased nodes' => sub {
     my $tree = MaxMind::DB::Writer::Tree->new(

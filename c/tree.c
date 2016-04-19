@@ -72,22 +72,29 @@ LOCAL void resolve_ip(int tree_ip_version, const char *const ipstr,
                       uint8_t *bytes);
 LOCAL void free_network(MMDBW_network_s *network);
 LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree);
-LOCAL MMDBW_status insert_record_for_network(MMDBW_tree_s *tree,
-                                             MMDBW_network_s *network,
-                                             MMDBW_record_s *new_record,
-                                             bool merge_record_collisions,
-                                             bool is_internal_insert);
-LOCAL bool merge_records(MMDBW_tree_s *tree,
-                         MMDBW_network_s *network,
-                         MMDBW_record_s *new_record,
-                         MMDBW_record_s *record_to_set);
+LOCAL MMDBW_status insert_record_for_network(
+    MMDBW_tree_s *tree,
+    MMDBW_network_s *network,
+    MMDBW_record_s *new_record,
+    MMDBW_insertion_type
+    insertion_type,
+    bool is_internal_insert);
+LOCAL bool maybe_merge_records(MMDBW_tree_s *tree,
+                               MMDBW_network_s *network,
+                               MMDBW_record_s *new_record,
+                               MMDBW_record_s *record_to_set,
+                               MMDBW_insertion_type insertion_type);
 LOCAL int network_bit_value(MMDBW_tree_s *tree, MMDBW_network_s *network,
                             uint8_t current_bit);
 LOCAL int tree_depth0(MMDBW_tree_s *tree);
-LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into);
-LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to);
-LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into);
-LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into);
+LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into,
+                        bool merge_only_if_parent_exists);
+LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to,
+                                         bool merge_only_if_parent_exists);
+LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into,
+                        bool merge_only_if_parent_exists);
+LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into,
+                        bool merge_only_if_parent_exists);
 LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
                                            MMDBW_network_s *network,
                                            bool follow_aliases,
@@ -185,7 +192,7 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
 
 void insert_network(MMDBW_tree_s *tree, const char *ipstr,
                     const uint8_t prefix_length, SV *key_sv, SV *data,
-                    bool force_overwrite)
+                    MMDBW_insertion_type insertion_type)
 {
     verify_ip(tree, ipstr);
 
@@ -201,11 +208,7 @@ void insert_network(MMDBW_tree_s *tree, const char *ipstr,
     };
 
     MMDBW_status status = insert_record_for_network(
-        tree, &network, &new_record,
-        tree->merge_strategy !=
-        MMDBW_MERGE_STRATEGY_NONE
-        && !force_overwrite,
-        false);
+        tree, &network, &new_record, insertion_type, false);
 
     free_network(&network);
 
@@ -224,7 +227,7 @@ LOCAL void verify_ip(MMDBW_tree_s *tree, const char *ipstr)
 
 void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
                   const char *end_ipstr, SV *key_sv, SV *data_sv,
-                  bool force_overwrite)
+                  MMDBW_insertion_type insertion_type)
 {
     verify_ip(tree, start_ipstr);
     verify_ip(tree, end_ipstr);
@@ -272,9 +275,7 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
 
         status = insert_record_for_network(
             tree, &network, &new_record,
-            tree->merge_strategy !=
-            MMDBW_MERGE_STRATEGY_NONE
-            && !force_overwrite,
+            insertion_type,
             false);
         if (MMDBW_SUCCESS != status) {
             break;
@@ -379,7 +380,8 @@ void remove_network(MMDBW_tree_s *tree, const char *ipstr,
     };
 
     MMDBW_status status =
-        insert_record_for_network(tree, &network, &new_record, false,
+        insert_record_for_network(tree, &network, &new_record,
+                                  MMDBW_INSERTION_TYPE_FORCE_OVERWRITE,
                                   false);
 
     free_network(&network);
@@ -595,11 +597,13 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
     }
 }
 
-LOCAL MMDBW_status insert_record_for_network(MMDBW_tree_s *tree,
-                                             MMDBW_network_s *network,
-                                             MMDBW_record_s *new_record,
-                                             bool merge_record_collisions,
-                                             bool is_internal_insert)
+LOCAL MMDBW_status insert_record_for_network(
+    MMDBW_tree_s *tree,
+    MMDBW_network_s *network,
+    MMDBW_record_s *new_record,
+    MMDBW_insertion_type
+    insertion_type,
+    bool is_internal_insert)
 {
     MMDBW_record_s *record_to_set, *other_record;
     MMDBW_status status =
@@ -622,12 +626,9 @@ LOCAL MMDBW_status insert_record_for_network(MMDBW_tree_s *tree,
         return MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR;
     }
 
-    if (merge_record_collisions &&
-        MMDBW_RECORD_TYPE_DATA == new_record->type) {
-
-        if (merge_records(tree, network, new_record, record_to_set)) {
-            return MMDBW_SUCCESS;
-        }
+    if (maybe_merge_records(tree, network, new_record, record_to_set,
+                            insertion_type)) {
+        return MMDBW_SUCCESS;
     }
 
     /* If this record we're about to insert is a data record, and the other
@@ -662,7 +663,7 @@ LOCAL MMDBW_status insert_record_for_network(MMDBW_tree_s *tree,
              */
             MMDBW_status status =
                 insert_record_for_network(tree, &parent_network, new_record,
-                                          false,
+                                          MMDBW_INSERTION_TYPE_FORCE_OVERWRITE,
                                           true);
             free_network(&parent_network);
             return status;
@@ -682,11 +683,24 @@ LOCAL MMDBW_status insert_record_for_network(MMDBW_tree_s *tree,
     return MMDBW_SUCCESS;
 }
 
-LOCAL bool merge_records(MMDBW_tree_s *tree,
-                         MMDBW_network_s *network,
-                         MMDBW_record_s *new_record,
-                         MMDBW_record_s *record_to_set)
+LOCAL bool maybe_merge_records(MMDBW_tree_s *tree,
+                               MMDBW_network_s *network,
+                               MMDBW_record_s *new_record,
+                               MMDBW_record_s *record_to_set,
+                               MMDBW_insertion_type insertion_type)
 {
+    if (MMDBW_RECORD_TYPE_DATA != new_record->type) {
+        return false;
+    }
+
+    if (tree->merge_strategy == MMDBW_MERGE_STRATEGY_NONE) {
+        return false;
+    }
+
+    if (insertion_type == MMDBW_INSERTION_TYPE_FORCE_OVERWRITE) {
+        return false;
+    }
+
     int max_depth0 = tree_depth0(tree);
 
     if (MMDBW_RECORD_TYPE_NODE == record_to_set->type) {
@@ -712,7 +726,8 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
         };
 
         MMDBW_status status =
-            insert_record_for_network(tree, &left, &new_left_record, true,
+            insert_record_for_network(tree, &left, &new_left_record,
+                                      insertion_type,
                                       true);
         if (MMDBW_SUCCESS != status) {
             return status;
@@ -739,7 +754,8 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
         };
 
         status =
-            insert_record_for_network(tree, &right, &new_right_record, true,
+            insert_record_for_network(tree, &right, &new_right_record,
+                                      insertion_type,
                                       true);
         if (MMDBW_SUCCESS != status) {
             return status;
@@ -754,10 +770,13 @@ LOCAL bool merge_records(MMDBW_tree_s *tree,
        insert_record_for_network, as we only want to prune nodes where the
        merged record matches. */
     else if (MMDBW_RECORD_TYPE_DATA == record_to_set->type) {
-        SV *merged = merge_hashes_for_keys(tree,
-                                           new_record->value.key,
-                                           record_to_set->value.key,
-                                           network);
+        SV *merged = merge_hashes_for_keys(
+            tree,
+            new_record->value.key,
+            record_to_set->value.key,
+            network,
+            insertion_type ==
+            MMDBW_INSERTION_TYPE_ONLY_IF_PARENT_EXISTS);
 
         SV *key_sv = key_for_data(merged);
         const char *const new_key =
@@ -788,8 +807,10 @@ LOCAL int tree_depth0(MMDBW_tree_s *tree)
 }
 
 SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
-                          const char *const key_into, MMDBW_network_s *network)
+                          const char *const key_into, MMDBW_network_s *network,
+                          bool merge_only_if_parent_exists)
 {
+
     SV *data_from = data_for_key(tree, key_from);
     SV *data_into = data_for_key(tree, key_into);
 
@@ -815,24 +836,27 @@ SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
             address_string, network->prefix_length);
     }
 
-    return merge_hashes(tree, data_from, data_into);
+    return merge_hashes(tree, data_from, data_into, merge_only_if_parent_exists);
 }
 
-LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into)
+LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into,
+                        bool merge_only_if_parent_exists)
 {
     HV *hash_from = (HV *)SvRV(from);
     HV *hash_into = (HV *)SvRV(into);
     HV *hash_new = newHV();
 
-    merge_new_from_hash_into_hash(tree, hash_from, hash_new);
-    merge_new_from_hash_into_hash(tree, hash_into, hash_new);
+    merge_new_from_hash_into_hash(tree, hash_into, hash_new, false);
+    merge_new_from_hash_into_hash(tree, hash_from, hash_new,
+                                  merge_only_if_parent_exists);
 
     return newRV_noinc((SV *)hash_new);
 }
 
 // Note: unlike the other merge functions, this does _not_ replace existing
 // values.
-LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to)
+LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to,
+                                         bool merge_only_if_parent_exists)
 {
     (void)hv_iterinit(from);
     HE *he;
@@ -848,10 +872,16 @@ LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to)
                     // This should never happen as we just did an hv_exists
                     croak("Received an unexpected NULL from hv_fetch");
                 }
-                value = merge_values(tree, value, *existing_value);
+
+                value = merge_values(tree, value, *existing_value,
+                                     merge_only_if_parent_exists);
             } else {
-                continue;
+                // We are replacing the current value
+                hash = HeHASH(he);
+                SvREFCNT_inc_simple_void_NN(value);
             }
+        } else if (merge_only_if_parent_exists && SvROK(value)) {
+            continue;
         } else {
             hash = HeHASH(he);
             SvREFCNT_inc_simple_void_NN(value);
@@ -863,7 +893,8 @@ LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to)
     return;
 }
 
-LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into)
+LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into,
+                        bool merge_only_if_parent_exists)
 {
     if (SvROK(from) != SvROK(into)) {
         croak("Attempt to merge a reference value and non-refrence value");
@@ -877,17 +908,18 @@ LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into)
     }
 
     if (SvTYPE(SvRV(from)) == SVt_PVHV && SvTYPE(SvRV(into)) == SVt_PVHV) {
-        return merge_hashes(tree, from, into);
+        return merge_hashes(tree, from, into, merge_only_if_parent_exists);
     }
 
     if (SvTYPE(SvRV(from)) == SVt_PVAV && SvTYPE(SvRV(into)) == SVt_PVAV) {
-        return merge_arrays(tree, from, into);
+        return merge_arrays(tree, from, into, merge_only_if_parent_exists);
     }
 
     croak("Only arrayrefs, hashrefs, and scalars can be merged.");
 }
 
-LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into)
+LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into,
+                        bool merge_only_if_parent_exists)
 {
     AV *from_array = (AV *)SvRV(from);
     AV *into_array = (AV *)SvRV(into);
@@ -906,8 +938,12 @@ LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into)
         SV ** from_value = av_fetch(from_array, i, 0);
         SV ** into_value = av_fetch(into_array, i, 0);
         if (from_value != NULL && into_value != NULL) {
-            new_value = merge_values(tree, *from_value, *into_value);
+            new_value = merge_values(tree, *from_value, *into_value,
+                                     merge_only_if_parent_exists);
         } else if (from_value != NULL) {
+            if (merge_only_if_parent_exists && SvROK(*from_value)) {
+                break;
+            }
             new_value = *from_value;
             SvREFCNT_inc_simple_void_NN(new_value);
         } else if (into_value != NULL) {
@@ -1297,7 +1333,7 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
         // We should never need to merge when thawing a tree.
         MMDBW_status status = insert_record_for_network(
             tree, thawed->network, thawed->record,
-            false, true);
+            MMDBW_INSERTION_TYPE_FORCE_OVERWRITE, true);
         free_network(thawed->network);
         free(thawed->network);
         free(thawed->record);

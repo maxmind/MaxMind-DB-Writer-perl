@@ -69,6 +69,12 @@ typedef enum {
     MMDBW_MERGE_STRATEGY_RECURSE
 } MMDBW_merge_strategy;
 
+typedef enum {
+    MMDBW_INSERTION_TYPE_DEFAULT,
+    MMDBW_INSERTION_TYPE_FORCE_OVERWRITE,
+    MMDBW_INSERTION_TYPE_ONLY_IF_PARENT_EXISTS,
+} MMDBW_insertion_type;
+
 typedef struct MMDBW_record_s {
     union {
         const char *key;
@@ -118,14 +124,15 @@ typedef void (MMDBW_iterator_callback)(MMDBW_tree_s *tree,
                                   const bool alias_ipv6);
     extern void insert_network(MMDBW_tree_s *tree, const char *ipstr,
                                const uint8_t prefix_length, SV *key_sv, SV *data,
-                               bool force_overwrite);
+                               MMDBW_insertion_type insertion_type);
     extern void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
                              const char *end_ipstr, SV *key_sv, SV *data_sv,
-                             bool force_overwrite);
+                             MMDBW_insertion_type insertion_type);
     extern void remove_network(MMDBW_tree_s *tree, const char *ipstr,
                                const uint8_t prefix_length);
     extern SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
-                                     const char *const key_into, MMDBW_network_s *network);
+                                     const char *const key_into, MMDBW_network_s *network,
+                                     bool merge_only_if_parent_exists);
     extern SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr);
     extern MMDBW_node_s *new_node();
     extern void assign_node_numbers(MMDBW_tree_s *tree);

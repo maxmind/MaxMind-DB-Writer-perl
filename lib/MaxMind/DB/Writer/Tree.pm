@@ -178,10 +178,10 @@ sub _build_tree {
 }
 
 sub insert_network {
-    my $self            = shift;
-    my $network         = shift;
-    my $data            = shift;
-    my $additional_args = shift // {};
+    my $self    = shift;
+    my $network = shift;
+    my $data    = shift;
+    my $args    = shift // {};
 
     my ( $ip_address, $prefix_length ) = split qr{/}, $network, 2;
 
@@ -192,12 +192,15 @@ sub insert_network {
         die "Invalid network inserted: $network";
     }
 
+    $self->_validate_insertion_args($args) if %{$args};
+
     $self->_insert_network(
         $ip_address,
         $prefix_length,
         key_for_data($data),
         $data,
-        $additional_args->{force_overwrite},
+        $args->{force_overwrite},
+        $args->{merge_subrecord_only_if_parent_exists},
     );
 
     return;
@@ -208,17 +211,37 @@ sub insert_range {
     my $start_ip_address = shift;
     my $end_ip_address   = shift;
     my $data             = shift;
-    my $additional_args  = shift // {};
+    my $args             = shift // {};
+
+    $self->_validate_insertion_args($args) if %{$args};
 
     $self->_insert_range(
         $start_ip_address,
         $end_ip_address,
         key_for_data($data),
         $data,
-        $additional_args->{force_overwrite},
+        $args->{force_overwrite},
+        $args->{merge_subrecord_only_if_parent_exists},
     );
 
     return;
+}
+
+sub _validate_insertion_args {
+    my $self = shift;
+    my $args = shift;
+
+    if (   $args->{merge_subrecord_only_if_parent_exists}
+        && $self->merge_strategy ne 'recurse' ) {
+        die
+            'Merge strategy must be "recurse" to use merge_subrecord_only_if_parent_exists.';
+    }
+
+    if (   $args->{merge_subrecord_only_if_parent_exists}
+        && $args->{force_overwrite} ) {
+        die
+            'merge_subrecord_only_if_parent_exists cannot be used with force_overwrite';
+    }
 }
 
 sub remove_network {
@@ -707,10 +730,29 @@ also handle unsigned 64-bit and 128-bit integers if they are passed as
 L<Math::UInt128|Math::Int128> objects.
 
 C<$additional_args> is a hash reference containing additional arguments that
-change the behavior of the insert. Currently, the only supported argument is
-C<force_overwrite>. This causes the object-wide C<merge_record_collisions>
-setting to be ignored for the insert, causing C<$data> to overwrite any
-existing data for the network.
+change the behavior of the insert. The following arguments are supported:
+
+=over 2
+
+=item * C<force_overwrite>
+
+This causes the tree's C<merge_record_collisions> setting to be ignored
+for the insert, causing C<$data> to overwrite any existing data for the
+network.
+
+=item * C<merge_subrecord_only_if_parent_exists>
+
+When merging the data record with an existing data record, do not create new
+hash references that do not exist in the original data record. For instance,
+if the original data record is C<{parent_a => {sibling => 1}}> and
+C<{parent_a => {child_a => 1}, parent_b => {child_b => 1}}> is inserted, only
+C<child_a>, not C<child_b>, will appear in the merged record. This is useful
+when inserting data that is supposed to supplement the existing data but is
+not helpful on its own.
+
+To use this option, you I<must> be using the C<merge_strategy> c<recurse>.
+
+=back
 
 =head3 Insert Order, Merging, and Overwriting
 

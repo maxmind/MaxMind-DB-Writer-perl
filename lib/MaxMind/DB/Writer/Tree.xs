@@ -141,6 +141,14 @@ SV *maybe_method(HV *package, const char *const method)
     return NULL;
 }
 
+MMDBW_insertion_type insertion_type(bool force_overwrite,
+                                    bool only_if_parent_exists)
+{
+    return force_overwrite ? MMDBW_INSERTION_TYPE_FORCE_OVERWRITE :
+           only_if_parent_exists ? MMDBW_INSERTION_TYPE_ONLY_IF_PARENT_EXISTS :
+           MMDBW_INSERTION_TYPE_DEFAULT;
+}
+
 /* *INDENT-OFF* */
 
 /* XXX - it'd be nice to find a way to get the tree from the XS code so we
@@ -168,28 +176,30 @@ _create_tree(ip_version, record_size, merge_strategy, alias_ipv6)
         RETVAL
 
 void
-_insert_network(self, ip_address, prefix_length, key, data, force_overwrite)
+_insert_network(self, ip_address, prefix_length, key, data, force_overwrite, only_if_parent_exists)
     SV *self;
     char *ip_address;
     uint8_t prefix_length;
     SV *key;
     SV *data;
     bool force_overwrite;
+    bool only_if_parent_exists;
 
     CODE:
-        insert_network(tree_from_self(self), ip_address, prefix_length, key, data, force_overwrite);
+        insert_network(tree_from_self(self), ip_address, prefix_length, key, data, insertion_type(force_overwrite, only_if_parent_exists));
 
 void
-_insert_range(self, start_ip_address, end_ip_address, key, data, force_overwrite)
+_insert_range(self, start_ip_address, end_ip_address, key, data, force_overwrite, only_if_parent_exists)
     SV *self;
     char *start_ip_address;
     char *end_ip_address;
     SV *key;
     SV *data;
     bool force_overwrite;
+    bool only_if_parent_exists;
 
     CODE:
-        insert_range(tree_from_self(self), start_ip_address, end_ip_address, key, data, force_overwrite);
+        insert_range(tree_from_self(self), start_ip_address, end_ip_address, key, data, insertion_type(force_overwrite, only_if_parent_exists));
 
 void
 _remove_network(self, ip_address, prefix_length)
