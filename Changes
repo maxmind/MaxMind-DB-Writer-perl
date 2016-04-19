@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+- Added the optional tree insertion argument
+  merge_subrecord_only_if_parent_exists. When enabled, data will be inserted
+  only if the parent hash reference already exists. This argument can only be
+  used when the merge_strategy is "recurse".
+
+
 0.200003 2016-04-11
 
 - The Teredo range is no longer removed from the database when
@@ -8,6 +14,7 @@
   this alias would be removed if both "alias_ipv6_to_ipv4" and
   "remove_reserved_networks" were enabled.
 - Allow changing the record size when unfreezing a frozen tree
+
 
 0.200002 2016-04-07
 
