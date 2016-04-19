@@ -178,10 +178,10 @@ sub _build_tree {
 }
 
 sub insert_network {
-    my $self            = shift;
-    my $network         = shift;
-    my $data            = shift;
-    my $additional_args = shift // {};
+    my $self    = shift;
+    my $network = shift;
+    my $data    = shift;
+    my $args    = shift // {};
 
     my ( $ip_address, $prefix_length ) = split qr{/}, $network, 2;
 
@@ -192,15 +192,15 @@ sub insert_network {
         die "Invalid network inserted: $network";
     }
 
-    $self->_validate_insertion_args($additional_args);
+    $self->_validate_insertion_args($args) if %{$args};
 
     $self->_insert_network(
         $ip_address,
         $prefix_length,
         key_for_data($data),
         $data,
-        $additional_args->{force_overwrite},
-        $additional_args->{merge_subrecord_only_if_parent_exists},
+        $args->{force_overwrite},
+        $args->{merge_subrecord_only_if_parent_exists},
     );
 
     return;
@@ -211,17 +211,17 @@ sub insert_range {
     my $start_ip_address = shift;
     my $end_ip_address   = shift;
     my $data             = shift;
-    my $additional_args  = shift // {};
+    my $args             = shift // {};
 
-    $self->_validate_insertion_args($additional_args);
+    $self->_validate_insertion_args($args) if %{$args};
 
     $self->_insert_range(
         $start_ip_address,
         $end_ip_address,
         key_for_data($data),
         $data,
-        $additional_args->{force_overwrite},
-        $additional_args->{merge_subrecord_only_if_parent_exists},
+        $args->{force_overwrite},
+        $args->{merge_subrecord_only_if_parent_exists},
     );
 
     return;
