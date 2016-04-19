@@ -76,8 +76,7 @@ LOCAL MMDBW_status insert_record_for_network(
     MMDBW_tree_s *tree,
     MMDBW_network_s *network,
     MMDBW_record_s *new_record,
-    MMDBW_insertion_type
-    insertion_type,
+    MMDBW_insertion_type insertion_type,
     bool is_internal_insert);
 LOCAL bool maybe_merge_records(MMDBW_tree_s *tree,
                                MMDBW_network_s *network,
@@ -601,8 +600,7 @@ LOCAL MMDBW_status insert_record_for_network(
     MMDBW_tree_s *tree,
     MMDBW_network_s *network,
     MMDBW_record_s *new_record,
-    MMDBW_insertion_type
-    insertion_type,
+    MMDBW_insertion_type insertion_type,
     bool is_internal_insert)
 {
     MMDBW_record_s *record_to_set, *other_record;
@@ -614,6 +612,13 @@ LOCAL MMDBW_status insert_record_for_network(
     if (MMDBW_SUCCESS != status) {
         free_record_value(tree, new_record);
         return MMDBW_FINDING_NODE_ERROR;
+    }
+
+    if (record_to_set->type == MMDBW_RECORD_TYPE_EMPTY &&
+        insertion_type == MMDBW_INSERTION_TYPE_ONLY_IF_PARENT_EXISTS) {
+        // We do not create a new record when using "only if parent exists"
+        free_record_value(tree, new_record);
+        return MMDBW_SUCCESS;
     }
 
     if (record_to_set->type == MMDBW_RECORD_TYPE_ALIAS) {
