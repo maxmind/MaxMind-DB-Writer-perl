@@ -557,7 +557,7 @@ subtest 'merge subrecord only if parent exists - hashes' => sub {
     my @pairs = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
-                { parent => { sibling => 1 } },
+                { parent => { sibling => { child => 1 } } },
         ],
         [
             Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
@@ -565,7 +565,12 @@ subtest 'merge subrecord only if parent exists - hashes' => sub {
         ],
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/31' ) =>
-                { parent                            => { self => 0 } },
+                {
+                parent => {
+                    sibling => { child => 2 },
+                    self    => 0
+                }
+                },
             { merge_subrecord_only_if_parent_exists => 1 },
         ],
     );
@@ -573,7 +578,7 @@ subtest 'merge subrecord only if parent exists - hashes' => sub {
     my @expect = (
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
-                { parent => { sibling => 1, self => 0 } },
+                { parent => { sibling => { child => 2 }, self => 0 } },
         ],
         [
             Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
