@@ -3,7 +3,7 @@ package MaxMind::DB::Writer;
 use strict;
 use warnings;
 
-our $VERSION = '0.200004';
+our $VERSION = '0.200005';
 
 1;
 
