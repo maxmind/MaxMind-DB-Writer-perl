@@ -564,14 +564,14 @@ subtest 'merge subrecord only if parent exists - hashes' => sub {
                 { non_parent => { non_subling => 1 } },
         ],
         [
-            Net::Works::Network->new_from_string( string => '2.0.0.0/31' ) =>
+            Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
                 {
                 parent => {
                     sibling => { child => 2 },
                     self    => 0
                 }
                 },
-            { merge_subrecord_only_if_parent_exists => 1 },
+            { insert_only_if_parent_exists => 1 },
         ],
     );
 
@@ -584,12 +584,16 @@ subtest 'merge subrecord only if parent exists - hashes' => sub {
             Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
                 { non_parent => { non_subling => 1 } },
         ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.2/31' ) =>
+                undef,
+        ],
     );
 
     test_tree(
         \@pairs,
         \@expect,
-        'merge hashes merge_subrecord_only_if_parent_exists inserts correctly',
+        'merge hashes insert_only_if_parent_exists inserts correctly',
         { merge_record_collisions => 1, merge_strategy => 'recurse' },
     );
 };
@@ -612,8 +616,9 @@ subtest 'merge subrecord only if parent exists - arrays' => sub {
                 {
                 grandparent => [ { self => 0 } ],
                 scalars     => [3],
+                new_array   => [ { new  => 0 } ],
                 },
-            { merge_subrecord_only_if_parent_exists => 1 },
+            { insert_only_if_parent_exists => 1 },
         ],
     );
 
@@ -634,14 +639,13 @@ subtest 'merge subrecord only if parent exists - arrays' => sub {
     test_tree(
         \@pairs,
         \@expect,
-        'merge arrays merge_subrecord_only_if_parent_exists inserts correctly',
+        'merge arrays insert_only_if_parent_exists inserts correctly',
         { merge_record_collisions => 1, merge_strategy => 'recurse' },
     );
 };
 
 subtest
-    'merge_subrecord_only_if_parent_exists requires merge_strategy => recurse'
-    => sub {
+    'insert_only_if_parent_exists requires merge_strategy => recurse' => sub {
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version            => 4,
         record_size           => 24,
@@ -656,11 +660,11 @@ subtest
         exception {
             $tree->insert_network(
                 '1.0.0.0/24',
-                { a                                     => { b => 1 } },
-                { merge_subrecord_only_if_parent_exists => 1 },
+                { a                            => { b => 1 } },
+                { insert_only_if_parent_exists => 1 },
                 )
         },
-        qr/Merge strategy must be "recurse" to use merge_subrecord_only_if_parent_exists/,
+        qr/Merge strategy must be "recurse" to use insert_only_if_parent_exists/,
         'received expected exception'
     );
     };

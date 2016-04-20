@@ -1,9 +1,9 @@
 {{$NEXT}}
 
-- Added the optional tree insertion argument
-  merge_subrecord_only_if_parent_exists. When enabled, data will be inserted
-  only if the parent hash reference already exists. This argument can only be
-  used when the merge_strategy is "recurse".
+- Added the optional tree insertion argument insert_only_if_parent_exists.
+  When enabled, data will be inserted if a record already exists for the
+  network and only if the parent hash reference already exists. This argument
+  can only be used when the merge_strategy is "recurse".
 
 
 0.200003 2016-04-11
