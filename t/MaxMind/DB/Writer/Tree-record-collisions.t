@@ -6,6 +6,7 @@ use lib 't/lib';
 use Test::Fatal;
 use Test::MaxMind::DB::Writer qw( test_tree test_freeze_thaw );
 use Test::More;
+use Test::Warnings qw( :all );
 
 use MaxMind::DB::Writer::Tree;
 
@@ -50,11 +51,20 @@ subtest 'simple IPv6 merge' => sub {
         ],
     );
 
-    test_tree(
-        \@pairs,
-        \@expect,
-        'data hashes for records are merged on collision - ipv6',
-        { merge_record_collisions => 1 },
+    my @warnings = warnings {
+        test_tree(
+            \@pairs,
+            \@expect,
+            'data hashes for records are merged on collision - ipv6',
+            { merge_record_collisions => 1 },
+            )
+    };
+    is( scalar @warnings, 2, 'received two warnings' );
+
+    like(
+        $warnings[0],
+        qr/merge_record_collisions is deprecated./,
+        'merge_record_collisions deprecation message'
     );
 };
 
@@ -95,7 +105,7 @@ subtest 'merge - small net, large net, small net' => sub {
         \@pairs,
         \@expect,
         'data hashes for records are merged on collision - small net, large net, small net',
-        { merge_record_collisions => 1 },
+        { merge_strategy => 'toplevel' },
     );
 };
 
@@ -130,7 +140,7 @@ subtest 'merge  - large net, small net, large net' => sub {
         \@pairs,
         \@expect,
         'data hashes for records are merged on collision - large net, small net, large net',
-        { merge_record_collisions => 1 },
+        { merge_strategy => 'toplevel' },
     );
 };
 
@@ -160,7 +170,7 @@ subtest 'merge - same network' => sub {
         \@pairs,
         \@expect,
         'data hashes for records are merged on collision - same network',
-        { merge_record_collisions => 1 },
+        { merge_strategy => 'toplevel' },
     );
 };
 
@@ -194,7 +204,7 @@ subtest 'merge - overlapping network, larger net first' => sub {
         \@pairs,
         \@expect,
         'data hashes for records are merged on collision - overlapping network, larger net first',
-        { merge_record_collisions => 1 },
+        { merge_strategy => 'toplevel' },
     );
 };
 
@@ -228,7 +238,7 @@ subtest 'merge - overlapping network, smaller net first' => sub {
         \@pairs,
         \@expect,
         'data hashes for records are merged on collision - overlapping network, smaller net first',
-        { merge_record_collisions => 1 },
+        { merge_strategy => 'toplevel' },
     );
 };
 
@@ -274,7 +284,7 @@ subtest 'merge - smaller nets first' => sub {
         \@pairs,
         \@expect,
         'data hashes for records are merged on collision - smaller nets first',
-        { merge_record_collisions => 1 },
+        { merge_strategy => 'toplevel' },
     );
 };
 
@@ -355,7 +365,7 @@ subtest 'merge - smaller net first' => sub {
         \@pairs,
         \@expect,
         'data hashes for records are merged on collision - smaller net first',
-        { merge_record_collisions => 1 },
+        { merge_strategy => 'toplevel' },
     );
 };
 
@@ -396,7 +406,7 @@ subtest 'merge - larger net first' => sub {
         \@pairs,
         \@expect,
         'data hashes for records are merged on collision - larger net first',
-        { merge_record_collisions => 1 },
+        { merge_strategy => 'toplevel' },
     );
 };
 
@@ -455,7 +465,7 @@ subtest 'merge - larger net first' => sub {
         \@pairs,
         \@expect,
         'data hashes for records are merged on repeated collision - larger net first',
-        { merge_record_collisions => 1 },
+        { merge_strategy => 'toplevel' },
     );
 };
 
@@ -505,7 +515,7 @@ subtest 'last in value wins when overwriting' => sub {
         \@pairs,
         \@expect,
         'last in value wins when overwriting',
-        { merge_record_collisions => 1 },
+        { merge_strategy => 'toplevel' },
     );
 };
 
@@ -545,11 +555,19 @@ subtest 'force_overwrite with merge_record_collisions' => sub {
         ],
     );
 
-    test_tree(
-        \@pairs,
-        \@expect,
-        'force_overwrite overwrites record even when merge_record_collisions is enabled',
-        { merge_record_collisions => 1 },
+    my @warnings = warnings {
+        test_tree(
+            \@pairs,
+            \@expect,
+            'force_overwrite overwrites record even when merge_record_collisions is enabled',
+            { merge_strategy => 'toplevel' },
+            )
+    };
+
+    is( scalar @warnings, 2, 'received 2 warnings' );
+    like(
+        $warnings[0], qr/force_overwrite is deprecated/,
+        'received deprecation warning'
     );
 };
 
@@ -590,11 +608,19 @@ subtest 'merge subrecord only if parent exists - hashes' => sub {
         ],
     );
 
-    test_tree(
-        \@pairs,
-        \@expect,
-        'merge hashes insert_only_if_parent_exists inserts correctly',
-        { merge_record_collisions => 1, merge_strategy => 'recurse' },
+    my @warnings = warnings {
+        test_tree(
+            \@pairs,
+            \@expect,
+            'merge hashes insert_only_if_parent_exists inserts correctly',
+            { merge_strategy => 'recurse' },
+            )
+    };
+    is( scalar @warnings, 2, 'received two warnings' );
+    like(
+        $warnings[0],
+        qr/The argument insert_only_if_parent_exists is deprecated./,
+        'expected deprecation message'
     );
 };
 
@@ -618,7 +644,7 @@ subtest 'merge subrecord only if parent exists - arrays' => sub {
                 scalars     => [3],
                 new_array   => [ { new  => 0 } ],
                 },
-            { insert_only_if_parent_exists => 1 },
+            { merge_strategy => 'add-only-if-parent-exists' },
         ],
     );
 
@@ -640,34 +666,9 @@ subtest 'merge subrecord only if parent exists - arrays' => sub {
         \@pairs,
         \@expect,
         'merge arrays insert_only_if_parent_exists inserts correctly',
-        { merge_record_collisions => 1, merge_strategy => 'recurse' },
+        { merge_strategy => 'recurse' },
     );
 };
-
-subtest
-    'insert_only_if_parent_exists requires merge_strategy => recurse' => sub {
-    my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version            => 4,
-        record_size           => 24,
-        database_type         => 'Test',
-        languages             => ['en'],
-        description           => { en => 'Test tree' },
-        merge_strategy        => 'toplevel',
-        map_key_type_callback => sub { },
-    );
-
-    like(
-        exception {
-            $tree->insert_network(
-                '1.0.0.0/24',
-                { a                            => { b => 1 } },
-                { insert_only_if_parent_exists => 1 },
-                )
-        },
-        qr/Merge strategy must be "recurse" to use insert_only_if_parent_exists/,
-        'received expected exception'
-    );
-    };
 
 subtest 'merge strategies' => sub {
     my @pairs = (
@@ -740,7 +741,7 @@ subtest 'merge strategies' => sub {
         \@pairs,
         \@expect_recurse,
         'recurse merge strategy',
-        { merge_record_collisions => 1, merge_strategy => 'recurse' },
+        { merge_strategy => 'recurse' },
     );
 
     my @expect_toplevel = (
@@ -780,19 +781,88 @@ subtest 'merge strategies' => sub {
         \@pairs,
         \@expect_toplevel,
         'expect_toplevel merge strategy',
-        { merge_record_collisions => 1, merge_strategy => 'toplevel' },
+        { merge_strategy => 'toplevel' },
+    );
+};
+
+subtest 'insert-specific merge strategies' => sub {
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
+                {
+                parent => { sibling => { child => 1 } },
+                aunt   => { cousin  => 1 },
+                },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { new        => 1 },
+            { merge_strategy => 'none' }
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
+                { parent     => { new => 1 } },
+            { merge_strategy => 'recurse' }
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.2/32' ) =>
+                { aunt       => { step_cousin => 1 } },
+            { merge_strategy => 'toplevel' }
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.3/32' ) =>
+                {
+                aunt  => { step_cousin => 1 },
+                uncle => { cousin      => 2 }
+                },
+            { merge_strategy => 'add-only-if-parent-exists' }
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
+                { new => 1 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
+                {
+                parent => { sibling => { child => 1 }, new => 1 },
+                aunt   => { cousin  => 1 },
+                },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.2/32' ) =>
+                {
+                parent => { sibling     => { child => 1 } },
+                aunt   => { step_cousin => 1 },
+                },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.3/32' ) =>
+                {
+                parent => { sibling => { child => 1 } },
+                aunt => { cousin => 1, step_cousin => 1 },
+                },
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'insert-specific merge strategies',
     );
 };
 
 subtest 'merge error on hash mismatch' => sub {
     my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version              => 4,
-        record_size             => 24,
-        database_type           => 'Test',
-        languages               => ['en'],
-        description             => { en => 'Test tree' },
-        merge_record_collisions => 1,
-        map_key_type_callback   => sub { },
+        ip_version            => 4,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        merge_strategy        => 'toplevel',
+        map_key_type_callback => sub { },
     );
 
     $tree->insert_network(
@@ -818,13 +888,13 @@ subtest 'merge error on hash mismatch' => sub {
 
 subtest 'merge error on hash-array mismatch' => sub {
     my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version              => 4,
-        record_size             => 24,
-        database_type           => 'Test',
-        languages               => ['en'],
-        description             => { en => 'Test tree' },
-        merge_record_collisions => 1,
-        map_key_type_callback   => sub { },
+        ip_version            => 4,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        merge_strategy        => 'toplevel',
+        map_key_type_callback => sub { },
     );
 
     $tree->insert_network(
@@ -848,14 +918,14 @@ subtest 'merge error on hash-array mismatch' => sub {
 
 subtest 'Test merging into aliased nodes' => sub {
     my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version              => 6,
-        record_size             => 24,
-        database_type           => 'Test',
-        languages               => ['en'],
-        description             => { en => 'Test tree' },
-        merge_record_collisions => 1,
-        map_key_type_callback   => sub { 'utf8_string' },
-        alias_ipv6_to_ipv4      => 1,
+        ip_version            => 6,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        merge_strategy        => 'toplevel',
+        map_key_type_callback => sub { 'utf8_string' },
+        alias_ipv6_to_ipv4    => 1,
     );
 
     _insert_network( $tree, $_ ) for qw( 1.0.0.0/24 ::/1 2001::/31 );

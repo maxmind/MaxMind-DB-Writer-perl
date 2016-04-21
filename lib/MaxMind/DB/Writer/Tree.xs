@@ -141,14 +141,6 @@ SV *maybe_method(HV *package, const char *const method)
     return NULL;
 }
 
-MMDBW_insertion_type insertion_type(bool force_overwrite,
-                                    bool only_if_parent_exists)
-{
-    return force_overwrite ? MMDBW_INSERTION_TYPE_FORCE_OVERWRITE :
-           only_if_parent_exists ? MMDBW_INSERTION_TYPE_ONLY_IF_PARENT_EXISTS :
-           MMDBW_INSERTION_TYPE_DEFAULT;
-}
-
 /* *INDENT-OFF* */
 
 /* XXX - it'd be nice to find a way to get the tree from the XS code so we
@@ -176,30 +168,29 @@ _create_tree(ip_version, record_size, merge_strategy, alias_ipv6)
         RETVAL
 
 void
-_insert_network(self, ip_address, prefix_length, key, data, force_overwrite, only_if_parent_exists)
+_insert_network(self, ip_address, prefix_length, key, data, merge_strategy)
     SV *self;
     char *ip_address;
     uint8_t prefix_length;
     SV *key;
     SV *data;
-    bool force_overwrite;
-    bool only_if_parent_exists;
+    MMDBW_merge_strategy merge_strategy;
 
     CODE:
-        insert_network(tree_from_self(self), ip_address, prefix_length, key, data, insertion_type(force_overwrite, only_if_parent_exists));
+        MMDBW_tree_s *tree = tree_from_self(self);
+        insert_network(tree, ip_address, prefix_length, key, data, merge_strategy);
 
 void
-_insert_range(self, start_ip_address, end_ip_address, key, data, force_overwrite, only_if_parent_exists)
+_insert_range(self, start_ip_address, end_ip_address, key, data, merge_strategy)
     SV *self;
     char *start_ip_address;
     char *end_ip_address;
     SV *key;
     SV *data;
-    bool force_overwrite;
-    bool only_if_parent_exists;
+    MMDBW_merge_strategy merge_strategy;
 
     CODE:
-        insert_range(tree_from_self(self), start_ip_address, end_ip_address, key, data, insertion_type(force_overwrite, only_if_parent_exists));
+        insert_range(tree_from_self(self), start_ip_address, end_ip_address, key, data, merge_strategy);
 
 void
 _remove_network(self, ip_address, prefix_length)
@@ -303,7 +294,7 @@ _thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, al
     bool alias_ipv6;
 
     CODE:
-    RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6);
+        RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6);
 
     OUTPUT:
         RETVAL

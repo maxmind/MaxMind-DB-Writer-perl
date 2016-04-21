@@ -32,7 +32,7 @@ for my $record_size ( 24, 28, 32 ) {
             database_type           => 'Test',
             languages               => [ 'en', 'fr' ],
             description             => { en => 'Test tree' },
-            merge_record_collisions => 1,
+            merge_strategy => 'toplevel',
             map_key_type_callback   => sub { 'uint32' },
             remove_reserved_networks => 0,
         );
@@ -69,7 +69,7 @@ for my $record_size ( 24, 28, 32 ) {
                 database_type           => 'Test',
                 languages               => ['en'],
                 description             => { en => 'Test tree' },
-                merge_record_collisions => 1,
+                merge_strategy => 'toplevel',
                 map_key_type_callback   => $cb,
                 remove_reserved_networks => 0,
             );
@@ -166,7 +166,7 @@ for my $record_size ( 24, 28, 32 ) {
         database_type           => 'Test',
         languages               => ['en'],
         description             => { en => 'Test tree' },
-        merge_record_collisions => 1,
+        merge_strategy => 'toplevel',
         map_key_type_callback   => sub {'uint32'},
         remove_reserved_networks => 0,
     );
