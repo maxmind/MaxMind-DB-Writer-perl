@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.201000 2016-04-22
+
 - The insertion methods now take a merge_strategy argument.
 - An add-only-if-parent-exists merge strategy was added. This replaces the
   functionality of insert_only_if_parent_exists.
