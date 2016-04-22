@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
-our $VERSION = '0.201000';
+our $VERSION = '0.201001';
 
 use Data::Dumper::Concise;
 use Digest::MD5 qw( md5_hex );
