@@ -4,9 +4,10 @@
 - An add-only-if-parent-exists merge strategy was added. This replaces the
   functionality of insert_only_if_parent_exists.
 - Deprecated insert_only_if_parent_exists and force_overwrite insertion
-  arguments. These arguments will now warn and will be removed in the future.
+  arguments. These arguments will now warn and will be removed in a future
+  major release.
 - Deprecated merge_record_collisions constructor argument. This argument will
-  now warn and will be removed in the future.
+  now warn and will be removed in a future major release.
 
 
 0.200004 2016-04-20
