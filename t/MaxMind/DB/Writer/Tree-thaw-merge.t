@@ -10,11 +10,11 @@ use Test::Requires {
     'MaxMind::DB::Reader' => 0.040000,
 };
 
-use Test::More;
-
 use File::Temp qw( tempdir );
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
+use Test::More;
+use Test::Warnings qw( :all );
 
 ########################################################################
 # the purpose of this test is to check the merging arguments are being
@@ -99,6 +99,17 @@ check_tree(
     [],
     sub {
         my %args = @_;
+
+        like(
+            warning {
+                ok(
+                    !$args{thawed_tree}->merge_record_collisions,
+                    'thawed merge_record_collisons'
+                    )
+            },
+            qr/merge_record_collisions is deprecated/,
+            'received deprecation message'
+        );
 
         is(
             $args{thawed_tree}->merge_strategy, 'none',
@@ -187,6 +198,17 @@ check_tree(
     [ merge_strategy => 'toplevel' ],
     sub {
         my %args = @_;
+
+        like(
+            warning {
+                ok(
+                    $args{thawed_tree}->merge_record_collisions,
+                    'thawed merge_record_collisons'
+                    )
+            },
+            qr/merge_record_collisions is deprecated/,
+            'received deprecation message'
+        );
 
         is(
             $args{thawed_tree}->merge_strategy, 'toplevel',
