@@ -10,11 +10,11 @@ use Test::Requires {
     'MaxMind::DB::Reader' => 0.040000,
 };
 
-use Test::More;
-
 use File::Temp qw( tempdir );
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
+use Test::More;
+use Test::Warnings qw( :all );
 
 ########################################################################
 # the purpose of this test is to check the merging arguments are being
@@ -100,10 +100,17 @@ check_tree(
     sub {
         my %args = @_;
 
-        ok(
-            !$args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
+        like(
+            warning {
+                ok(
+                    !$args{thawed_tree}->merge_record_collisions,
+                    'thawed merge_record_collisons'
+                    )
+            },
+            qr/merge_record_collisions is deprecated/,
+            'received deprecation message'
         );
+
         is(
             $args{thawed_tree}->merge_strategy, 'none',
             'thawed merge_strategy'
@@ -127,15 +134,11 @@ check_tree(
 
 check_tree(
     'check no merging explictly',
-    [ merge_record_collisions => 0 ],
+    [ merge_strategy => 'none' ],
     [],
     sub {
         my %args = @_;
 
-        ok(
-            !$args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'none',
             'thawed merge_strategy'
@@ -159,15 +162,11 @@ check_tree(
 
 check_tree(
     'check no merging and none explictly',
-    [ merge_record_collisions => 0, merge_strategy => 'none' ],
+    [ merge_strategy => 'none' ],
     [],
     sub {
         my %args = @_;
 
-        ok(
-            !$args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'none',
             'thawed merge_strategy'
@@ -195,15 +194,22 @@ check_tree(
 
 check_tree(
     'set mrc in constructor, toplevel in thaw',
-    [ merge_record_collisions => 1 ],
-    [ merge_strategy          => 'toplevel' ],
+    [ merge_strategy => 'toplevel' ],
+    [ merge_strategy => 'toplevel' ],
     sub {
         my %args = @_;
 
-        ok(
-            $args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
+        like(
+            warning {
+                ok(
+                    $args{thawed_tree}->merge_record_collisions,
+                    'thawed merge_record_collisons'
+                    )
+            },
+            qr/merge_record_collisions is deprecated/,
+            'received deprecation message'
         );
+
         is(
             $args{thawed_tree}->merge_strategy, 'toplevel',
             'thawed merge_strategy'
@@ -234,10 +240,6 @@ check_tree(
     sub {
         my %args = @_;
 
-        ok(
-            $args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'toplevel',
             'thawed merge_strategy'
@@ -268,10 +270,6 @@ check_tree(
     sub {
         my %args = @_;
 
-        ok(
-            $args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'recurse',
             'thawed merge_strategy'
@@ -301,15 +299,11 @@ check_tree(
 
 check_tree(
     'set mrc only in constructor',
-    [ merge_record_collisions => 1 ],
+    [ merge_strategy => 'toplevel' ],
     [],
     sub {
         my %args = @_;
 
-        ok(
-            $args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'toplevel',
             'thawed merge_strategy'
@@ -340,10 +334,6 @@ check_tree(
     sub {
         my %args = @_;
 
-        ok(
-            $args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'toplevel',
             'thawed merge_strategy'
@@ -374,10 +364,6 @@ check_tree(
     sub {
         my %args = @_;
 
-        ok(
-            $args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'recurse',
             'thawed merge_strategy'
@@ -412,10 +398,6 @@ check_tree(
     sub {
         my %args = @_;
 
-        ok(
-            $args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'toplevel',
             'thawed merge_strategy'
@@ -440,15 +422,11 @@ check_tree(
 
 check_tree(
     'set mrc off in constructor, toplevel in thaw',
-    [ merge_record_collisions => 0 ],
-    [ merge_strategy          => 'toplevel' ],
+    [ merge_strategy => 'none' ],
+    [ merge_strategy => 'toplevel' ],
     sub {
         my %args = @_;
 
-        ok(
-            $args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'toplevel',
             'thawed merge_strategy'
@@ -478,10 +456,6 @@ check_tree(
     sub {
         my %args = @_;
 
-        ok(
-            $args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'toplevel',
             'thawed merge_strategy'
@@ -511,10 +485,6 @@ check_tree(
     sub {
         my %args = @_;
 
-        ok(
-            $args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'recurse',
             'thawed merge_strategy'
@@ -539,15 +509,11 @@ check_tree(
 
 check_tree(
     'set mrc off in constructor, recurse in thaw',
-    [ merge_record_collisions => 0 ],
-    [ merge_strategy          => 'recurse' ],
+    [ merge_strategy => 'none' ],
+    [ merge_strategy => 'recurse' ],
     sub {
         my %args = @_;
 
-        ok(
-            $args{thawed_tree}->merge_record_collisions,
-            'thawed merge_record_collisons'
-        );
         is(
             $args{thawed_tree}->merge_strategy, 'recurse',
             'thawed merge_strategy'

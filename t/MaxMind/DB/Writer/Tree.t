@@ -240,7 +240,7 @@ subtest 'Inserting invalid neworks and ranges' => sub {
         database_type           => 'Test',
         languages               => ['en'],
         description             => { en => 'Test tree' },
-        merge_record_collisions => 1,
+        merge_strategy => 'toplevel',
         map_key_type_callback   => sub { 'utf8_string' },
         alias_ipv6_to_ipv4      => 1,
     );
@@ -284,7 +284,7 @@ subtest 'Recording merging at /0' => sub {
         database_type           => 'Test',
         languages               => ['en'],
         description             => { en => 'Test tree' },
-        merge_record_collisions => 1,
+        merge_strategy => 'toplevel',
         map_key_type_callback   => sub { 'utf8_string' },
 
         # These are 0 to as enabling them will create more than one network

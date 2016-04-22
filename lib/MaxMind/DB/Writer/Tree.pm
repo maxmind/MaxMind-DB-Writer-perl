@@ -52,19 +52,14 @@ has record_size => (
     required => 1,
 );
 
-has merge_record_collisions => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => 0,
-);
-
-my $MergeStrategyEnum = enum( [qw( none toplevel recurse )] );
+my $MergeStrategyEnum
+    = enum( [qw( add-only-if-parent-exists none recurse toplevel )] );
 
 has merge_strategy => (
     is      => 'ro',
     isa     => $MergeStrategyEnum,
     lazy    => 1,
-    default => sub { $_[0]->merge_record_collisions ? 'toplevel' : 'none'; },
+    default => 'none',
 );
 
 has remove_reserved_networks => (
@@ -143,20 +138,26 @@ around BUILDARGS => sub {
     my $class = shift;
     my $args  = $class->$orig(@_);
 
-    return $args unless exists $args->{merge_strategy};
-
-    unless ( exists $args->{merge_record_collisions} ) {
-        $args->{merge_record_collisions} = $args->{merge_strategy} ne 'none';
-        return $args;
+    if ( exists $args->{merge_record_collisions} ) {
+        warn
+            'merge_record_collisions is deprecated. Use merge_strategy instead.';
     }
 
-    unless ( $args->{merge_strategy} eq 'none'
-        xor $args->{merge_record_collisions} ) {
+    return $args unless exists $args->{merge_record_collisions};
+
+    my $merge_record_collisions = delete $args->{merge_record_collisions};
+
+    if ( $args->{merge_strategy}
+        && !( $args->{merge_strategy} eq 'none' xor $merge_record_collisions )
+        ) {
         die sprintf(
             'merge_strategy cannot be "%s" if merge_record_collisions is "%s"',
             $args->{merge_strategy}, $args->{merge_record_collisions}
         );
     }
+
+    $args->{merge_strategy} //=
+        $merge_record_collisions ? 'toplevel' : 'none';
 
     return $args;
 };
@@ -177,6 +178,13 @@ sub _build_tree {
     );
 }
 
+sub merge_record_collisions {
+    warn
+        'merge_record_collisions is deprecated and will be removed in a future release';
+
+    return $_[0]->merge_strategy ne 'none';
+}
+
 sub insert_network {
     my $self    = shift;
     my $network = shift;
@@ -192,17 +200,15 @@ sub insert_network {
         die "Invalid network inserted: $network";
     }
 
-    $self->_validate_insertion_args($args) if %{$args};
+    my $merge_strategy = %{$args} ? $self->_merge_strategy($args) : q{};
 
     $self->_insert_network(
         $ip_address,
         $prefix_length,
         key_for_data($data),
         $data,
-        $args->{force_overwrite},
-        $args->{insert_only_if_parent_exists},
+        $merge_strategy,
     );
-
     return;
 }
 
@@ -213,35 +219,47 @@ sub insert_range {
     my $data             = shift;
     my $args             = shift // {};
 
-    $self->_validate_insertion_args($args) if %{$args};
+    my $merge_strategy = %{$args} ? $self->_merge_strategy($args) : q{};
 
     $self->_insert_range(
         $start_ip_address,
         $end_ip_address,
         key_for_data($data),
         $data,
-        $args->{force_overwrite},
-        $args->{insert_only_if_parent_exists},
+        $merge_strategy,
     );
-
     return;
 }
 
-sub _validate_insertion_args {
+sub _merge_strategy {
     my $self = shift;
     my $args = shift;
 
-    if (   $args->{insert_only_if_parent_exists}
-        && $self->merge_strategy ne 'recurse' ) {
-        die
-            'Merge strategy must be "recurse" to use insert_only_if_parent_exists.';
+    if (  ( $args->{insert_only_if_parent_exists} ? 1 : 0 )
+        + ( $args->{force_overwrite} ? 1 : 0 )
+        + ( $args->{merge_strategy}  ? 1 : 0 ) > 1 ) {
+        die 'Only one of merge_strategy, force_overwrite, or '
+            . 'insert_only_if_parent_exists can be set at a time';
     }
 
-    if (   $args->{insert_only_if_parent_exists}
-        && $args->{force_overwrite} ) {
-        die
-            'insert_only_if_parent_exists cannot be used with force_overwrite';
+    if ( $args->{insert_only_if_parent_exists} ) {
+        warn 'The argument insert_only_if_parent_exists is deprecated. '
+            . 'Use the merge_strategy "add-if-parent-exists" instead.';
+        return 'add-only-if-parent-exists';
     }
+
+    if ( $args->{force_overwrite} ) {
+        warn 'The argument force_overwrite is deprecated. '
+            . 'Use the merge_strategy "none" instead.';
+        return 'none';
+    }
+
+    return undef unless $args->{merge_strategy};
+
+    die "Unknown merge strategy: $args->{merge_strategy}"
+        unless $MergeStrategyEnum->check( $args->{merge_strategy} );
+
+    return $args->{merge_strategy};
 }
 
 sub remove_network {
@@ -385,7 +403,6 @@ sub write_tree {
 {
     my %do_not_freeze = map { $_ => 1 } qw(
         map_key_type_callback
-        merge_record_collisions
         _tree
     );
 
@@ -604,6 +621,8 @@ set to something other than C<none>.
 This parameter is deprecated. New code should just set C<merge_strategy>
 directly.
 
+B<This parameter is deprecated. Use C<merge_strategy> instead.>
+
 =item * merge_strategy
 
 Controls what merge strategy is employed.
@@ -669,6 +688,19 @@ Then querying within the range will produce the results:
         company => 'Hanna-Barbera Productions',
     }
 
+=item * add-only-if-parent-exists
+
+With this merge strategy, data will only be inserted when there is already a
+record for the network (or sub-network). Similarly, when merging the data
+record with an existing data record, no new hash or array references will be
+created within the data record for the new data. For instance, if the original
+data record is C<{parent_a => {sibling => 1}}> and C<{parent_a => {child_a =>
+1}, parent_b => {child_b => 1}}> is inserted, only C<child_a>, not C<child_b>,
+will appear in the merged record.
+
+This option is intended to be used when inserting data that supplements
+existing data but that is not independently useful.
+
 =back
 
 In all merge strategies attempting to merge two differing data structures
@@ -732,38 +764,30 @@ L<Math::UInt128|Math::Int128> objects.
 C<$additional_args> is a hash reference containing additional arguments that
 change the behavior of the insert. The following arguments are supported:
 
-=over 2
+=over 3
+
+=item * C<merge_strategy>
+
+When set, the tree's default merge strategy will be overridden for the
+insertion with this merge strategy.
 
 =item * C<force_overwrite>
 
-This causes the tree's C<merge_record_collisions> setting to be ignored
-for the insert, causing C<$data> to overwrite any existing data for the
-network.
+This make the merge strategy for the insert C<none>.
+
+B<This option is deprecated.>
 
 =item * C<insert_only_if_parent_exists>
 
-When enabled, data will only be inserted when there is already a record for
-the network (or sub-network). Similarly, when merging the data record with an
-existing data record, no new hash or array references will be created within
-the data record for the new data. For instance, if the original data record is
-C<{parent_a => {sibling => 1}}> and C<{parent_a => {child_a => 1}, parent_b =>
-{child_b => 1}}> is inserted, only C<child_a>, not C<child_b>, will appear in
-the merged record.
+This make the merge strategy for the insert C<add-only-if-parent-exists>.
 
-This option is intended to be used when inserting data that supplements
-existing data but that is not independently useful.
-
-To use this option, you I<must> be using the C<merge_strategy> c<recurse>.
+B<This option is deprecated.>
 
 =back
 
 =head3 Insert Order, Merging, and Overwriting
 
-Depending on whether or not you set C<merge_record_collisions> to true in the
-constructor, the order in which you insert networks will affect the final tree
-output.
-
-When C<merge_record_collisions> is I<false>, the last insert "wins". This
+When C<merge_strategy> is I<none>, the last insert "wins". This
 means that if you insert C<1.2.3.255/32> and then C<1.2.3.0/24>, the data for
 C<1.2.3.255/24> will overwrite the data you previously inserted for
 C<1.2.3.255/232>. On the other hand, if you insert C<1.2.3.255/32> last, then
@@ -773,11 +797,12 @@ data than C<1.2.3.255>.
 In this scenario, if you want to make sure that no data is overwritten then
 you need to sort your input by network prefix length.
 
-When C<merge_record_collisions> is I<true>, then regardless of insert order,
-the C<1.2.3.255/32> network will end up with its data plus the data provided
-for the C<1.2.3.0/24> network, while C<1.2.3.0 - 1.2.3.254> will have the
-expected data. This can be disabled on a per-insert basis by using the
-C<force_overwrite> argument when inserting a network as discussed above.
+When C<merge_strategy> is not I<none>, then records will be merged based on
+the particular strategy. For instance, the C<1.2.3.255/32> network will end up
+with its data plus the data provided for the C<1.2.3.0/24> network, while
+C<1.2.3.0 - 1.2.3.254> will have the expected data. The merge strategy can be
+changed on a per-insert basis by using the C<merge_strategy> argument when
+inserting a network as discussed above.
 
 =head2 $tree->insert_range( $first_ip, $last_ip, $data, $additional_args )
 
@@ -868,6 +893,8 @@ Returns the tree's record size, as passed to the constructor.
 
 Returns a boolean indicating whether the tree will merge colliding records, as
 determined by the merge strategy.
+
+B<This is deprecated.>
 
 =head2 $tree->merge_strategy()
 

@@ -11,7 +11,7 @@ subtest 'Reference counting when replacing node, no merging' => sub {
 };
 
 subtest 'Reference counting with merging' => sub {
-    _test_insert( merge_record_collisions => 1 );
+    _test_insert( merge_strategy => 'toplevel' );
 };
 
 sub _test_insert {
