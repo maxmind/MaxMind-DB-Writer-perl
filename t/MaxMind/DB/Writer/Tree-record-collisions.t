@@ -629,13 +629,14 @@ subtest 'merge subrecord only if parent exists - arrays' => sub {
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
                 {
-                grandparent => [    { sibling => 1 } ],
-                scalars     => [ 1, 2 ],
+                grandparent => [        { sibling => 1 } ],
+                scalars     => [ 1,     2 ],
+                already     => { exists => 2 },
                 },
         ],
         [
             Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
-                { grandparent => [], scalars => [], },
+                { grandparent => [], scalars => [], }
         ],
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/31' ) =>
@@ -643,6 +644,7 @@ subtest 'merge subrecord only if parent exists - arrays' => sub {
                 grandparent => [ { self => 0 } ],
                 scalars     => [3],
                 new_array   => [ { new  => 0 } ],
+                already => { exists => 1 },
                 },
             { merge_strategy => 'add-only-if-parent-exists' },
         ],
@@ -652,13 +654,16 @@ subtest 'merge subrecord only if parent exists - arrays' => sub {
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
                 {
-                grandparent => [    { sibling => 1, self => 0 } ],
-                scalars     => [ 3, 2 ],
+                grandparent => [        { sibling => 1, self => 0 } ],
+                scalars     => [ 3,     2 ],
+                already     => { exists => 1 },
                 },
         ],
         [
             Net::Works::Network->new_from_string( string => '2.0.0.1/32' ) =>
-                { grandparent => [], scalars => [3] },
+                {
+                grandparent => [], scalars => [3],
+                },
         ],
     );
 
@@ -667,6 +672,46 @@ subtest 'merge subrecord only if parent exists - arrays' => sub {
         \@expect,
         'merge arrays insert_only_if_parent_exists inserts correctly',
         { merge_strategy => 'recurse' },
+    );
+};
+
+subtest 'merge subrecord only if parent exists - overwriting' => sub {
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/24' ) =>
+                { location => {} },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '::/0' ) =>
+                { location => { accuracy_radius => 1000 } },
+            { merge_strategy => 'add-only-if-parent-exists' },
+
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
+                { location   => { accuracy_radius => 10 } },
+            { merge_strategy => 'add-only-if-parent-exists' },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '2.0.0.0/30' ) =>
+                { location => { accuracy_radius => 10 } },
+        ],
+        [
+            Net::Works::Network->new_from_string(
+                string => '2.0.0.255/32' ) =>
+                { location => { accuracy_radius => 1000 } },
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'insert_only_if_parent_exists overwrites correctly',
+        { ip_version => 6 },
+        1
     );
 };
 

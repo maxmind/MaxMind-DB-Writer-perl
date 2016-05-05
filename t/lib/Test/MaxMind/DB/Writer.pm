@@ -26,10 +26,11 @@ our @EXPORT_OK = qw(
 );
 
 sub test_tree {
-    my $insert_pairs = shift;
-    my $expect_pairs = shift;
-    my $desc         = shift;
-    my $args         = shift;
+    my $insert_pairs   = shift;
+    my $expect_pairs   = shift;
+    my $desc           = shift;
+    my $args           = shift;
+    my $skip_dne_tests = shift;
 
     for my $type (qw( network range )) {
 
@@ -37,6 +38,8 @@ sub test_tree {
             my $tree = make_tree_from_pairs( $type, $insert_pairs, $args );
 
             _test_expected_data( $tree, $expect_pairs, $desc );
+
+            return if $skip_dne_tests;
 
             for my $raw (qw( 1.1.1.33 8.9.10.11 ffff::1 )) {
                 my $address = Net::Works::Address->new_from_string(
