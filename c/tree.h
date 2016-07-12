@@ -53,6 +53,7 @@ typedef uint128_t uint128_t_a8 __attribute__ ((aligned(8)));
 typedef enum {
     MMDBW_SUCCESS,
     MMDBW_FINDING_NODE_ERROR,
+    MMDBW_FREED_ALIAS_NODE_ERROR,
     MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR,
 } MMDBW_status;
 

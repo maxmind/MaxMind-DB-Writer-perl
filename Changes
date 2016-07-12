@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- The writer now throws an exception if you try to insert a network that
+  contains an alias node. Previously, the alias node would be overwritten.
+
+
 0.201000 2016-04-22
 
 - The insertion methods now take a merge_strategy argument.
