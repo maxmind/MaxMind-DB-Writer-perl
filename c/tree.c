@@ -218,7 +218,8 @@ void insert_network(MMDBW_tree_s *tree, const char *ipstr,
     free_network(&network);
 
     if (MMDBW_SUCCESS != status) {
-        croak("%s (when inserting %s/%" PRIu8 ")", status_error_message(status), ipstr);
+        croak("%s (when inserting %s/%" PRIu8 ")", status_error_message(
+                  status), ipstr, prefix_length);
     }
 }
 
