@@ -4,7 +4,7 @@ MaxMind::DB::Writer - Create MaxMind DB database files
 
 # VERSION
 
-version 0.201000
+version 0.201001
 
 # SYNOPSIS
 
@@ -67,14 +67,14 @@ We welcome patches as pull requests against our GitHub repository at
 
 # AUTHORS
 
-- Olaf Alders &lt;oalders@maxmind.com>
-- Greg Oschwald &lt;goschwald@maxmind.com>
-- Dave Rolsky &lt;drolsky@maxmind.com>
-- Mark Fowler &lt;mfowler@maxmind.com>
+- Olaf Alders <oalders@maxmind.com>
+- Greg Oschwald <goschwald@maxmind.com>
+- Dave Rolsky <drolsky@maxmind.com>
+- Mark Fowler <mfowler@maxmind.com>
 
 # CONTRIBUTORS
 
-- Florian Ragwitz &lt;rafl@debian.org>
+- Florian Ragwitz <rafl@debian.org>
 - Jan Bieron &lt;jbieron+github@gmail.com>
 
 # COPYRIGHT AND LICENSE

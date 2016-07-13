@@ -107,8 +107,11 @@ LOCAL MMDBW_node_s *return_null(
     MMDBW_tree_s *UNUSED(tree), MMDBW_record_s *UNUSED(record));
 LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
                                          MMDBW_record_s *record);
-LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node);
-LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record);
+LOCAL MMDBW_status free_node_and_subnodes(MMDBW_tree_s *tree,
+                                          MMDBW_node_s *node,
+                                          bool remove_alias_nodes);
+LOCAL MMDBW_status free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record,
+                                     bool remove_alias_nodes);
 LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               uint128_t UNUSED(network),
                               uint8_t UNUSED(depth), void *UNUSED(args));
@@ -215,7 +218,8 @@ void insert_network(MMDBW_tree_s *tree, const char *ipstr,
     free_network(&network);
 
     if (MMDBW_SUCCESS != status) {
-        croak("%s (%s)", status_error_message(status), ipstr);
+        croak("%s (when inserting %s/%" PRIu8 ")", status_error_message(
+                  status), ipstr, prefix_length);
     }
 }
 
@@ -295,7 +299,8 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
     decrement_data_reference_count(tree, key);
 
     if (MMDBW_SUCCESS != status) {
-        croak("%s (%s - %s)", status_error_message(status), start_ipstr,
+        croak("%s (when inserting %s - %s)", status_error_message(
+                  status), start_ipstr,
               end_ipstr);
     }
 }
@@ -616,20 +621,25 @@ LOCAL MMDBW_status insert_record_for_network(
                                 &new_node_from_record,
                                 &record_to_set, &other_record);
     if (MMDBW_SUCCESS != status) {
-        free_record_value(tree, new_record);
+        status = free_record_value(tree, new_record, true);
+        if (status != MMDBW_SUCCESS) {
+            return status;
+        }
         return MMDBW_FINDING_NODE_ERROR;
     }
 
     if (record_to_set->type == MMDBW_RECORD_TYPE_EMPTY &&
         merge_strategy == MMDBW_MERGE_STRATEGY_ADD_ONLY_IF_PARENT_EXISTS) {
         // We do not create a new record when using "only if parent exists"
-        free_record_value(tree, new_record);
-        return MMDBW_SUCCESS;
+        return free_record_value(tree, new_record, true);
     }
 
     if (record_to_set->type == MMDBW_RECORD_TYPE_ALIAS) {
         MMDBW_record_type type = new_record->type;
-        free_record_value(tree, new_record);
+        status = free_record_value(tree, new_record, true);
+        if (status != MMDBW_SUCCESS) {
+            return status;
+        }
         if (type == MMDBW_RECORD_TYPE_DATA && is_internal_insert) {
             // Possibly change return value in future
             return MMDBW_SUCCESS;
@@ -681,7 +691,7 @@ LOCAL MMDBW_status insert_record_for_network(
         }
     }
 
-    free_record_value(tree, record_to_set);
+    status = free_record_value(tree, record_to_set, false);
 
     record_to_set->type = new_record->type;
     if (MMDBW_RECORD_TYPE_DATA == new_record->type) {
@@ -691,7 +701,7 @@ LOCAL MMDBW_status insert_record_for_network(
         record_to_set->value.node = new_record->value.node;
     }
 
-    return MMDBW_SUCCESS;
+    return status;
 }
 
 LOCAL bool maybe_merge_records(MMDBW_tree_s *tree,
@@ -1098,25 +1108,44 @@ MMDBW_node_s *new_node()
     return node;
 }
 
-LOCAL void free_node_and_subnodes(MMDBW_tree_s *tree, MMDBW_node_s *node)
+LOCAL MMDBW_status free_node_and_subnodes(MMDBW_tree_s *tree,
+                                          MMDBW_node_s *node,
+                                          bool remove_alias_nodes)
 {
-    free_record_value(tree, &(node->left_record));
-    free_record_value(tree, &(node->right_record));
+    MMDBW_status status = free_record_value(tree, &(node->left_record),
+                                            remove_alias_nodes);
+    if (status != MMDBW_SUCCESS) {
+        return status;
+    }
+
+    status = free_record_value(tree, &(node->right_record), remove_alias_nodes);
+    if (status != MMDBW_SUCCESS) {
+        return status;
+    }
 
     free(node);
+    return MMDBW_SUCCESS;
 }
 
-LOCAL void free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record)
+LOCAL MMDBW_status free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record,
+                                     bool remove_alias_nodes)
 {
     if (MMDBW_RECORD_TYPE_NODE == record->type) {
-        free_node_and_subnodes(tree, record->value.node);
+        return free_node_and_subnodes(tree, record->value.node,
+                                      remove_alias_nodes);
     }
 
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
         decrement_data_reference_count(tree, record->value.key);
     }
 
-    /* We do not follow MMDBW_RECORD_TYPE_ALIAS nodes */
+    /* Alias nodes should only be removed explicitly. We can't just croak
+       as it will leave the tree in an inconsistent state causing a segfault
+       during unwinding. */
+    if (MMDBW_RECORD_TYPE_ALIAS == record->type && !remove_alias_nodes) {
+        return MMDBW_FREED_ALIAS_NODE_ERROR;
+    }
+    return MMDBW_SUCCESS;
 }
 
 void assign_node_numbers(MMDBW_tree_s *tree)
@@ -1808,7 +1837,7 @@ SV *data_for_key(MMDBW_tree_s *tree, const char *const key)
 
 void free_tree(MMDBW_tree_s *tree)
 {
-    free_record_value(tree, &tree->root_record);
+    free_record_value(tree, &tree->root_record, true);
 
     int hash_count = HASH_COUNT(tree->data_table);
     if (0 != hash_count) {
@@ -1930,6 +1959,9 @@ LOCAL char *status_error_message(MMDBW_status status)
             "Error finding node. Did you try inserting into an aliased network?";
     case MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR:
         return "Attempted to overwrite an alised network.";
+    case MMDBW_FREED_ALIAS_NODE_ERROR:
+        return
+            "Attempted to free an IPv4 alias node. Did you try to overwrite an alias network?";
     }
     // We should get a compile time warning if an enum is missing
     return "Unknown error";

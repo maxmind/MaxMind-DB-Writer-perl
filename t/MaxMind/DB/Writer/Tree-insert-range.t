@@ -173,27 +173,19 @@ subtest 'IPv4 overlapping ranges' => sub {
     subtest 'IPv6 remove reserved networks' => sub {
         my $tree = _make_tree(6);
 
-        my $data_0    = { start_ip => '::' };
-        my $data_8000 = { start_ip => '8000::' };
+        my $data_0 = { start_ip => '::' };
 
         _test_ranges(
             $tree,
             [
-                [ '::', '7FFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF' ],
-
-                # XXX - We are inserting this as two separate ranges due to
-                # https://github.com/maxmind/MaxMind-DB-Writer-perl/issues/55
-                [ '8000::', 'FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF' ],
+                [ '::', 'FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF' ],
             ],
             {
                 (
                     map { $_ => $data_0 } (
                         '1.0.0.0', '126.0.2.255', '11.1.1.11', '193.0.0.4',
-                        '2002::',
+                        '2003::',  '8000::',      'a000::',    'efff::'
                     )
-                ),
-                (
-                    map { $_ => $data_8000 } ( '8000::',, 'a000::', 'efff::' )
                 )
             },
             [
@@ -205,7 +197,8 @@ subtest 'IPv4 overlapping ranges' => sub {
                 'fe80::',
                 'ff00::',
             ],
-            0
+            0,
+            { merge_strategy => 'toplevel' },
         );
 
     };
@@ -229,16 +222,20 @@ sub _make_tree {
 }
 
 sub _test_ranges {
-    my $tree           = shift;
-    my @insert_ranges  = @{ shift() };
-    my %expected       = %{ shift() };
-    my @unexpected_ips = @{ shift() };
-    my $test_endpoints = shift // 1;
+    my $tree                = shift;
+    my @insert_ranges       = @{ shift() };
+    my %expected            = %{ shift() };
+    my @unexpected_ips      = @{ shift() };
+    my $test_endpoints      = shift // 1;
+    my $insertion_arguments = shift;
 
     for my $range (@insert_ranges) {
         my ( $start_ip, $end_ip ) = @{$range};
         my $data = { start_ip => $start_ip };
-        $tree->insert_range( $start_ip, $end_ip, { start_ip => $start_ip } );
+        $tree->insert_range(
+            $start_ip, $end_ip, { start_ip => $start_ip },
+            $insertion_arguments
+        );
         @expected{ $start_ip, $end_ip } = ($data) x 2 if $test_endpoints;
     }
 

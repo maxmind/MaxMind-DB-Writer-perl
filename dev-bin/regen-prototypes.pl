@@ -79,7 +79,7 @@ sub _regen_prototypes {
 
 my $return_type_re = qr/(?:\w+\s+)+?\**?/;
 my $signature_re   = qr/\([^\(\)]+?\)/;
-my $c_function_re  = qr/($return_type_re(\w+)$signature_re)(?>\n{)/s;
+my $c_function_re  = qr/($return_type_re(\w+)$signature_re)(?>\n\{)/s;
 
 # Shamelessly stolen from Inline::C::ParseRegExp
 my $sp = qr{[ \t]|\n(?![ \t]*\n)};
@@ -95,7 +95,7 @@ my $re_identifier = qr{ \w+ $sp* }x;
 my $re_args = qr/\(.*?\)/s;
 
 # and again from Inline::C::ParseRegExp
-my $re_signature = qr/^(.+? ($re_identifier) $re_args) (?>[\ \t\n]*?{)/x;
+my $re_signature = qr/^(.+? ($re_identifier) $re_args) (?>[\ \t\n]*?\{)/x;
 
 sub parse_prototypes {
     my $c_code = shift;

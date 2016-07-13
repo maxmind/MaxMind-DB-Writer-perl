@@ -8,6 +8,7 @@ use MaxMind::DB::Writer::Tree;
 use File::Temp qw( tempdir );
 use Net::Works::Address;
 use Net::Works::Network;
+use Test::Fatal qw( exception );
 
 my $tempdir = tempdir( CLEANUP => 1 );
 
@@ -48,6 +49,16 @@ my $tempdir = tempdir( CLEANUP => 1 );
             "got expected data for $address"
         );
     }
+
+    # Aliases should never be overwritten. Currently we just throw an
+    # exception is someone tries to overwrite one. In the future, we could do
+    # something smarter, _but_ it isn't clear what the right behavior is.
+    like(
+        exception { $tree->insert_network( '2000::/4', {} ) },
+        qr/Attempted to free an IPv4 alias node./,
+        'received expected error when trying to overwrite an alias node'
+    );
+
 }
 
 done_testing();
