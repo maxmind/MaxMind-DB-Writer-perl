@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.201001 2016-07-13
+
 - The writer now throws an exception if you try to insert a network that
   contains an alias node. Previously, the alias node would be overwritten.
 
