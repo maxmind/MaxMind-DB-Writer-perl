@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+- Data merges are now cached so that we do not have to merge the same two
+  hashes repeatedly.
+- Remove unnecessary encode call that slowed down generation of data key on
+  inserts.
+  
+
 0.201001 2016-07-13
 
 - The writer now throws an exception if you try to insert a network that

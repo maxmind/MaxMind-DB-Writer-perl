@@ -25,6 +25,8 @@
 
 #define SHA1_KEY_LENGTH (27)
 
+#define MERGE_KEY_SIZE (57)
+
 typedef struct freeze_args_s {
     int fd;
     char *filename;
@@ -86,6 +88,10 @@ LOCAL bool maybe_merge_records(MMDBW_tree_s *tree,
 LOCAL int network_bit_value(MMDBW_tree_s *tree, MMDBW_network_s *network,
                             uint8_t current_bit);
 LOCAL int tree_depth0(MMDBW_tree_s *tree);
+LOCAL const char *merge_records(MMDBW_tree_s *tree, const char *const key_from,
+                                const char *const key_into,
+                                MMDBW_network_s *network,
+                                MMDBW_merge_strategy merge_strategy);
 LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into,
                         MMDBW_merge_strategy merge_strategy);
 LOCAL void merge_new_from_hash_into_hash(MMDBW_tree_s *tree, HV *from, HV *to,
@@ -149,6 +155,13 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
                         void *args,
                         MMDBW_iterator_callback callback);
 LOCAL SV *key_for_data(SV * data);
+LOCAL const char *merge_cache_lookup(MMDBW_tree_s *tree,
+                                     char *merge_cache_key
+                                     );
+LOCAL void store_in_merge_cache(MMDBW_tree_s *tree,
+                                char *merge_cache_key,
+                                const char *const new_key
+                                );
 LOCAL void dwarn(SV *thing);
 LOCAL void *checked_malloc(size_t size);
 LOCAL void checked_write(int fd, char *filename, void *buffer,
@@ -181,6 +194,7 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
 
     tree->record_size = record_size;
     tree->merge_strategy = merge_strategy;
+    tree->merge_cache = NULL;
     tree->data_table = NULL;
     tree->is_aliased = false;
     tree->root_record = (MMDBW_record_s) {
@@ -665,9 +679,7 @@ LOCAL MMDBW_status insert_record_for_network(
         const char *const new_key = new_record->value.key;
         const char *const other_key = other_record->value.key;
 
-        if (strlen(new_key) == strlen(other_key)
-            && 0 == strcmp(new_key, other_key)) {
-
+        if (0 == strcmp(new_key, other_key)) {
             size_t bytes_length = tree->ip_version == 6 ? 16 : 4;
             uint8_t *bytes = checked_malloc(bytes_length);
             memcpy(bytes, network->bytes, bytes_length);
@@ -786,26 +798,20 @@ LOCAL bool maybe_merge_records(MMDBW_tree_s *tree,
     /* This must come before the node pruning code in
        insert_record_for_network, as we only want to prune nodes where the
        merged record matches. */
-    else if (MMDBW_RECORD_TYPE_DATA == record_to_set->type) {
-        SV *merged = merge_hashes_for_keys(
+    else if (MMDBW_RECORD_TYPE_DATA == record_to_set->type
+             // If the two keys are equal, there is no point in trying to merge
+             // the contents.
+             && 0 != strcmp(new_record->value.key, record_to_set->value.key)
+             ) {
+        const char *new_key = merge_records(
             tree,
             new_record->value.key,
             record_to_set->value.key,
             network,
             merge_strategy);
-
-        SV *key_sv = key_for_data(merged);
-        const char *const new_key =
-            store_data_in_tree(tree, SvPVbyte_nolen(key_sv), merged);
-        SvREFCNT_dec(key_sv);
-
-        /* The ref count was incremented in store_data_in_tree */
-        SvREFCNT_dec(merged);
-
         decrement_data_reference_count(tree, new_record->value.key);
         new_record->value.key = new_key;
     }
-
     return false;
 }
 
@@ -820,6 +826,44 @@ LOCAL int network_bit_value(MMDBW_tree_s *tree, MMDBW_network_s *network,
 LOCAL int tree_depth0(MMDBW_tree_s *tree)
 {
     return tree->ip_version == 6 ? 127 : 31;
+}
+
+LOCAL const char *merge_records(MMDBW_tree_s *tree, const char *const key_from,
+                                const char *const key_into,
+                                MMDBW_network_s *network,
+                                MMDBW_merge_strategy merge_strategy)
+{
+    char merge_cache_key[MERGE_KEY_SIZE + 1];
+    snprintf(merge_cache_key, MERGE_KEY_SIZE + 1, "%d-%s-%s", merge_strategy,
+             key_from,
+             key_into);
+
+    const char * cached_key = merge_cache_lookup(tree, merge_cache_key);
+    if (cached_key != NULL) {
+        const char *const new_key = increment_data_reference_count(tree,
+                                                                   cached_key);
+
+        return new_key;
+    }
+
+    SV *merged = merge_hashes_for_keys(
+        tree,
+        key_from,
+        key_into,
+        network,
+        merge_strategy);
+
+    SV *key_sv = key_for_data(merged);
+    const char *const new_key =
+        store_data_in_tree(tree, SvPVbyte_nolen(key_sv), merged);
+    SvREFCNT_dec(key_sv);
+
+    /* The ref count was incremented in store_data_in_tree */
+    SvREFCNT_dec(merged);
+
+    store_in_merge_cache(tree, merge_cache_key, new_key);
+
+    return new_key;
 }
 
 SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
@@ -1835,9 +1879,50 @@ SV *data_for_key(MMDBW_tree_s *tree, const char *const key)
     }
 }
 
+LOCAL const char *merge_cache_lookup(MMDBW_tree_s *tree,
+                                     char *merge_cache_key
+                                     )
+{
+    MMDBW_merge_cache_s *cache = NULL;
+    HASH_FIND(hh, tree->merge_cache, merge_cache_key, MERGE_KEY_SIZE, cache);
+
+    if (!cache) {
+        return NULL;
+    }
+
+    // We have to check that the value has not been removed from the data
+    // table
+    MMDBW_data_hash_s *data = NULL;
+    HASH_FIND(hh, tree->data_table, cache->value, SHA1_KEY_LENGTH, data);
+    if (data != NULL) {
+        return cache->value;
+    }
+
+    // Item has been removed from data table. Remove the cached merge too.
+    HASH_DEL(tree->merge_cache, cache);
+    return NULL;
+}
+
+LOCAL void store_in_merge_cache(MMDBW_tree_s *tree,
+                                char *merge_cache_key,
+                                const char *const new_key
+                                )
+{
+    MMDBW_merge_cache_s *data = checked_malloc(sizeof(MMDBW_merge_cache_s));
+    data->value = checked_malloc(SHA1_KEY_LENGTH + 1);
+    strncpy((char *)data->value, new_key, SHA1_KEY_LENGTH + 1);
+
+    data->key = checked_malloc(MERGE_KEY_SIZE + 1);
+    strncpy((char *)data->key, merge_cache_key, MERGE_KEY_SIZE + 1);
+
+    HASH_ADD_KEYPTR(hh, tree->merge_cache, data->key,
+                    MERGE_KEY_SIZE, data);
+}
+
 void free_tree(MMDBW_tree_s *tree)
 {
     free_record_value(tree, &tree->root_record, true);
+    free_merge_cache(tree);
 
     int hash_count = HASH_COUNT(tree->data_table);
     if (0 != hash_count) {
@@ -1846,6 +1931,17 @@ void free_tree(MMDBW_tree_s *tree)
     }
 
     free(tree);
+}
+
+void free_merge_cache(MMDBW_tree_s *tree)
+{
+    MMDBW_merge_cache_s *cache, *tmp = NULL;
+    HASH_ITER(hh, tree->merge_cache, cache, tmp) {
+        HASH_DEL(tree->merge_cache, cache);
+        free((void *)cache->key);
+        free((void *)cache->value);
+        free(cache);
+    }
 }
 
 const char *record_type_name(int record_type)
