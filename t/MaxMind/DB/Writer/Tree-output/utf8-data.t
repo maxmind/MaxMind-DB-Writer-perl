@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Test::Builder;
 use Test::More;
 
 use Test::Requires (
@@ -11,15 +12,15 @@ use MaxMind::DB::Writer::Tree;
 
 use Encode ();
 use File::Temp qw( tempdir );
+use MaxMind::DB::Reader;
 use Net::Works::Network;
 
 {
     my $tb = Test::Builder->new();
 
-    binmode $_, ':encoding(UTF-8)'
-        for $tb->output(),
-        $tb->failure_output(),
-        $tb->todo_output();
+    for ( $tb->output, $tb->failure_output, $tb->todo_output ) {
+        binmode $_, ':encoding(UTF-8)' or die $!;
+    }
 }
 
 my $tempdir = tempdir( CLEANUP => 1 );
@@ -78,10 +79,10 @@ sub _write_tree {
         },
     );
 
-    my $filename = $tempdir . "/Test-utf8-string.mmdb";
-    open my $fh, '>', $filename;
-
+    my $filename = $tempdir . '/Test-utf8-string.mmdb';
+    open my $fh, '>', $filename or die $!;
     $tree->write_tree($fh);
+    close $fh or die $!;
 
     return $filename;
 }

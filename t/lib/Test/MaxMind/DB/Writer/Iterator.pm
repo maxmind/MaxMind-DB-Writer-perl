@@ -3,6 +3,8 @@ package Test::MaxMind::DB::Writer::Iterator;
 use strict;
 use warnings;
 
+use Net::Works::Network;
+
 sub new {
     my $class      = shift;
     my $ip_version = shift;
@@ -10,15 +12,13 @@ sub new {
     return bless { ip_version => $ip_version }, $class;
 }
 
+## no critic (Subroutines::ProhibitManyArgs)
 sub process_node_record {
-    my $self                 = shift;
-    my $node_num             = shift;
-    my $dir                  = shift;
-    my $node_ip_num          = shift;
-    my $node_prefix_length   = shift;
-    my $record_ip_num        = shift;
-    my $record_prefix_length = shift;
-    my $record_node_num      = shift;
+    my $self               = shift;
+    my $node_num           = shift;
+    my $dir                = shift;
+    my $node_ip_num        = shift;
+    my $node_prefix_length = shift;
 
     $self->_saw_network( $node_ip_num, $node_prefix_length, 'node' );
 
@@ -28,13 +28,11 @@ sub process_node_record {
 }
 
 sub process_empty_record {
-    my $self                 = shift;
-    my $node_num             = shift;
-    my $dir                  = shift;
-    my $node_ip_num          = shift;
-    my $node_prefix_length   = shift;
-    my $record_ip_num        = shift;
-    my $record_prefix_length = shift;
+    my $self               = shift;
+    my $node_num           = shift;
+    my $dir                = shift;
+    my $node_ip_num        = shift;
+    my $node_prefix_length = shift;
 
     $self->_saw_network( $node_ip_num, $node_prefix_length, 'empty' );
 
@@ -70,7 +68,6 @@ sub _saw_network {
     my $self          = shift;
     my $ip_num        = shift;
     my $prefix_length = shift;
-    my $type          = shift;
 
     my $network = $self->_nw_network( $ip_num, $prefix_length );
 

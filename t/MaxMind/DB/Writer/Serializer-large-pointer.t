@@ -31,10 +31,13 @@ my $large_pointer
     = $serializer->store_data( utf8_string => $last_short_string );
 
 my $buffer = $serializer->buffer();
-open my $fh, '<:raw', $buffer;
+
+## no critic (InputOutput::RequireBriefOpen)
+open my $fh, '<:raw', $buffer or die $!;
 
 my $decoder = MaxMind::DB::Reader::Decoder->new(
-    data_source       => $fh,
+    data_source => $fh,
+    ## no critic (Modules::RequireExplicitInclusion, Subroutines::ProhibitCallsToUnexportedSubs)
     _data_source_size => bytes::length( ${$buffer} ),
 );
 

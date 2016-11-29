@@ -8,6 +8,8 @@ use Test::MaxMind::DB::Common::Data qw( test_cases_for );
 use Test::MaxMind::DB::Writer::Serializer qw( test_encoding_of_type );
 use Test::More;
 
+use MaxMind::DB::Writer::Serializer;
+
 test_encoding_of_type( uint32 => test_cases_for('uint32') );
 
 {

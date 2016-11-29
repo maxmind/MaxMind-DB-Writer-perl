@@ -38,6 +38,7 @@ has _labels => (
     default  => sub { {} },
 );
 
+## no critic (Subroutines::ProhibitManyArgs)
 sub process_node_record {
     my $self                 = shift;
     my $node_num             = shift;

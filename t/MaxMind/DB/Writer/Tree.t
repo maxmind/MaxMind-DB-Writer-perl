@@ -235,14 +235,14 @@ subtest '::/0 insertion' => sub {
 
 subtest 'Inserting invalid neworks and ranges' => sub {
     my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version              => 6,
-        record_size             => 24,
-        database_type           => 'Test',
-        languages               => ['en'],
-        description             => { en => 'Test tree' },
-        merge_strategy => 'toplevel',
-        map_key_type_callback   => sub { 'utf8_string' },
-        alias_ipv6_to_ipv4      => 1,
+        ip_version            => 6,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        merge_strategy        => 'toplevel',
+        map_key_type_callback => sub { 'utf8_string' },
+        alias_ipv6_to_ipv4    => 1,
     );
 
     like(
@@ -279,13 +279,13 @@ subtest 'Inserting invalid neworks and ranges' => sub {
 
 subtest 'Recording merging at /0' => sub {
     my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version              => 6,
-        record_size             => 24,
-        database_type           => 'Test',
-        languages               => ['en'],
-        description             => { en => 'Test tree' },
-        merge_strategy => 'toplevel',
-        map_key_type_callback   => sub { 'utf8_string' },
+        ip_version            => 6,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        merge_strategy        => 'toplevel',
+        map_key_type_callback => sub { 'utf8_string' },
 
         # These are 0 to as enabling them will create more than one network
         alias_ipv6_to_ipv4       => 0,

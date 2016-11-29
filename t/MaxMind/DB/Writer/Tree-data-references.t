@@ -39,7 +39,7 @@ sub _test_insert {
         $data,
     );
     is(
-        Devel::Refcount::refcount($data), 2,
+        refcount($data), 2,
         'ref count of 2 after initial insert'
     );
 
@@ -49,7 +49,7 @@ sub _test_insert {
     );
 
     is(
-        Devel::Refcount::refcount($data), 1,
+        refcount($data), 1,
         'ref count of 1 after data is overwritten'
     );
 }

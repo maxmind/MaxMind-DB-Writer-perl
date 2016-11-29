@@ -12,13 +12,14 @@ use Test::MaxMind::DB::Writer qw( make_tree_from_pairs test_iterator_sanity );
 use Test::MaxMind::DB::Writer::Iterator;
 use Test::More;
 
+use JSON;
 use MaxMind::DB::Writer::Tree;
 
 {
-    open my $fh, '<', 't/test-data/geolite2-sample.json';
-    my $geolite2_data = do { local $/; <$fh> };
+    open my $fh, '<', 't/test-data/geolite2-sample.json' or die $!;
+    my $geolite2_data = do { local $/ = undef; <$fh> };
     my $records = JSON->new->decode($geolite2_data);
-    close $fh;
+    close $fh or die $!;
 
     my $tree = make_tree_from_pairs(
         'network',

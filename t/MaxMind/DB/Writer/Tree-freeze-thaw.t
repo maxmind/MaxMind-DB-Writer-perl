@@ -18,7 +18,9 @@ use Test::MaxMind::DB::Writer qw(
 use Test::More;
 
 use File::Temp qw( tempdir );
+use JSON;
 use Math::Int128 qw( uint128 );
+use MaxMind::DB::Reader;
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
 
@@ -27,13 +29,13 @@ use Net::Works::Network;
 for my $record_size ( 24, 28, 32 ) {
     {
         my $tree = MaxMind::DB::Writer::Tree->new(
-            ip_version              => 4,
-            record_size             => $record_size,
-            database_type           => 'Test',
-            languages               => [ 'en', 'fr' ],
-            description             => { en => 'Test tree' },
-            merge_strategy => 'toplevel',
-            map_key_type_callback   => sub { 'uint32' },
+            ip_version               => 4,
+            record_size              => $record_size,
+            database_type            => 'Test',
+            languages                => [ 'en', 'fr' ],
+            description              => { en => 'Test tree' },
+            merge_strategy           => 'toplevel',
+            map_key_type_callback    => sub { 'uint32' },
             remove_reserved_networks => 0,
         );
 
@@ -55,59 +57,59 @@ for my $record_size ( 24, 28, 32 ) {
                 test_freeze_thaw_optional_params($tree);
             }
         );
+    }
 
-        {
-            my $cb = sub {
-                my $key = $_[0];
-                $key =~ s/X$//;
-                return $key eq 'array' ? [ 'array', 'uint32' ] : $key;
-            };
+    {
+        my $cb = sub {
+            my $key = $_[0];
+            $key =~ s/X$//;
+            return $key eq 'array' ? [ 'array', 'uint32' ] : $key;
+        };
 
-            my $tree = MaxMind::DB::Writer::Tree->new(
-                ip_version              => 6,
-                record_size             => 24,
-                database_type           => 'Test',
-                languages               => ['en'],
-                description             => { en => 'Test tree' },
-                merge_strategy => 'toplevel',
-                map_key_type_callback   => $cb,
-                remove_reserved_networks => 0,
+        my $tree = MaxMind::DB::Writer::Tree->new(
+            ip_version               => 6,
+            record_size              => 24,
+            database_type            => 'Test',
+            languages                => ['en'],
+            description              => { en => 'Test tree' },
+            merge_strategy           => 'toplevel',
+            map_key_type_callback    => $cb,
+            remove_reserved_networks => 0,
+        );
+
+        my $count       = 2**14;
+        my $ipv6_offset = uint128(2)**34;
+
+        for my $i ( 1 .. $count ) {
+            my $ipv4 = Net::Works::Network->new_from_integer(
+                integer       => $i,
+                prefix_length => 128,
+                version       => 6
             );
+            $tree->insert_network( $ipv4, _data_record( $i % 16 ) );
 
-            my $count       = 2**14;
-            my $ipv6_offset = uint128(2)**34;
-
-            for my $i ( 1 .. $count ) {
-                my $ipv4 = Net::Works::Network->new_from_integer(
-                    integer       => $i,
-                    prefix_length => 128,
-                    version       => 6
-                );
-                $tree->insert_network( $ipv4, _data_record( $i % 16 ) );
-
-                my $ipv6 = Net::Works::Network->new_from_integer(
-                    integer       => $i + $ipv6_offset,
-                    prefix_length => 128,
-                    version       => 6
-                );
-                $tree->insert_network( $ipv6, _data_record( $i % 16 ) );
-            }
-
-            subtest(
-                "Tree with $count networks - mixed IPv4 and IPv6 - $record_size-bit records",
-                sub {
-                    test_freeze_thaw( $tree, $cb );
-                }
+            my $ipv6 = Net::Works::Network->new_from_integer(
+                integer       => $i + $ipv6_offset,
+                prefix_length => 128,
+                version       => 6
             );
+            $tree->insert_network( $ipv6, _data_record( $i % 16 ) );
         }
+
+        subtest(
+            "Tree with $count networks - mixed IPv4 and IPv6 - $record_size-bit records",
+            sub {
+                test_freeze_thaw( $tree, $cb );
+            }
+        );
     }
 }
 
 {
-    open my $fh, '<', 't/test-data/geolite2-sample.json';
-    my $geolite2_data = do { local $/; <$fh> };
+    open my $fh, '<', 't/test-data/geolite2-sample.json' or die $!;
+    my $geolite2_data = do { local $/ = undef; <$fh> };
     my $records = JSON->new->decode($geolite2_data);
-    close $fh;
+    close $fh or die $!;
 
     my $tree = make_tree_from_pairs(
         'network',
@@ -161,13 +163,13 @@ for my $record_size ( 24, 28, 32 ) {
 
 {
     my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version              => 6,
-        record_size             => 24,
-        database_type           => 'Test',
-        languages               => ['en'],
-        description             => { en => 'Test tree' },
-        merge_strategy => 'toplevel',
-        map_key_type_callback   => sub {'uint32'},
+        ip_version               => 6,
+        record_size              => 24,
+        database_type            => 'Test',
+        languages                => ['en'],
+        description              => { en => 'Test tree' },
+        merge_strategy           => 'toplevel',
+        map_key_type_callback    => sub { 'uint32' },
         remove_reserved_networks => 0,
     );
 

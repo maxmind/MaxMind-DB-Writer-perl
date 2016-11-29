@@ -38,12 +38,13 @@ my $tempdir = tempdir( CLEANUP => 1 );
     $tree->freeze_tree("$tempdir/frozen");
 
     my $output;
-    open my $fh, '>:raw', \$output;
+    open my $fh, '>:raw', \$output or die $!;
     is(
         exception { $tree->write_tree($fh) },
         undef,
         'no exception writing tree where an alias overwrote an existing record'
     );
+    close $fh or die $!;
 }
 
 done_testing();

@@ -4,18 +4,20 @@ use warnings;
 use lib 't/lib';
 
 use Test::Bits;
+use Test::Builder;
 use Test::Fatal;
 use Test::MaxMind::DB::Common::Data qw( test_cases_for );
 use Test::MaxMind::DB::Writer::Serializer qw( test_encoding_of_type );
 use Test::More;
 
+use MaxMind::DB::Writer::Serializer;
+
 {
     my $tb = Test::Builder->new();
 
-    binmode $_, ':encoding(UTF-8)'
-        for $tb->output(),
-        $tb->failure_output(),
-        $tb->todo_output();
+    for ( $tb->output, $tb->failure_output, $tb->todo_output ) {
+        binmode $_, ':encoding(UTF-8)' or die $!;
+    }
 }
 
 test_encoding_of_type( utf8_string => test_cases_for('utf8_string') );

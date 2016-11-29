@@ -29,7 +29,7 @@ sub _test_search_tree {
             en => 'Test Database',
             zh => 'Test Database Chinese',
         },
-        map_key_type_callback => sub { 'utf8_string' },
+        map_key_type_callback    => sub { 'utf8_string' },
         remove_reserved_networks => 0,
     );
 
@@ -52,9 +52,9 @@ sub _test_search_tree {
     );
 
     my $buffer;
-    open my $fh, '>:raw', \$buffer;
-
+    open my $fh, '>:raw', \$buffer or die $!;
     $tree->write_tree($fh);
+    close $fh or die $!;
 
     my $separator = DATA_SECTION_SEPARATOR;
 
@@ -91,10 +91,13 @@ sub _test_search_tree {
         for my $num ( 1, 2 ) {
             my $node = $nodes[ $num - 1 ];
 
-            my ( $left, $middle, $right ) = unpack( a3Ca3 => $node );
+            my ( $left_bytes, $middle_bytes, undef )
+                = unpack( a3Ca3 => $node );
 
-            $left_record{$num} = unpack(
-                N => pack( 'Ca*', ( $middle & 0xf0 ) >> 4, $left ) );
+            $left_record{$num}
+                = unpack( N =>
+                    pack( 'Ca*', ( $middle_bytes & 0xf0 ) >> 4, $left_bytes )
+                );
         }
     }
     else {
@@ -123,6 +126,7 @@ sub _test_search_tree {
     );
 }
 
+## no critic (Subroutines::ProhibitUnusedPrivateSubroutines)
 sub _24_bit_number {
     return substr( pack( 'N', $_[0] ), 1, 3 );
 }
@@ -136,6 +140,7 @@ sub _28_bit_number {
 sub _32_bit_number {
     return pack( 'N', $_[0] );
 }
+## use critic
 
 sub _test_ipv4_networks {
     my $record_size = shift;
@@ -144,18 +149,14 @@ sub _test_ipv4_networks {
 
     my $buffer = _write_tree(
         $record_size,
-        [
-            Net::Works::Network->range_as_subnets(
-                '1.1.1.1', '1.1.1.32'
-            )
-        ],
+        [ Net::Works::Network->range_as_subnets( '1.1.1.1', '1.1.1.32' ) ],
         { ip_version => 4 },
     );
 
     like(
         $buffer,
         qr/\0{16}/,
-        "written-out database includes 16 bytes of 0s"
+        'written-out database includes 16 bytes of 0s'
     );
 
     my $expect = join q{}, map { chr($_) } (
@@ -239,7 +240,7 @@ sub _write_tree {
             en => 'Test Database',
             zh => 'Test Database Chinese',
         },
-        map_key_type_callback => sub { 'utf8_string' },
+        map_key_type_callback    => sub { 'utf8_string' },
         remove_reserved_networks => 0,
     );
 
@@ -251,9 +252,9 @@ sub _write_tree {
     }
 
     my $buffer;
-    open my $fh, '>', \$buffer;
-
+    open my $fh, '>', \$buffer or die $!;
     $tree->write_tree($fh);
+    close $fh or die $!;
 
     return $buffer;
 }

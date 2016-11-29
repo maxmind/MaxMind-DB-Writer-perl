@@ -14,7 +14,9 @@ use Test::MaxMind::DB::Writer qw( test_freeze_thaw );
 use Test::More;
 
 use File::Temp qw( tempdir );
+use JSON;
 use Math::Int128 qw( uint128 );
+use MaxMind::DB::Reader;
 use MaxMind::DB::Writer::Tree;
 use Net::Works::Network;
 
@@ -80,17 +82,17 @@ my $tree = MaxMind::DB::Writer::Tree->new(
     map_key_type_callback   => $map_key_type_callback,
 );
 
-open my $fh, '<', $json_file;
-my $geolite2_data = do { local $/; <$fh> };
-my $records = JSON->new->decode($geolite2_data);
-close $fh;
+open my $fh, '<', $json_file or die $!;
+my $geolite2_data = do { local $/ = undef; <$fh> };
+my $geolite_data = JSON->new->decode($geolite2_data);
+close $fh or die $!;
 
 my $i = 0;
-for my $record ( @{$records} ) {
-    my ($network) = keys %{$record};
+for my $geolite_entry ( @{$geolite_data} ) {
+    my ($network) = keys %{$geolite_entry};
     $tree->insert_network(
         Net::Works::Network->new_from_string( string => $network ),
-        $record->{$network},
+        $geolite_entry->{$network},
     );
 
     $i++;
@@ -106,7 +108,7 @@ $tree->freeze_tree($frozen_file);
 my $mmdb_file = "$dir/Test-GeoLite2-Country.mmdb";
 
 if ( my $pid = fork ) {
-    waitpid $pid, 0;
+    waitpid $pid, 0 or die $!;
 }
 else {
     my $thawed_tree = MaxMind::DB::Writer::Tree->new_from_frozen_tree(
@@ -114,23 +116,23 @@ else {
         map_key_type_callback => $map_key_type_callback,
     );
 
-    open $fh, '>', $mmdb_file;
+    open $fh, '>', $mmdb_file or die $!;
     $thawed_tree->write_tree($fh);
-    close $fh;
+    close $fh or die $!;
 
     exit 0;
 }
 
 my $reader = MaxMind::DB::Reader->new( file => $mmdb_file );
 
-for my $i ( 0 .. int( ( scalar @{$records} ) / 777 ) ) {
-    my $record    = $records->[ $i * 777 ];
-    my ($network) = keys %{$record};
-    my $ip        = $network =~ s{/.+$}{}r;
+for my $i ( 0 .. int( ( scalar @{$geolite_data} ) / 777 ) ) {
+    my $geolite_entry = $geolite_data->[ $i * 777 ];
+    my ($network)     = keys %{$geolite_entry};
+    my $ip            = $network =~ s{/.+$}{}r;
 
     is_deeply(
         $reader->record_for_address($ip),
-        $record->{$network},
+        $geolite_entry->{$network},
         "record for $ip"
     );
 }
