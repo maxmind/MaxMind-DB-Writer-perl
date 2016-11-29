@@ -12,34 +12,107 @@ if ( $^O =~ /Win32/ ) {
         . " See the documentation for details.\n";
 }
 
+my %module_build_args = (
+  "build_requires" => {
+    "Module::Build" => "0.28"
+  },
+  "configure_requires" => {
+    "Carp" => 0,
+    "Dist::Zilla::File::InMemory" => 0,
+    "Dist::Zilla::Plugin::ModuleBuild" => 0,
+    "Exporter" => 0,
+    "ExtUtils::CBuilder" => 0,
+    "File::Basename" => 0,
+    "File::Spec" => 0,
+    "File::Temp" => 0,
+    "IO::Handle" => 0,
+    "Module::Build" => "0.28",
+    "Moose" => 0,
+    "PerlIO" => 0,
+    "Scalar::Util" => 0,
+    "base" => 0,
+    "lib" => 0,
+    "namespace::autoclean" => 0,
+    "perl" => "5.008002",
+    "strict" => 0,
+    "warnings" => 0
+  },
+  "dist_abstract" => "Create MaxMind DB database files",
+  "dist_author" => [
+    "Olaf Alders <oalders\@maxmind.com>",
+    "Greg Oschwald <goschwald\@maxmind.com>",
+    "Dave Rolsky <drolsky\@maxmind.com>",
+    "Mark Fowler <mfowler\@maxmind.com>"
+  ],
+  "dist_name" => "MaxMind-DB-Writer",
+  "dist_version" => "0.201002",
+  "license" => "perl",
+  "module_name" => "MaxMind::DB::Writer",
+  "recursive_test_files" => 1,
+  "requires" => {
+    "Carp" => 0,
+    "Data::Dumper::Concise" => 0,
+    "Data::IEEE754" => 0,
+    "Digest::MD5" => 0,
+    "Digest::SHA1" => 0,
+    "Encode" => 0,
+    "Exporter" => 0,
+    "IO::Handle" => 0,
+    "Math::Int128" => "0.21",
+    "Math::Int64" => "0.51",
+    "MaxMind::DB::Common" => "0.031003",
+    "MaxMind::DB::Metadata" => 0,
+    "MaxMind::DB::Reader::Decoder" => 0,
+    "MaxMind::DB::Role::Debugs" => 0,
+    "Moose" => 0,
+    "Moose::Util::TypeConstraints" => 0,
+    "MooseX::Params::Validate" => 0,
+    "MooseX::StrictConstructor" => 0,
+    "Net::Works::Network" => 0,
+    "Sereal::Decoder" => 0,
+    "Sereal::Encoder" => "3.002",
+    "Test::Deep::NoTest" => 0,
+    "XSLoader" => 0,
+    "autodie" => 0,
+    "bytes" => 0,
+    "constant" => 0,
+    "namespace::autoclean" => 0,
+    "strict" => 0,
+    "warnings" => 0
+  },
+  "test_requires" => {
+    "Data::Printer" => 0,
+    "Devel::Refcount" => 0,
+    "ExtUtils::MakeMaker" => 0,
+    "File::Spec" => 0,
+    "File::Temp" => 0,
+    "JSON" => 0,
+    "List::AllUtils" => 0,
+    "List::Util" => 0,
+    "MaxMind::DB::Reader" => 0,
+    "Net::Works::Address" => 0,
+    "Scalar::Util" => 0,
+    "Test::Bits" => 0,
+    "Test::Builder" => 0,
+    "Test::Fatal" => 0,
+    "Test::HexDifferences" => 0,
+    "Test::MaxMind::DB::Common::Data" => 0,
+    "Test::More" => "0.96",
+    "Test::Requires" => 0,
+    "Test::Warnings" => 0,
+    "lib" => 0,
+    "utf8" => 0
+  }
+);
+
 my $mb = Module::Build->new(
-    _mb_args(),
+    %module_build_args,
     c_source => 'c',
 );
 
 $mb->extra_compiler_flags( _cc_flags($mb) );
 
 $mb->create_build_script();
-
-sub _mb_args {
-
-    # This is a funky way of allowing this code to run stand-alone and as a
-    # template to be processed by Dist::Zilla::Plugin::ModuleBuild::Custom
-    my $data = do { local $/; <DATA> };
-
-    if ( $data !~ /^\#/ ) {
-        my $args = eval $data;
-        return %{$args};
-    }
-    else {
-        return (
-            module_name          => 'MaxMind::DB::Writer',
-            dist_abstract        => 'Whatever',
-            license              => 'perl',
-            recursive_test_files => 1,
-        );
-    }
-}
 
 sub _cc_flags {
     my $mb = shift;
@@ -127,6 +200,3 @@ EOF
 
     return $autoconf->check_cached( $cache_name, "for $type", $check_sub );
 }
-
-__DATA__
-##{ ( my $args = Data::Dumper::Dumper( $plugin->module_build_args ) ) =~ s/\$VAR\d+ =//; $args ##}
