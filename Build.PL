@@ -17,25 +17,7 @@ my %module_build_args = (
     "Module::Build" => "0.28"
   },
   "configure_requires" => {
-    "Carp" => 0,
-    "Dist::Zilla::File::InMemory" => 0,
-    "Dist::Zilla::Plugin::ModuleBuild" => 0,
-    "Exporter" => 0,
-    "ExtUtils::CBuilder" => 0,
-    "File::Basename" => 0,
-    "File::Spec" => 0,
-    "File::Temp" => 0,
-    "IO::Handle" => 0,
-    "Module::Build" => "0.28",
-    "Moose" => 0,
-    "PerlIO" => 0,
-    "Scalar::Util" => 0,
-    "base" => 0,
-    "lib" => 0,
-    "namespace::autoclean" => 0,
-    "perl" => "5.008002",
-    "strict" => 0,
-    "warnings" => 0
+    "Module::Build" => "0.28"
   },
   "dist_abstract" => "Create MaxMind DB database files",
   "dist_author" => [

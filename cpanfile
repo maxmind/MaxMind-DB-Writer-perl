@@ -61,25 +61,7 @@ on 'test' => sub {
 };
 
 on 'configure' => sub {
-  requires "Carp" => "0";
-  requires "Dist::Zilla::File::InMemory" => "0";
-  requires "Dist::Zilla::Plugin::ModuleBuild" => "0";
-  requires "Exporter" => "0";
-  requires "ExtUtils::CBuilder" => "0";
-  requires "File::Basename" => "0";
-  requires "File::Spec" => "0";
-  requires "File::Temp" => "0";
-  requires "IO::Handle" => "0";
   requires "Module::Build" => "0.28";
-  requires "Moose" => "0";
-  requires "PerlIO" => "0";
-  requires "Scalar::Util" => "0";
-  requires "base" => "0";
-  requires "lib" => "0";
-  requires "namespace::autoclean" => "0";
-  requires "perl" => "5.008002";
-  requires "strict" => "0";
-  requires "warnings" => "0";
 };
 
 on 'develop' => sub {
