@@ -5,6 +5,8 @@ use strict;
 use warnings;
 use namespace::autoclean;
 
+use Dist::Zilla::File::InMemory;
+
 use Moose;
 
 extends 'Dist::Zilla::Plugin::ModuleBuild';
@@ -124,8 +126,6 @@ EOT
 
 sub gather_files {
     my ($self) = @_;
-
-    require Dist::Zilla::File::InMemory;
 
     my $file = Dist::Zilla::File::InMemory->new(
         {
