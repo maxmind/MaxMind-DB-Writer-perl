@@ -45,7 +45,7 @@ my %module_build_args = (
     "Mark Fowler <mfowler\@maxmind.com>"
   ],
   "dist_name" => "MaxMind-DB-Writer",
-  "dist_version" => "0.201002",
+  "dist_version" => "0.201003",
   "license" => "perl",
   "module_name" => "MaxMind::DB::Writer",
   "recursive_test_files" => 1,
