@@ -93,11 +93,18 @@ typedef struct MMDBW_data_hash_s {
     UT_hash_handle hh;
 } MMDBW_data_hash_s;
 
+typedef struct MMDBW_merge_cache_s {
+    const char *key;
+    const char *value;
+    UT_hash_handle hh;
+} MMDBW_merge_cache_s;
+
 typedef struct MMDBW_tree_s {
     uint8_t ip_version;
     uint8_t record_size;
     MMDBW_merge_strategy merge_strategy;
     MMDBW_data_hash_s *data_table;
+    MMDBW_merge_cache_s *merge_cache;
     MMDBW_record_s root_record;
     uint32_t node_count;
     bool is_aliased;
@@ -149,6 +156,7 @@ typedef void (MMDBW_iterator_callback)(MMDBW_tree_s *tree,
     extern uint128_t flip_network_bit(MMDBW_tree_s *tree, uint128_t network, uint8_t depth);
     extern SV *data_for_key(MMDBW_tree_s *tree, const char *const key);
     extern void free_tree(MMDBW_tree_s *tree);
+    extern void free_merge_cache(MMDBW_tree_s *tree);
     extern const char *record_type_name(int record_type);
     extern void warn_hex(uint8_t digest[16], char *where);
     extern char *md5_as_hex(uint8_t digest[16]);
