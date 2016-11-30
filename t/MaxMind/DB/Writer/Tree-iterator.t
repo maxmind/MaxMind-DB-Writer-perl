@@ -18,8 +18,9 @@ my ( $insert, $expect ) = ranges_to_data(
     ],
 );
 
-my $basic_tree = make_tree_from_pairs('network', $insert);
+my $basic_tree = make_tree_from_pairs( 'network', $insert );
 
+## no critic (Modules::ProhibitMultiplePackages)
 {
     like(
         exception { $basic_tree->iterate( [] ) },

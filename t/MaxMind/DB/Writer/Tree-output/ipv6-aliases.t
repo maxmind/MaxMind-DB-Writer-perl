@@ -10,6 +10,7 @@ use Test::Requires (
 use MaxMind::DB::Writer::Tree;
 
 use File::Temp qw( tempdir );
+use MaxMind::DB::Reader;
 use Net::Works::Network;
 
 my $tempdir = tempdir( CLEANUP => 1 );
@@ -90,10 +91,10 @@ sub _write_tree {
         );
     }
 
-    my $filename = $tempdir . "/Test-ipv6-alias.mmdb";
-    open my $fh, '>', $filename;
-
+    my $filename = $tempdir . '/Test-ipv6-alias.mmdb';
+    open my $fh, '>', $filename or die $!;
     $tree->write_tree($fh);
+    close $fh or die $!;
 
     return $filename;
 }

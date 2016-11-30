@@ -10,6 +10,7 @@ use Test::Requires (
 use MaxMind::DB::Writer::Tree;
 
 use File::Temp qw( tempdir );
+use MaxMind::DB::Reader;
 use Net::Works::Network;
 
 my $tempdir = tempdir( CLEANUP => 1 );
@@ -42,7 +43,7 @@ sub _write_tree {
             en => 'Test Database',
             zh => 'Test Database Chinese',
         },
-        map_key_type_callback => sub { 'utf8_string' },
+        map_key_type_callback    => sub { 'utf8_string' },
         remove_reserved_networks => 0
     );
 
@@ -56,10 +57,10 @@ sub _write_tree {
         { ip => '0.0.0.0' },
     );
 
-    my $filename = $tempdir . "/Test-0-network.mmdb";
-    open my $fh, '>', $filename;
-
+    my $filename = $tempdir . '/Test-0-network.mmdb';
+    open my $fh, '>', $filename or die $!;
     $tree->write_tree($fh);
+    close $fh or die $!;
 
     return $filename;
 }

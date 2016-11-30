@@ -442,7 +442,8 @@ sub new_from_frozen_tree {
         record_size           => { isa => $RecordSizeType, optional => 1 },
         );
 
-    open my $fh, '<:raw', $filename;
+    ## no critic (InputOutput::RequireBriefOpen)
+    open my $fh, '<:raw', $filename or die $!;
     my $packed_params_size;
     unless ( read( $fh, $packed_params_size, 4 ) == 4 ) {
         die "Could not read 4 bytes from $filename: $!";
@@ -453,6 +454,8 @@ sub new_from_frozen_tree {
     unless ( read( $fh, $frozen_params, $params_size ) == $params_size ) {
         die "Could not read $params_size bytes from $filename: $!";
     }
+    close $fh or die $!;
+
     my $params = decode_sereal($frozen_params);
 
     $params->{database_type} = $database_type if defined $database_type;

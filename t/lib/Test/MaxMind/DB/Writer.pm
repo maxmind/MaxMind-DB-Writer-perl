@@ -223,14 +223,14 @@ sub test_freeze_thaw {
     $_->_set_build_epoch($now) for $tree1, $tree2;
 
     my $tree1_output;
-    open my $fh, '>:raw', \$tree1_output;
+    open my $fh, '>:raw', \$tree1_output or die $!;
     $tree1->write_tree($fh);
-    close $fh;
+    close $fh or die $!;
 
     my $tree2_output;
-    open $fh, '>:raw', \$tree2_output;
+    open $fh, '>:raw', \$tree2_output or die $!;
     $tree2->write_tree($fh);
-    close $fh;
+    close $fh or die $!;
 
     eq_or_dump_diff(
         $tree1_output, $tree2_output,

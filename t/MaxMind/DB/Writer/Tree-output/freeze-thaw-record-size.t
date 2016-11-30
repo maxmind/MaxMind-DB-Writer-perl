@@ -48,8 +48,9 @@ my $tempdir = tempdir( CLEANUP => 1 );
         record_size           => 32,
     );
 
-    open my $fh, '>:raw', "$tempdir/mmdb";
+    open my $fh, '>:raw', "$tempdir/mmdb" or die $!;
     $tree->write_tree($fh);
+    close $fh or die $!;
 }
 
 # load the mmdb, check record size is 32 not 24

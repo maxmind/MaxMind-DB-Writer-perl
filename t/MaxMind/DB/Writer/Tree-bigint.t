@@ -6,6 +6,7 @@ use Test::More 0.88;
 
 use MaxMind::DB::Writer::Tree;
 use Math::Int128 qw( uint128 );
+use Net::Works::Address;
 use Net::Works::Network;
 
 {
@@ -33,11 +34,11 @@ use Net::Works::Network;
         'no exception inserting data that includes a Math::UInt128 object'
     );
 
-    my $record = $tree->lookup_ip_address(
+    my $ip_record = $tree->lookup_ip_address(
         Net::Works::Address->new_from_string( string => '1.1.1.1' ) );
 
     is(
-        $record->{value},
+        $ip_record->{value},
         $int128,
         'got expected value back with Math::UInt128 object'
     );

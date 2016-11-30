@@ -46,11 +46,7 @@ my $tree = make_tree_from_pairs(
     },
 );
 
-my $dir = tempdir( CLEANUP => 1 );
-open my $fh, '>', "$dir/dedupe.mmdb";
-
 my $calls = 0;
-
 {
     package MaxMind::DB::Writer::Serializer;
     no warnings 'redefine';
@@ -71,13 +67,14 @@ my $calls = 0;
     };
 }
 
+my $dir = tempdir( CLEANUP => 1 );
+open my $fh, '>', "$dir/dedupe.mmdb" or die $!;
 $tree->write_tree($fh);
+close $fh or die $!;
 
 is(
     $calls, 2,
     'store_data was only called twice because identical record values are deduplicated'
 );
-
-close $fh;
 
 done_testing();

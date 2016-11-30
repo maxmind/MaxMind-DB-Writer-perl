@@ -4,7 +4,7 @@ MaxMind::DB::Writer - Create MaxMind DB database files
 
 # VERSION
 
-version 0.201001
+version 0.201002
 
 # SYNOPSIS
 
@@ -65,6 +65,8 @@ Please report all issues with this code using the GitHub issue tracker at
 We welcome patches as pull requests against our GitHub repository at
 [https://github.com/maxmind/MaxMind-DB-Writer-perl](https://github.com/maxmind/MaxMind-DB-Writer-perl).
 
+Bugs may be submitted through [https://github.com/maxmind/MaxMind-DB-Writer-perl/issues](https://github.com/maxmind/MaxMind-DB-Writer-perl/issues).
+
 # AUTHORS
 
 - Olaf Alders <oalders@maxmind.com>
@@ -76,6 +78,7 @@ We welcome patches as pull requests against our GitHub repository at
 
 - Florian Ragwitz <rafl@debian.org>
 - Jan Bieron &lt;jbieron+github@gmail.com>
+- tjmather <tjmather@maxmind.com>
 
 # COPYRIGHT AND LICENSE
 

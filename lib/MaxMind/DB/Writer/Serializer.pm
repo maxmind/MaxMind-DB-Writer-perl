@@ -19,6 +19,7 @@ use MooseX::StrictConstructor;
 
 with 'MaxMind::DB::Role::Debugs';
 
+## no critic (ValuesAndExpressions::ProhibitConstantPragma)
 use constant DEBUG  => $ENV{MAXMIND_DB_SERIALIZER_DEBUG};
 use constant VERIFY => $ENV{MAXMIND_DB_SERIALIZER_VERIFY};
 
@@ -28,8 +29,9 @@ if (VERIFY) {
     Test::Deep::NoTest->import(qw( cmp_details deep_diag ));
 }
 
-binmode STDERR, ':utf8'
-    if DEBUG;
+if (DEBUG) {
+    binmode STDERR, ':encoding(UTF-8)' or die $!;
+}
 
 has buffer => (
     is       => 'ro',
@@ -536,6 +538,7 @@ sub _encode_unsigned_int {
         }
 
         my $leftover_size;
+        ## no critic (ControlStructures::ProhibitCascadingIfElse)
         if ( $size < $ThresholdSize{1} ) {
             $first_byte |= $size;
         }
@@ -571,8 +574,7 @@ sub _encode_unsigned_int {
 }
 
 sub _write_encoded_data {
-    my $self    = shift;
-    my @encoded = @_;
+    my $self = shift;
 
     ${ $self->buffer() } .= $_ for @_;
 
@@ -585,7 +587,8 @@ sub _write_encoded_data {
 sub _build_decoder {
     my $self = shift;
 
-    open my $fh, '<:raw', $self->buffer();
+    ## no critic (InputOutput::RequireBriefOpen)
+    open my $fh, '<:raw', $self->buffer() or die $!;
 
     return MaxMind::DB::Reader::Decoder->new(
         data_source => $fh,

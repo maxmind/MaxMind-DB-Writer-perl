@@ -2,8 +2,7 @@ use strict;
 use warnings;
 use utf8;
 
-use lib 't/lib';
-
+use Test::Builder;
 use Test::Fatal;
 use Test::More;
 
@@ -14,9 +13,9 @@ use MaxMind::DB::Writer::Serializer;
 {
     my $tb = Test::Builder->new();
 
-    binmode $_, ':encoding(UTF-8)' for $tb->output(),
-        $tb->failure_output(),
-        $tb->todo_output();
+    for ( $tb->output, $tb->failure_output, $tb->todo_output ) {
+        binmode $_, ':encoding(UTF-8)' or die $!;
+    }
 }
 
 my $input = "\x{4eba}";
