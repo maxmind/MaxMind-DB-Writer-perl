@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.201002 2016-11-30
+
 - Data merges are now cached so that we do not have to merge the same two
   hashes repeatedly.
 - Remove unnecessary encode call that slowed down generation of data key on
