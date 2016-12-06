@@ -1,6 +1,15 @@
 {{$NEXT}}
 
+[ BUG FIXES ]
+
+- In an IPv6 tree with aliasing enabled, the IPv4 root node is now fixed,
+  meaning that it cannot be merged away or replaced. Previously, it was
+  possible for this node to be freed, causing aliases to be invalid.
+
+
 0.201003 2016-11-30
+
+[ BUG FIXES ]
 
 - The previous release included many unneeded modules in the configure phase
   prereqs.
@@ -8,13 +17,17 @@
 
 0.201002 2016-11-30
 
+[ ENHANCEMENTS ]
+
 - Data merges are now cached so that we do not have to merge the same two
   hashes repeatedly.
 - Remove unnecessary encode call that slowed down generation of data key on
   inserts.
-  
+
 
 0.201001 2016-07-13
+
+[ BUG FIXES ]
 
 - The writer now throws an exception if you try to insert a network that
   contains an alias node. Previously, the alias node would be overwritten.
@@ -22,9 +35,14 @@
 
 0.201000 2016-04-22
 
+[ ENHANCEMENTS ]
+
 - The insertion methods now take a merge_strategy argument.
 - An add-only-if-parent-exists merge strategy was added. This replaces the
   functionality of insert_only_if_parent_exists.
+
+[ OTHER ]
+
 - Deprecated insert_only_if_parent_exists and force_overwrite insertion
   arguments. These arguments will now warn and will be removed in a future
   major release.
@@ -34,6 +52,8 @@
 
 0.200004 2016-04-20
 
+[ ENHANCEMENTS ]
+
 - Added the optional tree insertion argument insert_only_if_parent_exists.
   When enabled, data will be inserted if a record already exists for the
   network and only if the parent hash reference already exists. This argument
@@ -42,15 +62,22 @@
 
 0.200003 2016-04-11
 
+[ BACKWARDS INCOMPATIBILITIES ]
+
 - The Teredo range is no longer removed from the database when
   "remove_reserved_networks" is enabled. This range is globally routable and
   aliased to the IPv4 range when "alias_ipv6_to_ipv4" is enabled. Previously
   this alias would be removed if both "alias_ipv6_to_ipv4" and
   "remove_reserved_networks" were enabled.
+
+[ ENHANCEMENTS ]
+
 - Allow changing the record size when unfreezing a frozen tree
 
 
 0.200002 2016-04-07
+
+[ BACKWARDS INCOMPATIBILITIES ]
 
 - The in-memory tree now has a root record rather than a root node. This fixes
   the insertion of a /0 network (GitHub #55) and a segmentation fault when
@@ -58,8 +85,14 @@
   of /0 are allowed (e.g., to create a default record for the database),
   writing, iterating, and freezing a database that only contains a single /0
   data record are currently forbidden.
+
+[ BUG FIXES ]
+
 - Fixed a bug where an incorrect node_count could be written to the database,
   causing invalid metadata errors when reading it.
+
+[ OTHER ]
+
 - The node_count() method on the Tree object now always recalculates the node
   count rather than using a possibly incorrect cached value.
 
@@ -76,7 +109,7 @@
   the aliased subnets leads to complications in determining the correct tree
   depth for the insert and could also cause unintentional overwriting of data.
 
-[ BUGFIXES ]
+[ BUG FIXES ]
 
 - Some memory leaks when throwing an exception were fixed.
 
@@ -105,7 +138,7 @@
 - Added MaxMind::DB::Writer::Tree->remove_network() to allow for removing a
   network from a tree.
 
-[ BUGFIXES ]
+[ BUG FIXES ]
 
 - Previously, inserting IPv6-mapped IPv4 addresses into a IPv6 tree with IPv4
   aliasing enabled could result in a corrupt search tree unless the deprecated

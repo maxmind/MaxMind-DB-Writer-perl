@@ -107,7 +107,8 @@ LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
                                                MMDBW_tree_s *tree,
                                                MMDBW_record_s *record),
                                            MMDBW_record_s **record,
-                                           MMDBW_record_s **sibling_record
+                                           MMDBW_record_s **sibling_record,
+                                           MMDBW_record_s **parent_record
                                            );
 LOCAL MMDBW_node_s *return_null(
     MMDBW_tree_s *UNUSED(tree), MMDBW_record_s *UNUSED(record));
@@ -115,9 +116,9 @@ LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
                                          MMDBW_record_s *record);
 LOCAL MMDBW_status free_node_and_subnodes(MMDBW_tree_s *tree,
                                           MMDBW_node_s *node,
-                                          bool remove_alias_nodes);
+                                          bool remove_alias_and_fixed_nodes);
 LOCAL MMDBW_status free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record,
-                                     bool remove_alias_nodes);
+                                     bool remove_alias_and_fixed_nodes);
 LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
                               uint128_t UNUSED(network),
                               uint8_t UNUSED(depth), void *UNUSED(args));
@@ -585,6 +586,7 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
                                                   false,
                                                   &return_null,
                                                   &ipv4_root_record,
+                                                  NULL,
                                                   NULL);
     free_network(&ipv4_root_network);
     if (status != MMDBW_SUCCESS) {
@@ -596,6 +598,8 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
               record_type_name(ipv4_root_record->type));
     }
 
+    ipv4_root_record->type = MMDBW_RECORD_TYPE_FIXED_NODE;
+
     MMDBW_node_s *ipv4_root_node =
         ipv4_root_record->value.node;
     for (int i = 0; i <= 2; i++) {
@@ -606,7 +610,7 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
         MMDBW_record_s *record_for_alias;
         MMDBW_status status = find_record_for_network(
             tree, &alias_network, true,
-            &new_node_from_record, &record_for_alias, NULL);
+            &new_node_from_record, &record_for_alias, NULL, NULL);
 
         free_network(&alias_network);
 
@@ -625,15 +629,20 @@ LOCAL MMDBW_status insert_record_for_network(
     MMDBW_merge_strategy merge_strategy,
     bool is_internal_insert)
 {
+    // We don't currently allow insertions of fixed nodes.
+    if (new_record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
+        return MMDBW_INSERT_FIXED_NODE_RECORD_ERROR;
+    }
     if (merge_strategy == MMDBW_MERGE_STRATEGY_UNKNOWN) {
         merge_strategy = tree->merge_strategy;
     }
-    MMDBW_record_s *record_to_set, *other_record;
+    MMDBW_record_s *record_to_set, *other_record, *parent_record;
     MMDBW_status status =
         find_record_for_network(tree, network,
                                 false,
                                 &new_node_from_record,
-                                &record_to_set, &other_record);
+                                &record_to_set, &other_record,
+                                &parent_record);
     if (MMDBW_SUCCESS != status) {
         status = free_record_value(tree, new_record, true);
         if (status != MMDBW_SUCCESS) {
@@ -674,6 +683,8 @@ LOCAL MMDBW_status insert_record_for_network(
     if (MMDBW_RECORD_TYPE_DATA == new_record->type
         && NULL != other_record
         && MMDBW_RECORD_TYPE_DATA == other_record->type
+        && (NULL != parent_record
+            && MMDBW_RECORD_TYPE_FIXED_NODE != parent_record->type)
         ) {
 
         const char *const new_key = new_record->value.key;
@@ -732,7 +743,8 @@ LOCAL bool maybe_merge_records(MMDBW_tree_s *tree,
 
     int max_depth0 = tree_depth0(tree);
 
-    if (MMDBW_RECORD_TYPE_NODE == record_to_set->type) {
+    if (MMDBW_RECORD_TYPE_NODE == record_to_set->type
+        || MMDBW_RECORD_TYPE_FIXED_NODE == record_to_set->type) {
         if (network->prefix_length > max_depth0) {
             croak("Something is very wrong. Prefix length is too long.");
         }
@@ -1037,7 +1049,7 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
     MMDBW_status status =
         find_record_for_network(tree, &network, true, &return_null,
                                 &record_for_address,
-                                NULL);
+                                NULL, NULL);
 
     free_network(&network);
 
@@ -1047,6 +1059,7 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
     }
 
     if (MMDBW_RECORD_TYPE_NODE == record_for_address->type ||
+        MMDBW_RECORD_TYPE_FIXED_NODE == record_for_address->type ||
         MMDBW_RECORD_TYPE_ALIAS == record_for_address->type) {
         croak(
             "WTF - found a node or alias record for an address lookup - %s"
@@ -1067,11 +1080,15 @@ LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
                                                MMDBW_tree_s *tree,
                                                MMDBW_record_s *record),
                                            MMDBW_record_s **record,
-                                           MMDBW_record_s **sibling_record
+                                           MMDBW_record_s **sibling_record,
+                                           MMDBW_record_s **parent_record
                                            )
 {
     if (NULL != sibling_record) {
         *sibling_record = NULL;
+    }
+    if (NULL != parent_record) {
+        *parent_record = NULL;
     }
 
     *record = &(tree->root_record);
@@ -1088,6 +1105,7 @@ LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
 
         MMDBW_node_s *node;
         if (MMDBW_RECORD_TYPE_NODE == (*record)->type ||
+            MMDBW_RECORD_TYPE_FIXED_NODE == (*record)->type ||
             MMDBW_RECORD_TYPE_ALIAS == (*record)->type) {
             node = (*record)->value.node;
         } else {
@@ -1100,6 +1118,9 @@ LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
             (*record)->value.node = node;
         }
 
+        if (NULL != parent_record) {
+            *parent_record = *record;
+        }
 
         if (network_bit_value(tree, network, current_bit)) {
             *record = &(node->right_record);
@@ -1154,15 +1175,16 @@ MMDBW_node_s *new_node()
 
 LOCAL MMDBW_status free_node_and_subnodes(MMDBW_tree_s *tree,
                                           MMDBW_node_s *node,
-                                          bool remove_alias_nodes)
+                                          bool remove_alias_and_fixed_nodes)
 {
     MMDBW_status status = free_record_value(tree, &(node->left_record),
-                                            remove_alias_nodes);
+                                            remove_alias_and_fixed_nodes);
     if (status != MMDBW_SUCCESS) {
         return status;
     }
 
-    status = free_record_value(tree, &(node->right_record), remove_alias_nodes);
+    status = free_record_value(tree, &(node->right_record),
+                               remove_alias_and_fixed_nodes);
     if (status != MMDBW_SUCCESS) {
         return status;
     }
@@ -1172,11 +1194,17 @@ LOCAL MMDBW_status free_node_and_subnodes(MMDBW_tree_s *tree,
 }
 
 LOCAL MMDBW_status free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record,
-                                     bool remove_alias_nodes)
+                                     bool remove_alias_and_fixed_nodes)
 {
-    if (MMDBW_RECORD_TYPE_NODE == record->type) {
+    if (MMDBW_RECORD_TYPE_FIXED_NODE == record->type &&
+        !remove_alias_and_fixed_nodes) {
+        return MMDBW_FREED_FIXED_NODE_ERROR;
+    }
+
+    if (MMDBW_RECORD_TYPE_NODE == record->type
+        || MMDBW_RECORD_TYPE_FIXED_NODE == record->type) {
         return free_node_and_subnodes(tree, record->value.node,
-                                      remove_alias_nodes);
+                                      remove_alias_and_fixed_nodes);
     }
 
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
@@ -1186,7 +1214,8 @@ LOCAL MMDBW_status free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record,
     /* Alias nodes should only be removed explicitly. We can't just croak
        as it will leave the tree in an inconsistent state causing a segfault
        during unwinding. */
-    if (MMDBW_RECORD_TYPE_ALIAS == record->type && !remove_alias_nodes) {
+    if (MMDBW_RECORD_TYPE_ALIAS == record->type &&
+        !remove_alias_and_fixed_nodes) {
         return MMDBW_FREED_ALIAS_NODE_ERROR;
     }
     return MMDBW_SUCCESS;
@@ -1660,7 +1689,8 @@ LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
 LOCAL void check_record_sanity(MMDBW_node_s *node, MMDBW_record_s *record,
                                char *side)
 {
-    if (MMDBW_RECORD_TYPE_NODE == record->type) {
+    if (MMDBW_RECORD_TYPE_NODE == record->type ||
+        MMDBW_RECORD_TYPE_FIXED_NODE == record->type) {
         if (record->value.node->number == node->number) {
             croak("%s record of node %" PRIu32 " points to the same node",
                   side, node->number);
@@ -1692,7 +1722,8 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
     if (MMDBW_RECORD_TYPE_EMPTY == record->type) {
         record_value = tree->node_count;
     } else if (MMDBW_RECORD_TYPE_NODE == record->type ||
-               MMDBW_RECORD_TYPE_ALIAS == record->type) {
+               MMDBW_RECORD_TYPE_ALIAS == record->type ||
+               MMDBW_RECORD_TYPE_FIXED_NODE == record->type) {
         record_value = record->value.node->number;
     } else {
         SV **cache_record =
@@ -1803,7 +1834,8 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
             "start IP: %s)! The tree is wonky.\n", depth, ip);
     }
 
-    if (MMDBW_RECORD_TYPE_NODE == record->type) {
+    if (MMDBW_RECORD_TYPE_NODE == record->type ||
+        MMDBW_RECORD_TYPE_FIXED_NODE == record->type) {
         MMDBW_node_s *node = record->value.node;
 
         if (!depth_first) {
@@ -1946,12 +1978,10 @@ void free_merge_cache(MMDBW_tree_s *tree)
 
 const char *record_type_name(int record_type)
 {
-    return MMDBW_RECORD_TYPE_EMPTY == record_type
-           ? "empty"
-           : MMDBW_RECORD_TYPE_NODE == record_type
-           ? "node"
-           : MMDBW_RECORD_TYPE_ALIAS == record_type
-           ? "alias"
+    return MMDBW_RECORD_TYPE_EMPTY == record_type           ? "empty"
+           : MMDBW_RECORD_TYPE_NODE == record_type           ? "node"
+           : MMDBW_RECORD_TYPE_FIXED_NODE == record_type ? "fixed_node"
+           : MMDBW_RECORD_TYPE_ALIAS == record_type           ? "alias"
            : "data";
 }
 
@@ -2058,6 +2088,11 @@ LOCAL char *status_error_message(MMDBW_status status)
     case MMDBW_FREED_ALIAS_NODE_ERROR:
         return
             "Attempted to free an IPv4 alias node. Did you try to overwrite an alias network?";
+    case MMDBW_FREED_FIXED_NODE_ERROR:
+        return
+            "Attempted to free a fixed node. This should never happen.";
+    case MMDBW_INSERT_FIXED_NODE_RECORD_ERROR:
+        return "Inserting fixed nodes is not currently supported.";
     }
     // We should get a compile time warning if an enum is missing
     return "Unknown error";
