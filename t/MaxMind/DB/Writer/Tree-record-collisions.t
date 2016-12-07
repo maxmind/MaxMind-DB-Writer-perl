@@ -1004,6 +1004,76 @@ subtest 'Test merging into aliased nodes' => sub {
     test_freeze_thaw($tree);
 };
 
+subtest 'Test merging away IPv4 root' => sub {
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version            => 6,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        merge_strategy        => 'toplevel',
+        map_key_type_callback => sub { 'utf8_string' },
+        alias_ipv6_to_ipv4    => 1,
+    );
+
+    $tree->insert_network( $_, { data => 1 } ) for qw( 1.0.0.0/24 ::/1 );
+
+    test_freeze_thaw($tree);
+};
+
+subtest 'Test overwriting IPv4 root' => sub {
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version            => 6,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        merge_strategy        => 'toplevel',
+        map_key_type_callback => sub { 'utf8_string' },
+        alias_ipv6_to_ipv4    => 1,
+    );
+
+    _insert_network( $tree, $_ ) for qw( 1.0.0.0/24 0.0.0.0/0 ::/95 );
+    my @pairs = (
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/24' ) =>
+                { insert => 1 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '0.0.0.0/0' ) =>
+                { insert => 2 },
+        ],
+        [
+            Net::Works::Network->new_from_string( string => '::/95' ) =>
+                { insert => 3 },
+        ],
+    );
+
+    my @expect = (
+        [
+            Net::Works::Network->new_from_string( string => '1.0.0.0/32' ) =>
+                { insert => 3 },
+        ],
+        [
+            Net::Works::Network->new_from_string(
+                string => '130.0.0.0/32' ) => { insert => 3 },
+        ],
+        [
+            Net::Works::Network->new_from_string(
+                string => '::1:ffff:ffff/128'
+                ) => { insert => 3 },
+        ],
+    );
+
+    test_tree(
+        \@pairs,
+        \@expect,
+        'IPv4 node is not merged away',
+        { ip_version => 6 },
+        1,
+    );
+};
+
 sub _insert_network {
     my $tree    = shift;
     my $network = shift;

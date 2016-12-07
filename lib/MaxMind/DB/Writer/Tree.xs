@@ -57,6 +57,7 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     if (MMDBW_RECORD_TYPE_DATA == record->type) {
         mPUSHs(newSVsv(data_for_key(tree, record->value.key)));
     } else if (MMDBW_RECORD_TYPE_NODE == record->type ||
+               MMDBW_RECORD_TYPE_FIXED_NODE == record->type ||
                MMDBW_RECORD_TYPE_ALIAS == record->type) {
         mPUSHi(record->value.node->number);
     }
@@ -82,6 +83,7 @@ SV *method_for_record_type(perl_iterator_args_s *args, const int record_type)
     return MMDBW_RECORD_TYPE_EMPTY == record_type
            ? args->empty_method
            : MMDBW_RECORD_TYPE_NODE == record_type ||
+           MMDBW_RECORD_TYPE_FIXED_NODE == record_type ||
            MMDBW_RECORD_TYPE_ALIAS == record_type
            ? args->node_method
            : args->data_method;

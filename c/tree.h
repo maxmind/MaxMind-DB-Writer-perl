@@ -54,13 +54,18 @@ typedef enum {
     MMDBW_SUCCESS,
     MMDBW_FINDING_NODE_ERROR,
     MMDBW_FREED_ALIAS_NODE_ERROR,
+    MMDBW_FREED_FIXED_NODE_ERROR,
     MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR,
+    MMDBW_INSERT_FIXED_NODE_RECORD_ERROR,
 } MMDBW_status;
 
 typedef enum {
     MMDBW_RECORD_TYPE_EMPTY,
     MMDBW_RECORD_TYPE_DATA,
     MMDBW_RECORD_TYPE_NODE,
+    // fixed nodes are used for nodes that other nodes alias; they cannot be
+    // removed without corrupting the tree.
+    MMDBW_RECORD_TYPE_FIXED_NODE,
     MMDBW_RECORD_TYPE_ALIAS,
 } MMDBW_record_type;
 
