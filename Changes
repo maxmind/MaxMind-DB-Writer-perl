@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.201004 2016-12-07
+
 [ BUG FIXES ]
 
 - In an IPv6 tree with aliasing enabled, the IPv4 root node is now fixed,
