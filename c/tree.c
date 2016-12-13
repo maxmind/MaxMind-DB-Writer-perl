@@ -80,6 +80,22 @@ LOCAL MMDBW_status insert_record_for_network(
     MMDBW_record_s *new_record,
     MMDBW_merge_strategy merge_strategy,
     bool is_internal_insert);
+LOCAL MMDBW_status insert_record_into_next_node(
+    MMDBW_tree_s *tree,
+    MMDBW_record_s *current_record,
+    MMDBW_network_s *network,
+    int current_bit,
+    MMDBW_record_s *new_record,
+    MMDBW_merge_strategy merge_strategy,
+    bool is_internal_insert);
+LOCAL MMDBW_status insert_record_into_current_record(
+    MMDBW_tree_s *tree,
+    MMDBW_record_s *current_record,
+    MMDBW_network_s *network,
+    int current_bit,
+    MMDBW_record_s *new_record,
+    MMDBW_merge_strategy merge_strategy,
+    bool is_internal_insert);
 LOCAL bool maybe_merge_records(MMDBW_tree_s *tree,
                                MMDBW_network_s *network,
                                MMDBW_record_s *new_record,
@@ -100,6 +116,8 @@ LOCAL SV * merge_values(MMDBW_tree_s *tree, SV *from, SV *into,
                         MMDBW_merge_strategy merge_strategy);
 LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into,
                         MMDBW_merge_strategy merge_strategy);
+LOCAL int network_bit_value2(MMDBW_tree_s *tree, MMDBW_network_s *network,
+                             uint8_t current_bit);
 LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
                                            MMDBW_network_s *network,
                                            bool follow_aliases,
@@ -172,6 +190,7 @@ LOCAL void checked_perlio_read(PerlIO * io, void *buffer,
 LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
                                char *op);
 LOCAL char *status_error_message(MMDBW_status status);
+LOCAL const char *record_type_name(MMDBW_record_type type);
 /* --prototypes end - don't remove this comment-- */
 /* *INDENT-ON* */
 
@@ -544,15 +563,15 @@ LOCAL void free_network(MMDBW_network_s *network)
     free((char *)network->bytes);
 }
 
-struct network {
+typedef struct network {
     const char *const ipstr;
     const uint8_t prefix_length;
-};
+} network;
 
 static struct network ipv4_aliases[] = {
     {
         .ipstr = "::ffff:0:0",
-        .prefix_length = 96
+        .prefix_length = 96,
     },
     {
         .ipstr = "2001::",
@@ -602,23 +621,30 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
 
     MMDBW_node_s *ipv4_root_node =
         ipv4_root_record->value.node;
-    for (int i = 0; i <= 2; i++) {
+    for (int i = 0; i < sizeof(ipv4_aliases) / sizeof(network); i++) {
         MMDBW_network_s alias_network =
             resolve_network(tree, ipv4_aliases[i].ipstr,
                             ipv4_aliases[i].prefix_length);
 
-        MMDBW_record_s *record_for_alias;
-        MMDBW_status status = find_record_for_network(
-            tree, &alias_network, true,
-            &new_node_from_record, &record_for_alias, NULL, NULL);
+        MMDBW_record_s *record_for_alias = checked_malloc(sizeof(MMDBW_record_s));
+        record_for_alias->type = MMDBW_RECORD_TYPE_ALIAS;
+        record_for_alias->value.node = ipv4_root_node;
+
+        MMDBW_status status = insert_record_for_network(
+            tree,
+            &alias_network,
+            record_for_alias,
+            MMDBW_MERGE_STRATEGY_NONE,
+            true
+            );
 
         free_network(&alias_network);
 
         if (MMDBW_SUCCESS != status) {
-            croak("Unexpected NULL when searching for last node for alias");
+            croak("Unexpected error when searching for last node for alias: %s",
+                  status_error_message(status));
         }
-        record_for_alias->type = MMDBW_RECORD_TYPE_ALIAS;
-        record_for_alias->value.node = ipv4_root_node;
+
     }
 }
 
@@ -629,37 +655,117 @@ LOCAL MMDBW_status insert_record_for_network(
     MMDBW_merge_strategy merge_strategy,
     bool is_internal_insert)
 {
+
+    bool is_ipv6 = tree->ip_version == 6;
+    char address_string[ is_ipv6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN];
+    inet_ntop(is_ipv6 ? AF_INET6 : AF_INET,
+              network->bytes,
+              address_string,
+              sizeof(address_string));
+
+    // printf("Network: %s/%u\n", address_string, network->prefix_length);
+
     // We don't currently allow insertions of fixed nodes.
     if (new_record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
         return MMDBW_INSERT_FIXED_NODE_RECORD_ERROR;
     }
+
     if (merge_strategy == MMDBW_MERGE_STRATEGY_UNKNOWN) {
         merge_strategy = tree->merge_strategy;
     }
-    MMDBW_record_s *record_to_set, *other_record, *parent_record;
-    MMDBW_status status =
-        find_record_for_network(tree, network,
-                                false,
-                                &new_node_from_record,
-                                &record_to_set, &other_record,
-                                &parent_record);
-    if (MMDBW_SUCCESS != status) {
-        status = free_record_value(tree, new_record, true);
-        if (status != MMDBW_SUCCESS) {
-            return status;
+
+    return insert_record_into_next_node(
+               tree,
+               &(tree->root_record),
+               network,
+               0,
+               new_record,
+               merge_strategy,
+               is_internal_insert
+               );
+}
+
+LOCAL MMDBW_status insert_record_into_next_node(
+    MMDBW_tree_s *tree,
+    MMDBW_record_s *current_record,
+    MMDBW_network_s *network,
+    int current_bit,
+    MMDBW_record_s *new_record,
+    MMDBW_merge_strategy merge_strategy,
+    bool is_internal_insert)
+{
+    MMDBW_node_s *next_node = NULL;
+    switch (current_record->type) {
+    case MMDBW_RECORD_TYPE_EMPTY:
+    case MMDBW_RECORD_TYPE_DATA: {
+            if (current_bit >= network->prefix_length) {
+                return insert_record_into_current_record(
+                           tree,
+                           current_record,
+                           network,
+                           current_bit,
+                           new_record,
+                           merge_strategy,
+                           is_internal_insert
+                           );
+            }
+            next_node = new_node_from_record(tree, current_record);
+            current_record->value.node = next_node;
+            current_record->type = MMDBW_RECORD_TYPE_NODE;
+            break;
         }
-        return MMDBW_FINDING_NODE_ERROR;
+    case MMDBW_RECORD_TYPE_ALIAS:
+    case MMDBW_RECORD_TYPE_FIXED_NODE:
+    case MMDBW_RECORD_TYPE_NODE: {
+            next_node = current_record->value.node;
+            break;
+        }
+    }
+    ;
+    MMDBW_record_s *next_record = NULL;
+    if (network_bit_value(tree, network, current_bit)) {
+        // printf("RIGHT\n");
+        next_record = &(next_node->right_record);
+    } else {
+        // printf("LEFT\n");
+        next_record = &(next_node->left_record);
+    }
+    return insert_record_into_next_node(
+               tree,
+               next_record,
+               network,
+               current_bit + 1,
+               new_record,
+               merge_strategy,
+               is_internal_insert
+               );
+}
+
+LOCAL MMDBW_status insert_record_into_current_record(
+    MMDBW_tree_s *tree,
+    MMDBW_record_s *current_record,
+    MMDBW_network_s *network,
+    int current_bit,
+    MMDBW_record_s *new_record,
+    MMDBW_merge_strategy merge_strategy,
+    bool is_internal_insert)
+{
+
+    if (current_record->type == MMDBW_RECORD_TYPE_NODE ||
+        current_record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
+        // XXX
+        abort();
     }
 
-    if (record_to_set->type == MMDBW_RECORD_TYPE_EMPTY &&
+    if (current_record->type == MMDBW_RECORD_TYPE_EMPTY &&
         merge_strategy == MMDBW_MERGE_STRATEGY_ADD_ONLY_IF_PARENT_EXISTS) {
         // We do not create a new record when using "only if parent exists"
         return free_record_value(tree, new_record, true);
     }
 
-    if (record_to_set->type == MMDBW_RECORD_TYPE_ALIAS) {
+    if (current_record->type == MMDBW_RECORD_TYPE_ALIAS) {
         MMDBW_record_type type = new_record->type;
-        status = free_record_value(tree, new_record, true);
+        MMDBW_status status = free_record_value(tree, new_record, true);
         if (status != MMDBW_SUCCESS) {
             return status;
         }
@@ -670,58 +776,60 @@ LOCAL MMDBW_status insert_record_for_network(
         return MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR;
     }
 
-    if (maybe_merge_records(tree, network, new_record, record_to_set,
+    if (maybe_merge_records(tree, network, new_record, current_record,
                             merge_strategy)) {
         return MMDBW_SUCCESS;
     }
 
-    /* If this record we're about to insert is a data record, and the other
-     * record in the node also has the same data, then we instead want to
-     * insert a single data record in this node's parent. We do this by
-     * inserting the new record for the parent network, which we can calculate
-     * quite easily by subtracting 1 from this network's prefix length. */
-    if (MMDBW_RECORD_TYPE_DATA == new_record->type
-        && NULL != other_record
-        && MMDBW_RECORD_TYPE_DATA == other_record->type
-        && (NULL != parent_record
-            && MMDBW_RECORD_TYPE_FIXED_NODE != parent_record->type)
-        ) {
 
-        const char *const new_key = new_record->value.key;
-        const char *const other_key = other_record->value.key;
+    // XXX - move up in recursion
+    // /* If this record we're about to insert is a data record, and the other
+    //  * record in the node also has the same data, then we instead want to
+    //  * insert a single data record in this node's parent. We do this by
+    //  * inserting the new record for the parent network, which we can calculate
+    //  * quite easily by subtracting 1 from this network's prefix length. */
+    // if (MMDBW_RECORD_TYPE_DATA == new_record->type
+    //     && NULL != other_record
+    //     && MMDBW_RECORD_TYPE_DATA == other_record->type
+    //     && (NULL != parent_record
+    //         && MMDBW_RECORD_TYPE_FIXED_NODE != parent_record->type)
+    //     ) {
+    //
+    //     const char *const new_key = new_record->value.key;
+    //     const char *const other_key = other_record->value.key;
+    //
+    //     if (0 == strcmp(new_key, other_key)) {
+    //         size_t bytes_length = tree->ip_version == 6 ? 16 : 4;
+    //         uint8_t *bytes = checked_malloc(bytes_length);
+    //         memcpy(bytes, network->bytes, bytes_length);
+    //
+    //         uint8_t parent_prefix_length = network->prefix_length - 1;
+    //         MMDBW_network_s parent_network = {
+    //             .bytes         = bytes,
+    //             .prefix_length = parent_prefix_length,
+    //         };
+    //
+    //         /* We don't need to merge record collisions in this insert as
+    //          * we have already merged the new record with the existing
+    //          * record
+    //          */
+    //         MMDBW_status status =
+    //             insert_record_for_network(tree, &parent_network, new_record,
+    //                                       MMDBW_MERGE_STRATEGY_NONE,
+    //                                       true);
+    //         free_network(&parent_network);
+    //         return status;
+    //     }
+    // }
 
-        if (0 == strcmp(new_key, other_key)) {
-            size_t bytes_length = tree->ip_version == 6 ? 16 : 4;
-            uint8_t *bytes = checked_malloc(bytes_length);
-            memcpy(bytes, network->bytes, bytes_length);
+    MMDBW_status status = free_record_value(tree, current_record, false);
 
-            uint8_t parent_prefix_length = network->prefix_length - 1;
-            MMDBW_network_s parent_network = {
-                .bytes         = bytes,
-                .prefix_length = parent_prefix_length,
-            };
-
-            /* We don't need to merge record collisions in this insert as
-             * we have already merged the new record with the existing
-             * record
-             */
-            MMDBW_status status =
-                insert_record_for_network(tree, &parent_network, new_record,
-                                          MMDBW_MERGE_STRATEGY_NONE,
-                                          true);
-            free_network(&parent_network);
-            return status;
-        }
-    }
-
-    status = free_record_value(tree, record_to_set, false);
-
-    record_to_set->type = new_record->type;
+    current_record->type = new_record->type;
     if (MMDBW_RECORD_TYPE_DATA == new_record->type) {
-        record_to_set->value.key = new_record->value.key;
+        current_record->value.key = new_record->value.key;
     } else if (MMDBW_RECORD_TYPE_NODE == new_record->type ||
                MMDBW_RECORD_TYPE_ALIAS == new_record->type) {
-        record_to_set->value.node = new_record->value.node;
+        current_record->value.node = new_record->value.node;
     }
 
     return status;
@@ -830,9 +938,7 @@ LOCAL bool maybe_merge_records(MMDBW_tree_s *tree,
 LOCAL int network_bit_value(MMDBW_tree_s *tree, MMDBW_network_s *network,
                             uint8_t current_bit)
 {
-    int max_depth0 = tree_depth0(tree);
-    return network->bytes[(max_depth0 - current_bit) >> 3]
-           & (1U << (~(max_depth0 - current_bit) & 7));
+    return network->bytes[current_bit >> 3] & (1U << (~current_bit & 7));
 }
 
 LOCAL int tree_depth0(MMDBW_tree_s *tree)
@@ -1093,11 +1199,8 @@ LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
 
     *record = &(tree->root_record);
 
-    int max_depth0 = tree_depth0(tree);
-    uint8_t last_bit = max_depth0 - (network->prefix_length - 1);
-
-    for (int current_bit = max_depth0; current_bit >= last_bit;
-         current_bit--) {
+    for (int current_bit = 0; current_bit < network->prefix_length;
+         current_bit++) {
 
         if (MMDBW_RECORD_TYPE_ALIAS == (*record)->type && !follow_aliases) {
             return MMDBW_FINDING_NODE_ERROR;
@@ -1198,6 +1301,7 @@ LOCAL MMDBW_status free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record,
 {
     if (MMDBW_RECORD_TYPE_FIXED_NODE == record->type &&
         !remove_alias_and_fixed_nodes) {
+        abort();
         return MMDBW_FREED_FIXED_NODE_ERROR;
     }
 
@@ -1808,8 +1912,10 @@ void start_iteration(MMDBW_tree_s *tree,
     // We disallow this as the callback is based on nodes rather than records,
     // and changing that is a rabbit hole that I don't want to go down
     // currently. (I stuck my head in and regretted it.)
-    if (MMDBW_RECORD_TYPE_NODE != tree->root_record.type) {
-        croak("Iteration is not currently allowed in trees with no nodes.");
+    if (MMDBW_RECORD_TYPE_NODE != tree->root_record.type &&
+        MMDBW_RECORD_TYPE_FIXED_NODE != tree->root_record.type) {
+        croak("Iteration is not currently allowed in trees with no nodes. "
+              "Record type: %s", record_type_name(tree->root_record.type));
     }
 
     iterate_tree(tree, &tree->root_record, network, depth, depth_first, args,
@@ -1976,15 +2082,6 @@ void free_merge_cache(MMDBW_tree_s *tree)
     }
 }
 
-const char *record_type_name(int record_type)
-{
-    return MMDBW_RECORD_TYPE_EMPTY == record_type           ? "empty"
-           : MMDBW_RECORD_TYPE_NODE == record_type           ? "node"
-           : MMDBW_RECORD_TYPE_FIXED_NODE == record_type ? "fixed_node"
-           : MMDBW_RECORD_TYPE_ALIAS == record_type           ? "alias"
-           : "data";
-}
-
 static SV *module;
 LOCAL void dwarn(SV *thing)
 {
@@ -2096,4 +2193,16 @@ LOCAL char *status_error_message(MMDBW_status status)
     }
     // We should get a compile time warning if an enum is missing
     return "Unknown error";
+}
+
+LOCAL const char *record_type_name(MMDBW_record_type type)
+{
+    switch (type) {
+    case MMDBW_RECORD_TYPE_EMPTY: return "empty";
+    case MMDBW_RECORD_TYPE_DATA: return "data";
+    case MMDBW_RECORD_TYPE_NODE: return "node";
+    case MMDBW_RECORD_TYPE_FIXED_NODE: return "fixed_node";
+    case MMDBW_RECORD_TYPE_ALIAS: return "alias";
+    }
+    return "unknown type";
 }
