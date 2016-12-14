@@ -11,6 +11,7 @@ use Test::MaxMind::DB::Writer qw(
 );
 use Test::Fatal;
 use Test::More;
+use Test::Warnings qw( :all );
 
 use MaxMind::DB::Writer::Tree;
 

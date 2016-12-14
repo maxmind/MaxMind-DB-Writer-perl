@@ -68,8 +68,6 @@ subtest 'simple IPv6 merge' => sub {
     );
 };
 
-exit 0;
-
 subtest 'merge - small net, large net, small net' => sub {
     my @pairs = (
         [
