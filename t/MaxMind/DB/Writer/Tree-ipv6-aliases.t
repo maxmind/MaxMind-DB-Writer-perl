@@ -54,8 +54,8 @@ my $tempdir = tempdir( CLEANUP => 1 );
     # exception is someone tries to overwrite one. In the future, we could do
     # something smarter, _but_ it isn't clear what the right behavior is.
     like(
-        exception { $tree->insert_network( '2000::/4', {} ) },
-        qr/Attempted to free an IPv4 alias node./,
+        exception { $tree->insert_network( '2001::/32', {} ) },
+        qr/Attempted to overwrite an alised network./,
         'received expected error when trying to overwrite an alias node'
     );
 
