@@ -595,47 +595,41 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
     }
 
     MMDBW_network_s ipv4_root_network = resolve_network(tree, "::0.0.0.0", 96);
+    MMDBW_node_s *ipv4_root_node = new_node();
+    MMDBW_record_s ipv4_root_record = {
+        .type       = MMDBW_RECORD_TYPE_FIXED_NODE,
+        .value.node = ipv4_root_node,
+    };
 
-    // We create an empty record for the aliases to point to initially. We do
-    // not simply use /96, as all of the alias code requires that the node be
-    // aliased to a MMDBW_RECORD_TYPE_NODE node. This is gross and confusing
-    // and should be fixed at some point.
-    remove_network(tree, "::0.0.0.0", 97);
+    MMDBW_status status = insert_record_for_network(
+        tree,
+        &ipv4_root_network,
+        &ipv4_root_record,
+        MMDBW_MERGE_STRATEGY_NONE,
+        true
+        );
 
-    MMDBW_record_s *ipv4_root_record;
-    MMDBW_status status = find_record_for_network(tree, &ipv4_root_network,
-                                                  false,
-                                                  &return_null,
-                                                  &ipv4_root_record,
-                                                  NULL,
-                                                  NULL);
     free_network(&ipv4_root_network);
+
     if (status != MMDBW_SUCCESS) {
-        croak("Unable to find IPv4 root node when setting up aliases");
+        croak("Unable to create IPv4 root node when setting up aliases: %s",
+              status_error_message(status));
     }
 
-    if (MMDBW_RECORD_TYPE_NODE != ipv4_root_record->type) {
-        croak("Unexpected type for IPv4 root record: %s",
-              record_type_name(ipv4_root_record->type));
-    }
-
-    ipv4_root_record->type = MMDBW_RECORD_TYPE_FIXED_NODE;
-
-    MMDBW_node_s *ipv4_root_node =
-        ipv4_root_record->value.node;
     for (int i = 0; i < sizeof(ipv4_aliases) / sizeof(network); i++) {
         MMDBW_network_s alias_network =
             resolve_network(tree, ipv4_aliases[i].ipstr,
                             ipv4_aliases[i].prefix_length);
 
-        MMDBW_record_s *record_for_alias = checked_malloc(sizeof(MMDBW_record_s));
-        record_for_alias->type = MMDBW_RECORD_TYPE_ALIAS;
-        record_for_alias->value.node = ipv4_root_node;
+        MMDBW_record_s record_for_alias = {
+            .type       = MMDBW_RECORD_TYPE_ALIAS,
+            .value.node = ipv4_root_node,
+        };
 
         MMDBW_status status = insert_record_for_network(
             tree,
             &alias_network,
-            record_for_alias,
+            &record_for_alias,
             MMDBW_MERGE_STRATEGY_NONE,
             true
             );
@@ -646,7 +640,6 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
             croak("Unexpected error when searching for last node for alias: %s",
                   status_error_message(status));
         }
-
     }
 }
 
@@ -664,11 +657,6 @@ LOCAL MMDBW_status insert_record_for_network(
               network->bytes,
               address_string,
               sizeof(address_string));
-
-    // We don't currently allow insertions of fixed nodes.
-    if (new_record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
-        return MMDBW_INSERT_FIXED_NODE_RECORD_ERROR;
-    }
 
     if (merge_strategy == MMDBW_MERGE_STRATEGY_UNKNOWN) {
         merge_strategy = tree->merge_strategy;
@@ -783,7 +771,9 @@ LOCAL MMDBW_status insert_record_into_next_node(
         }
     }
 
-    if (next_node->left_record.type == next_node->right_record.type) {
+    if (next_node->left_record.type == next_node->right_record.type &&
+        // We don't allow merging into aliases or fixed nodes
+        current_record->type == MMDBW_RECORD_TYPE_NODE) {
         switch (next_node->left_record.type) {
         case MMDBW_RECORD_TYPE_EMPTY: {
                 MMDBW_status status = free_node_and_subnodes(tree, next_node,
@@ -877,7 +867,8 @@ LOCAL MMDBW_status insert_record_into_current_record(
             merged_key == NULL ? new_record->value.key : merged_key
             );
         current_record->value.key = key;
-    } else if (MMDBW_RECORD_TYPE_NODE == new_record->type ||
+    } else if (MMDBW_RECORD_TYPE_FIXED_NODE == new_record->type ||
+               MMDBW_RECORD_TYPE_NODE == new_record->type ||
                MMDBW_RECORD_TYPE_ALIAS == new_record->type) {
         current_record->value.node = new_record->value.node;
     }
@@ -2173,8 +2164,6 @@ LOCAL char *status_error_message(MMDBW_status status)
     case MMDBW_FREED_FIXED_NODE_ERROR:
         return
             "Attempted to free a fixed node. This should never happen.";
-    case MMDBW_INSERT_FIXED_NODE_RECORD_ERROR:
-        return "Inserting fixed nodes is not currently supported.";
     }
     // We should get a compile time warning if an enum is missing
     return "Unknown error";
