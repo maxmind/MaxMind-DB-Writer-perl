@@ -100,10 +100,6 @@ LOCAL const char * maybe_merge_records(MMDBW_tree_s *tree,
                                        MMDBW_record_s *new_record,
                                        MMDBW_record_s *record_to_set,
                                        MMDBW_merge_strategy merge_strategy);
-LOCAL const char *merge_records(MMDBW_tree_s *tree, const char *const key_from,
-                                const char *const key_into,
-                                MMDBW_network_s *network,
-                                MMDBW_merge_strategy merge_strategy);
 LOCAL int network_bit_value(MMDBW_network_s *network, uint8_t current_bit);
 LOCAL int tree_depth0(MMDBW_tree_s *tree);
 LOCAL SV * merge_hashes(MMDBW_tree_s *tree, SV *from, SV *into,
@@ -116,16 +112,8 @@ LOCAL SV * merge_arrays(MMDBW_tree_s *tree, SV *from, SV *into,
                         MMDBW_merge_strategy merge_strategy);
 LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
                                            MMDBW_network_s *network,
-                                           bool follow_aliases,
-                                           MMDBW_node_s *(if_not_node)(
-                                               MMDBW_tree_s *tree,
-                                               MMDBW_record_s *record),
-                                           MMDBW_record_s **record,
-                                           MMDBW_record_s **sibling_record,
-                                           MMDBW_record_s **parent_record
+                                           MMDBW_record_s **record
                                            );
-LOCAL MMDBW_node_s *return_null(
-    MMDBW_tree_s *UNUSED(tree), MMDBW_record_s *UNUSED(record));
 LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
                                          MMDBW_record_s *record);
 LOCAL MMDBW_status free_node_and_subnodes(MMDBW_tree_s *tree,
@@ -490,7 +478,6 @@ LOCAL void decrement_data_reference_count(MMDBW_tree_s *tree,
     HASH_FIND(hh, tree->data_table, key, SHA1_KEY_LENGTH, data);
 
     if (NULL == data) {
-        abort();
         croak("Attempt to remove data that does not exist from tree");
     }
 
@@ -679,20 +666,25 @@ LOCAL MMDBW_status insert_record_into_next_node(
     MMDBW_merge_strategy merge_strategy,
     bool is_internal_insert)
 {
+    if (current_bit >= network->prefix_length
+        && (current_record->type == MMDBW_RECORD_TYPE_EMPTY
+            || current_record->type == MMDBW_RECORD_TYPE_DATA
+            || ( current_record->type == MMDBW_RECORD_TYPE_NODE
+                 && merge_strategy == MMDBW_MERGE_STRATEGY_NONE))) {
+        return insert_record_into_current_record(
+                   tree,
+                   current_record,
+                   network,
+                   new_record,
+                   merge_strategy,
+                   is_internal_insert
+                   );
+    }
+
     MMDBW_node_s *next_node = NULL;
     switch (current_record->type) {
     case MMDBW_RECORD_TYPE_EMPTY:
     case MMDBW_RECORD_TYPE_DATA: {
-            if (current_bit >= network->prefix_length) {
-                return insert_record_into_current_record(
-                           tree,
-                           current_record,
-                           network,
-                           new_record,
-                           merge_strategy,
-                           is_internal_insert
-                           );
-            }
             next_node = new_node_from_record(tree, current_record);
             current_record->value.node = next_node;
             current_record->type = MMDBW_RECORD_TYPE_NODE;
@@ -709,8 +701,7 @@ LOCAL MMDBW_status insert_record_into_next_node(
             else if (current_bit > network->prefix_length) {
                 return MMDBW_SUCCESS;
             } else {
-                // XXX - rename/replace error, this error name is here for backcompat
-                return MMDBW_FINDING_NODE_ERROR;
+                return MMDBW_INSERT_INTO_ALIAS_NODE_ERROR;
             }
         }
     case MMDBW_RECORD_TYPE_FIXED_NODE:
@@ -732,9 +723,6 @@ LOCAL MMDBW_status insert_record_into_next_node(
 
     // if we are beyond the prefix length, both records are within the
     // network we are inserting.
-    //
-    // XXX - We could make this more effecient by replacing when there is no
-    // merging and the record type is not fixed node
     bool insert_into_both = current_bit >= network->prefix_length;
 
     if (next_is_right || insert_into_both) {
@@ -817,11 +805,8 @@ LOCAL MMDBW_status insert_record_into_current_record(
     MMDBW_merge_strategy merge_strategy,
     bool is_internal_insert)
 {
-    if (current_record->type == MMDBW_RECORD_TYPE_NODE ||
-        current_record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
-        // XXX - we need to handle node merging and various error states
-        // better
-        abort();
+    if (current_record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
+        return MMDBW_FIXED_NODE_OVERWRITE_ATTEMPT_ERROR;
     }
 
     if (current_record->type == MMDBW_RECORD_TYPE_EMPTY &&
@@ -854,8 +839,6 @@ LOCAL MMDBW_status insert_record_into_current_record(
 
     current_record->type = new_record->type;
     if (MMDBW_RECORD_TYPE_DATA == new_record->type) {
-        // XXX - need to revisit all other increments/decrements during
-        // insertion
         const char *const key = increment_data_reference_count(
             tree,
             merged_key == NULL ? new_record->value.key : merged_key
@@ -874,7 +857,6 @@ LOCAL MMDBW_status insert_record_into_current_record(
     return status;
 }
 
-// XXX - simplify this and the calling spot
 LOCAL const char * maybe_merge_records(MMDBW_tree_s *tree,
                                        MMDBW_network_s *network,
                                        MMDBW_record_s *new_record,
@@ -896,24 +878,11 @@ LOCAL const char * maybe_merge_records(MMDBW_tree_s *tree,
         ) {
         return NULL;
     }
-    return merge_records(
-               tree,
-               new_record->value.key,
-               record_to_set->value.key,
-               network,
-               merge_strategy);
-}
 
-
-LOCAL const char *merge_records(MMDBW_tree_s *tree, const char *const key_from,
-                                const char *const key_into,
-                                MMDBW_network_s *network,
-                                MMDBW_merge_strategy merge_strategy)
-{
     char merge_cache_key[MERGE_KEY_SIZE + 1];
     snprintf(merge_cache_key, MERGE_KEY_SIZE + 1, "%d-%s-%s", merge_strategy,
-             key_from,
-             key_into);
+             new_record->value.key,
+             record_to_set->value.key);
 
     const char * cached_key = merge_cache_lookup(tree, merge_cache_key);
     if (cached_key != NULL) {
@@ -924,8 +893,8 @@ LOCAL const char *merge_records(MMDBW_tree_s *tree, const char *const key_from,
 
     SV *merged = merge_hashes_for_keys(
         tree,
-        key_from,
-        key_into,
+        new_record->value.key,
+        record_to_set->value.key,
         network,
         merge_strategy);
 
@@ -1122,9 +1091,7 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
 
     MMDBW_record_s *record_for_address;
     MMDBW_status status =
-        find_record_for_network(tree, &network, true, &return_null,
-                                &record_for_address,
-                                NULL, NULL);
+        find_record_for_network(tree, &network, &record_for_address);
 
     free_network(&network);
 
@@ -1150,30 +1117,13 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
 
 LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
                                            MMDBW_network_s *network,
-                                           bool follow_aliases,
-                                           MMDBW_node_s *(if_not_node)(
-                                               MMDBW_tree_s *tree,
-                                               MMDBW_record_s *record),
-                                           MMDBW_record_s **record,
-                                           MMDBW_record_s **sibling_record,
-                                           MMDBW_record_s **parent_record
+                                           MMDBW_record_s **record
                                            )
 {
-    if (NULL != sibling_record) {
-        *sibling_record = NULL;
-    }
-    if (NULL != parent_record) {
-        *parent_record = NULL;
-    }
-
     *record = &(tree->root_record);
 
     for (int current_bit = 0; current_bit < network->prefix_length;
          current_bit++) {
-
-        if (MMDBW_RECORD_TYPE_ALIAS == (*record)->type && !follow_aliases) {
-            return MMDBW_FINDING_NODE_ERROR;
-        }
 
         MMDBW_node_s *node;
         if (MMDBW_RECORD_TYPE_NODE == (*record)->type ||
@@ -1181,39 +1131,17 @@ LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
             MMDBW_RECORD_TYPE_ALIAS == (*record)->type) {
             node = (*record)->value.node;
         } else {
-            node = if_not_node(tree, *record);
-            if (NULL == node) {
-                break;
-            }
-
-            (*record)->type = MMDBW_RECORD_TYPE_NODE;
-            (*record)->value.node = node;
-        }
-
-        if (NULL != parent_record) {
-            *parent_record = *record;
+            break;
         }
 
         if (network_bit_value(network, current_bit)) {
             *record = &(node->right_record);
-            if (NULL != sibling_record) {
-                *sibling_record = &(node->left_record);
-            }
         } else {
             *record = &(node->left_record);
-            if (NULL != sibling_record) {
-                *sibling_record = &(node->right_record);
-            }
         }
     }
 
     return MMDBW_SUCCESS;
-}
-
-LOCAL MMDBW_node_s *return_null(
-    MMDBW_tree_s *UNUSED(tree), MMDBW_record_s *UNUSED(record))
-{
-    return NULL;
 }
 
 LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
@@ -1270,7 +1198,6 @@ LOCAL MMDBW_status free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record,
 {
     if (MMDBW_RECORD_TYPE_FIXED_NODE == record->type &&
         !remove_alias_and_fixed_nodes) {
-        abort();
         return MMDBW_FREED_FIXED_NODE_ERROR;
     }
 
@@ -2143,12 +2070,16 @@ LOCAL char *status_error_message(MMDBW_status status)
         return "Success";
     case MMDBW_FINDING_NODE_ERROR:
         return
-            "Error finding node. Did you try inserting into an aliased network?";
+            "Error finding node.";
+    case MMDBW_INSERT_INTO_ALIAS_NODE_ERROR:
+        return "Attempted to insert into an aliased network.";
     case MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR:
         return "Attempted to overwrite an alised network.";
     case MMDBW_FREED_ALIAS_NODE_ERROR:
         return
             "Attempted to free an IPv4 alias node. Did you try to overwrite an alias network?";
+    case MMDBW_FIXED_NODE_OVERWRITE_ATTEMPT_ERROR:
+        return "Attempted to overwrite a fixed node.";
     case MMDBW_FREED_FIXED_NODE_ERROR:
         return
             "Attempted to free a fixed node. This should never happen.";

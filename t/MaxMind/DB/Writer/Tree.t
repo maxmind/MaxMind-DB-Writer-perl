@@ -273,7 +273,7 @@ subtest 'Inserting invalid neworks and ranges' => sub {
 
     like(
         exception { $tree->insert_network( '2002:0101:0101:0101::/64', {} ) },
-        qr/Did you try inserting into an alias/,
+        qr/Attempted to insert into an aliased network/,
         'Received exception when inserting into alias'
     );
 };
