@@ -70,7 +70,7 @@ LOCAL void decrement_data_reference_count(MMDBW_tree_s *tree,
 LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
                                       const char *const ipstr,
                                       uint8_t prefix_length);
-LOCAL void resolve_ip(int tree_ip_version, const char *const ipstr,
+LOCAL MMDBW_status resolve_ip(int tree_ip_version, const char *const ipstr,
                       uint8_t *bytes);
 LOCAL void free_network(MMDBW_network_s *network);
 LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree);
@@ -328,7 +328,9 @@ void insert_range(MMDBW_tree_s *tree, const char *start_ipstr,
 LOCAL int128_t ip_string_to_integer(const char *ipstr, int family)
 {
     uint8_t bytes[family == 6 ? 16 : 4];
-    resolve_ip(family, ipstr, bytes);
+    if (resolve_ip(family, ipstr, bytes) != MMDBW_SUCCESS) {
+        croak("Invalid IP address: %s", ipstr);
+    }
     return ip_bytes_to_integer(bytes, family);
 }
 
@@ -496,7 +498,10 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
 {
     uint8_t *bytes = checked_malloc(tree->ip_version == 6 ? 16 : 4);
 
-    resolve_ip(tree->ip_version, ipstr, bytes);
+    if (resolve_ip(tree->ip_version, ipstr, bytes) != MMDBW_SUCCESS) {
+        free(bytes);
+        croak("Invalid IP address: %s", ipstr);
+    }
 
     if (NULL == strchr(ipstr, ':')) {
         // IPv4
@@ -523,7 +528,7 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
     return network;
 }
 
-LOCAL void resolve_ip(int tree_ip_version, const char *const ipstr,
+LOCAL MMDBW_status resolve_ip(int tree_ip_version, const char *const ipstr,
                       uint8_t *bytes)
 {
     bool is_ipv4_address = NULL == strchr(ipstr, ':');
@@ -540,8 +545,9 @@ LOCAL void resolve_ip(int tree_ip_version, const char *const ipstr,
         bytes += 12;
     }
     if (!inet_pton(family, ipstr, bytes)) {
-        croak("Invalid IP address: %s", ipstr);
+        return MMDBW_RESOLVING_IP_ERROR;
     }
+    return MMDBW_SUCCESS;
 }
 
 LOCAL void free_network(MMDBW_network_s *network)
@@ -2083,6 +2089,8 @@ LOCAL char *status_error_message(MMDBW_status status)
     case MMDBW_FREED_FIXED_NODE_ERROR:
         return
             "Attempted to free a fixed node. This should never happen.";
+    case MMDBW_RESOLVING_IP_ERROR:
+        return "Failed to resolve IP address.";
     }
     // We should get a compile time warning if an enum is missing
     return "Unknown error";
