@@ -71,7 +71,7 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
                                       const char *const ipstr,
                                       uint8_t prefix_length);
 LOCAL MMDBW_status resolve_ip(int tree_ip_version, const char *const ipstr,
-                      uint8_t *bytes);
+                              uint8_t *bytes);
 LOCAL void free_network(MMDBW_network_s *network);
 LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree);
 LOCAL MMDBW_status insert_record_for_network(
@@ -414,7 +414,7 @@ void remove_network(MMDBW_tree_s *tree, const char *ipstr,
                                   false);
 
     free_network(&network);
-    if (MMDBW_SUCCESS != status) {
+    if (status != MMDBW_SUCCESS) {
         croak(status_error_message(status));
     }
 }
@@ -529,7 +529,7 @@ LOCAL MMDBW_network_s resolve_network(MMDBW_tree_s *tree,
 }
 
 LOCAL MMDBW_status resolve_ip(int tree_ip_version, const char *const ipstr,
-                      uint8_t *bytes)
+                              uint8_t *bytes)
 {
     bool is_ipv4_address = NULL == strchr(ipstr, ':');
     int family = is_ipv4_address ? AF_INET : AF_INET6;
@@ -844,15 +844,15 @@ LOCAL MMDBW_status insert_record_into_current_record(
     MMDBW_status status = free_record_value(tree, current_record, false);
 
     current_record->type = new_record->type;
-    if (MMDBW_RECORD_TYPE_DATA == new_record->type) {
+    if (new_record->type == MMDBW_RECORD_TYPE_DATA) {
         const char *const key = increment_data_reference_count(
             tree,
             merged_key == NULL ? new_record->value.key : merged_key
             );
         current_record->value.key = key;
-    } else if (MMDBW_RECORD_TYPE_FIXED_NODE == new_record->type ||
-               MMDBW_RECORD_TYPE_NODE == new_record->type ||
-               MMDBW_RECORD_TYPE_ALIAS == new_record->type) {
+    } else if (new_record->type == MMDBW_RECORD_TYPE_FIXED_NODE ||
+               new_record->type == MMDBW_RECORD_TYPE_NODE ||
+               new_record->type == MMDBW_RECORD_TYPE_ALIAS) {
         current_record->value.node = new_record->value.node;
     }
 
@@ -880,7 +880,7 @@ LOCAL const char * maybe_merge_records(MMDBW_tree_s *tree,
     if (MMDBW_RECORD_TYPE_DATA != record_to_set->type
         // If the two keys are equal, there is no point in trying to merge
         // the contents.
-        || 0 == strcmp(new_record->value.key, record_to_set->value.key)
+        || strcmp(new_record->value.key, record_to_set->value.key) == 0
         ) {
         return NULL;
     }
@@ -1106,15 +1106,15 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
               status_error_message(status));
     }
 
-    if (MMDBW_RECORD_TYPE_NODE == record_for_address->type ||
-        MMDBW_RECORD_TYPE_FIXED_NODE == record_for_address->type ||
-        MMDBW_RECORD_TYPE_ALIAS == record_for_address->type) {
+    if (record_for_address->type == MMDBW_RECORD_TYPE_NODE ||
+        record_for_address->type == MMDBW_RECORD_TYPE_FIXED_NODE ||
+        record_for_address->type == MMDBW_RECORD_TYPE_ALIAS) {
         croak(
             "WTF - found a node or alias record for an address lookup - %s"
             PRIu8,
             ipstr);
         return &PL_sv_undef;
-    } else if (MMDBW_RECORD_TYPE_EMPTY == record_for_address->type) {
+    } else if (record_for_address->type == MMDBW_RECORD_TYPE_EMPTY) {
         return &PL_sv_undef;
     } else {
         return newSVsv(data_for_key(tree, record_for_address->value.key));
@@ -1132,9 +1132,9 @@ LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
          current_bit++) {
 
         MMDBW_node_s *node;
-        if (MMDBW_RECORD_TYPE_NODE == (*record)->type ||
-            MMDBW_RECORD_TYPE_FIXED_NODE == (*record)->type ||
-            MMDBW_RECORD_TYPE_ALIAS == (*record)->type) {
+        if ((*record)->type == MMDBW_RECORD_TYPE_NODE ||
+            (*record)->type == MMDBW_RECORD_TYPE_FIXED_NODE ||
+            (*record)->type == MMDBW_RECORD_TYPE_ALIAS) {
             node = (*record)->value.node;
         } else {
             break;
@@ -1154,7 +1154,7 @@ LOCAL MMDBW_node_s *new_node_from_record(MMDBW_tree_s *tree,
                                          MMDBW_record_s *record)
 {
     MMDBW_node_s *node = new_node();
-    if (MMDBW_RECORD_TYPE_DATA == record->type) {
+    if (record->type == MMDBW_RECORD_TYPE_DATA) {
         /* We only need to increment the reference count once as we are
            replacing the parent record */
         increment_data_reference_count(tree, record->value.key);
@@ -1202,25 +1202,25 @@ LOCAL MMDBW_status free_node_and_subnodes(MMDBW_tree_s *tree,
 LOCAL MMDBW_status free_record_value(MMDBW_tree_s *tree, MMDBW_record_s *record,
                                      bool remove_alias_and_fixed_nodes)
 {
-    if (MMDBW_RECORD_TYPE_FIXED_NODE == record->type &&
+    if (record->type == MMDBW_RECORD_TYPE_FIXED_NODE &&
         !remove_alias_and_fixed_nodes) {
         return MMDBW_FREED_FIXED_NODE_ERROR;
     }
 
-    if (MMDBW_RECORD_TYPE_NODE == record->type
-        || MMDBW_RECORD_TYPE_FIXED_NODE == record->type) {
+    if (record->type == MMDBW_RECORD_TYPE_NODE
+        || record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
         return free_node_and_subnodes(tree, record->value.node,
                                       remove_alias_and_fixed_nodes);
     }
 
-    if (MMDBW_RECORD_TYPE_DATA == record->type) {
+    if (record->type == MMDBW_RECORD_TYPE_DATA) {
         decrement_data_reference_count(tree, record->value.key);
     }
 
     /* Alias nodes should only be removed explicitly. We can't just croak
        as it will leave the tree in an inconsistent state causing a segfault
        during unwinding. */
-    if (MMDBW_RECORD_TYPE_ALIAS == record->type &&
+    if (record->type == MMDBW_RECORD_TYPE_ALIAS &&
         !remove_alias_and_fixed_nodes) {
         return MMDBW_FREED_ALIAS_NODE_ERROR;
     }
@@ -1257,7 +1257,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
                  size_t frozen_params_size)
 {
     int fd = open(filename, O_CREAT | O_TRUNC | O_RDWR, (mode_t)0644);
-    if (-1 == fd) {
+    if (fd == -1) {
         croak("Could not open file %s: %s", filename, strerror(errno));
     }
 
@@ -1276,7 +1276,7 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
 
     freeze_data_to_fd(fd, tree);
 
-    if (-1 == close(fd)) {
+    if (close(fd) == -1) {
         croak("Could not close file %s: %s", filename, strerror(errno));
     }
 
@@ -1287,13 +1287,13 @@ void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
 
 LOCAL void freeze_search_tree(MMDBW_tree_s *tree, freeze_args_s *args)
 {
-    if (MMDBW_RECORD_TYPE_DATA == tree->root_record.type) {
+    if (tree->root_record.type == MMDBW_RECORD_TYPE_DATA) {
         croak("A tree that only contains a data record for /0 cannot be "
               "frozen");
     }
 
-    if (MMDBW_RECORD_TYPE_NODE == tree->root_record.type ||
-        MMDBW_RECORD_TYPE_FIXED_NODE == tree->root_record.type) {
+    if (tree->root_record.type == MMDBW_RECORD_TYPE_NODE ||
+        tree->root_record.type == MMDBW_RECORD_TYPE_FIXED_NODE) {
         start_iteration(tree, false, (void *)args, &freeze_node);
         return;
     }
@@ -1310,12 +1310,12 @@ LOCAL void freeze_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
 
     const uint8_t next_depth = depth + 1;
 
-    if (MMDBW_RECORD_TYPE_DATA == node->left_record.type) {
+    if (node->left_record.type == MMDBW_RECORD_TYPE_DATA) {
         freeze_data_record(tree, network, next_depth,
                            node->left_record.value.key, args);
     }
 
-    if (MMDBW_RECORD_TYPE_DATA == node->right_record.type) {
+    if (node->right_record.type == MMDBW_RECORD_TYPE_DATA) {
         uint128_t right_network =
             flip_network_bit(tree, network, depth);
         freeze_data_record(tree, right_network, next_depth,
@@ -1355,7 +1355,7 @@ LOCAL void freeze_data_to_fd(int fd, MMDBW_tree_s *tree)
     char *frozen_data_chars = SvPV(frozen_data, frozen_data_size);
 
     ssize_t written = write(fd, &frozen_data_size, sizeof(STRLEN));
-    if (-1 == written) {
+    if (written == -1) {
         croak("Could not write frozen data size to file: %s", strerror(errno));
     }
     if (written != sizeof(STRLEN)) {
@@ -1364,7 +1364,7 @@ LOCAL void freeze_data_to_fd(int fd, MMDBW_tree_s *tree)
     }
 
     written = write(fd, frozen_data_chars, frozen_data_size);
-    if (-1 == written) {
+    if (written == -1) {
         croak("Could not write frozen data size to file: %s", strerror(errno));
     }
     if (written != (ssize_t)frozen_data_size) {
@@ -1420,12 +1420,12 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
                         const bool alias_ipv6)
 {
     int fd = open(filename, O_RDONLY, 0);
-    if (-1 == fd) {
+    if (fd == -1) {
         croak("Could not open file %s: %s", filename, strerror(errno));
     }
 
     struct stat fileinfo;
-    if (-1 == fstat(fd, &fileinfo)) {
+    if (fstat(fd, &fileinfo) == -1) {
         close(fd);
         croak("Could not stat file: %s: %s", filename, strerror(errno));
     }
@@ -1449,12 +1449,12 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
             true);
         free_network(thawed->network);
         free(thawed->network);
-        if (MMDBW_RECORD_TYPE_DATA == thawed->record->type) {
+        if (thawed->record->type == MMDBW_RECORD_TYPE_DATA) {
             free((char *)thawed->record->value.key);
         }
         free(thawed->record);
         free(thawed);
-        if (MMDBW_SUCCESS != status) {
+        if (status != MMDBW_SUCCESS) {
             croak(status_error_message(status));
         }
     }
@@ -1500,7 +1500,7 @@ LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
     uint128_t start_ip = thaw_uint128(buffer);
     uint8_t prefix_length = thaw_uint8(buffer);
 
-    if (0 == start_ip && 0 == prefix_length) {
+    if (start_ip == 0 && prefix_length == 0) {
         uint8_t *maybe_separator = thaw_bytes(buffer, FREEZE_SEPARATOR_LENGTH);
         if (memcmp(maybe_separator, FREEZE_SEPARATOR,
                    FREEZE_SEPARATOR_LENGTH) == 0) {
@@ -1657,14 +1657,14 @@ LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
     uint8_t *left_bytes = (uint8_t *)&left;
     uint8_t *right_bytes = (uint8_t *)&right;
 
-    if (24 == tree->record_size) {
+    if (tree->record_size == 24) {
         check_perlio_result(
             PerlIO_printf(args->output_io, "%c%c%c%c%c%c",
                           left_bytes[1], left_bytes[2], left_bytes[3],
                           right_bytes[1], right_bytes[2],
                           right_bytes[3]),
             6, "PerlIO_printf");
-    } else if (28 == tree->record_size) {
+    } else if (tree->record_size == 28) {
         check_perlio_result(
             PerlIO_printf(args->output_io, "%c%c%c%c%c%c%c",
                           left_bytes[1], left_bytes[2],
@@ -1690,8 +1690,8 @@ LOCAL void encode_node(MMDBW_tree_s *tree, MMDBW_node_s *node,
 LOCAL void check_record_sanity(MMDBW_node_s *node, MMDBW_record_s *record,
                                char *side)
 {
-    if (MMDBW_RECORD_TYPE_NODE == record->type ||
-        MMDBW_RECORD_TYPE_FIXED_NODE == record->type) {
+    if (record->type == MMDBW_RECORD_TYPE_NODE ||
+        record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
         if (record->value.node->number == node->number) {
             croak("%s record of node %" PRIu32 " points to the same node",
                   side, node->number);
@@ -1706,8 +1706,8 @@ LOCAL void check_record_sanity(MMDBW_node_s *node, MMDBW_record_s *record,
         }
     }
 
-    if (MMDBW_RECORD_TYPE_ALIAS == record->type) {
-        if (0 == record->value.node->number) {
+    if (record->type == MMDBW_RECORD_TYPE_ALIAS) {
+        if (record->value.node->number == 0) {
             croak("%s record of node %" PRIu32 " is an alias to node 0",
                   side, node->number);
         }
@@ -1718,68 +1718,75 @@ LOCAL uint32_t record_value_as_number(MMDBW_tree_s *tree,
                                       MMDBW_record_s *record,
                                       encode_args_s * args)
 {
-    uint32_t record_value;
+    uint32_t record_value = 0;
 
-    if (MMDBW_RECORD_TYPE_EMPTY == record->type) {
-        record_value = tree->node_count;
-    } else if (MMDBW_RECORD_TYPE_NODE == record->type ||
-               MMDBW_RECORD_TYPE_ALIAS == record->type ||
-               MMDBW_RECORD_TYPE_FIXED_NODE == record->type) {
-        record_value = record->value.node->number;
-    } else {
-        SV **cache_record =
-            hv_fetch(args->data_pointer_cache, record->value.key,
-                     SHA1_KEY_LENGTH, 0);
-        if (cache_record) {
-            /* It is ok to return this without the size check below as it
-               would have already croaked when it was inserted if it was too
-               big. */
-            return SvIV(*cache_record);
+    switch (record->type) {
+    case MMDBW_RECORD_TYPE_EMPTY: {
+            record_value = tree->node_count;
+            break;
         }
-
-        SV *data = newSVsv(data_for_key(tree, record->value.key));
-        if (!SvOK(data)) {
-            croak("No data associated with key - %s", record->value.key);
+    case MMDBW_RECORD_TYPE_NODE:
+    case MMDBW_RECORD_TYPE_ALIAS:
+    case MMDBW_RECORD_TYPE_FIXED_NODE: {
+            record_value = record->value.node->number;
+            break;
         }
+    case MMDBW_RECORD_TYPE_DATA: {
+            SV **cache_record =
+                hv_fetch(args->data_pointer_cache, record->value.key,
+                         SHA1_KEY_LENGTH, 0);
+            if (cache_record) {
+                /* It is ok to return this without the size check below as it
+                   would have already croaked when it was inserted if it was too
+                   big. */
+                return SvIV(*cache_record);
+            }
 
-        dSP;
-        ENTER;
-        SAVETMPS;
+            SV *data = newSVsv(data_for_key(tree, record->value.key));
+            if (!SvOK(data)) {
+                croak("No data associated with key - %s", record->value.key);
+            }
 
-        PUSHMARK(SP);
-        EXTEND(SP, 5);
-        PUSHs(args->serializer);
-        PUSHs(args->root_data_type);
-        mPUSHs(data);
-        PUSHs(&PL_sv_undef);
-        mPUSHp(record->value.key, strlen(record->value.key));
-        PUTBACK;
+            dSP;
+            ENTER;
+            SAVETMPS;
 
-        int count = call_method("store_data", G_SCALAR);
+            PUSHMARK(SP);
+            EXTEND(SP, 5);
+            PUSHs(args->serializer);
+            PUSHs(args->root_data_type);
+            mPUSHs(data);
+            PUSHs(&PL_sv_undef);
+            mPUSHp(record->value.key, strlen(record->value.key));
+            PUTBACK;
 
-        SPAGAIN;
+            int count = call_method("store_data", G_SCALAR);
 
-        if (count != 1) {
-            croak("Expected 1 item back from ->store_data() call");
+            SPAGAIN;
+
+            if (count != 1) {
+                croak("Expected 1 item back from ->store_data() call");
+            }
+
+            SV *rval = POPs;
+            if (!(SvIOK(rval) || SvUOK(rval))) {
+                croak(
+                    "The serializer's store_data() method returned an SV which is not SvIOK or SvUOK!");
+            }
+            uint32_t position = (uint32_t )SvUV(rval);
+
+            PUTBACK;
+            FREETMPS;
+            LEAVE;
+
+            record_value = position + tree->node_count +
+                           DATA_SECTION_SEPARATOR_SIZE;
+
+            SV *value = newSViv(record_value);
+            (void)hv_store(args->data_pointer_cache, record->value.key,
+                           SHA1_KEY_LENGTH, value, 0);
+            break;
         }
-
-        SV *rval = POPs;
-        if (!(SvIOK(rval) || SvUOK(rval))) {
-            croak(
-                "The serializer's store_data() method returned an SV which is not SvIOK or SvUOK!");
-        }
-        uint32_t position = (uint32_t )SvUV(rval);
-
-        PUTBACK;
-        FREETMPS;
-        LEAVE;
-
-        record_value = position + tree->node_count +
-                       DATA_SECTION_SEPARATOR_SIZE;
-
-        SV *value = newSViv(record_value);
-        (void)hv_store(args->data_pointer_cache, record->value.key,
-                       SHA1_KEY_LENGTH, value, 0);
     }
 
     if (record_value > max_record_value(tree)) {
@@ -1837,8 +1844,8 @@ LOCAL void iterate_tree(MMDBW_tree_s *tree,
             "start IP: %s)! The tree is wonky.\n", depth, ip);
     }
 
-    if (MMDBW_RECORD_TYPE_NODE == record->type ||
-        MMDBW_RECORD_TYPE_FIXED_NODE == record->type) {
+    if (record->type == MMDBW_RECORD_TYPE_NODE ||
+        record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
         MMDBW_node_s *node = record->value.node;
 
         if (!depth_first) {
@@ -1982,7 +1989,7 @@ void free_merge_cache(MMDBW_tree_s *tree)
 static SV *module;
 LOCAL void dwarn(SV *thing)
 {
-    if (NULL == module) {
+    if (!module) {
         module = newSVpv("Devel::Dwarn", 0);
         load_module(PERL_LOADMOD_NOIMPORT, module, NULL);
     }
@@ -2025,7 +2032,7 @@ char *md5_as_hex(uint8_t digest[16])
 LOCAL void *checked_malloc(size_t size)
 {
     void *ptr = malloc(size);
-    if (NULL == ptr) {
+    if (!ptr) {
         abort();
     }
 
@@ -2036,7 +2043,7 @@ LOCAL void checked_write(int fd, char *filename, void *buffer,
                          ssize_t count)
 {
     ssize_t result = write(fd, buffer, count);
-    if (-1 == result) {
+    if (result == -1) {
         close(fd);
         croak("Could not write to the file %s: %s", filename,
               strerror(errno));
