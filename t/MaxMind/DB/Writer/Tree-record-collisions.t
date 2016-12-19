@@ -996,7 +996,7 @@ subtest 'Test merging into aliased nodes' => sub {
     for my $network (@aliased_networks) {
         like(
             exception { _insert_network( $tree, $network ) },
-            qr/Attempted to overwrite an alised network./,
+            qr/Attempted to overwrite an aliased network./,
             "Exception when trying to overwrite alias at $network"
         );
     }

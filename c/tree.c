@@ -560,7 +560,7 @@ typedef struct network {
     const uint8_t prefix_length;
 } network;
 
-static struct network ipv4_aliases[] = {
+static network ipv4_aliases[] = {
     {
         .ipstr = "::ffff:0:0",
         .prefix_length = 96,
@@ -718,8 +718,8 @@ LOCAL MMDBW_status insert_record_into_next_node(
     }
 
     // If we are inserting a fixed node or an alias, we make all of the nodes
-    // down to that record fixed nodes. This makes it easier to not accidently
-    // delete or modify them.
+    // down to that record fixed nodes. This makes it easier to not
+    // accidentally delete or modify them.
     if (new_record->type == MMDBW_RECORD_TYPE_ALIAS ||
         new_record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
         current_record->type = MMDBW_RECORD_TYPE_FIXED_NODE;
@@ -2080,7 +2080,7 @@ LOCAL char *status_error_message(MMDBW_status status)
     case MMDBW_INSERT_INTO_ALIAS_NODE_ERROR:
         return "Attempted to insert into an aliased network.";
     case MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR:
-        return "Attempted to overwrite an alised network.";
+        return "Attempted to overwrite an aliased network.";
     case MMDBW_FREED_ALIAS_NODE_ERROR:
         return
             "Attempted to free an IPv4 alias node. Did you try to overwrite an alias network?";
