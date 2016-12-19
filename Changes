@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- The data insertion code was significantly refactored in order to improve
+  performance on inserts that result in record merges.
+
+
 0.201004 2016-12-07
 
 [ BUG FIXES ]
