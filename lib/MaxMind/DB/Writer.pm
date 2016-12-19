@@ -2,6 +2,7 @@ package MaxMind::DB::Writer;
 
 use strict;
 use warnings;
+use 5.013002;
 
 our $VERSION = '0.201005';
 
