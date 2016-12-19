@@ -25,6 +25,7 @@ requires "autodie" => "0";
 requires "bytes" => "0";
 requires "constant" => "0";
 requires "namespace::autoclean" => "0";
+requires "perl" => "5.013002";
 requires "strict" => "0";
 requires "warnings" => "0";
 
