@@ -11,6 +11,7 @@ use Test::MaxMind::DB::Writer qw(
 );
 use Test::Fatal;
 use Test::More;
+use Test::Warnings qw( :all );
 
 use MaxMind::DB::Writer::Tree;
 
@@ -192,7 +193,7 @@ subtest '::/0 insertion' => sub {
 # Tests handling of inserting multiple networks that all have the same data -
 # if we end up with a node that has two identical data records, we want to
 # remove that node entirely and move the data record up to the parent.
-{
+subtest 'test merging nodes' => sub {
     my @distinct_subnets
         = Net::Works::Network->new_from_string( string => '128.0.0.0/1' )
         ->split;
@@ -231,7 +232,7 @@ subtest '::/0 insertion' => sub {
             }
         }
     }
-}
+};
 
 subtest 'Inserting invalid neworks and ranges' => sub {
     my $tree = MaxMind::DB::Writer::Tree->new(
@@ -272,7 +273,7 @@ subtest 'Inserting invalid neworks and ranges' => sub {
 
     like(
         exception { $tree->insert_network( '2002:0101:0101:0101::/64', {} ) },
-        qr/Did you try inserting into an alias/,
+        qr/Attempted to insert into an aliased network/,
         'Received exception when inserting into alias'
     );
 };

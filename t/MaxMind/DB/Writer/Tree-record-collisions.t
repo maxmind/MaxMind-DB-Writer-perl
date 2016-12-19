@@ -59,7 +59,7 @@ subtest 'simple IPv6 merge' => sub {
             { merge_record_collisions => 1 },
             )
     };
-    is( scalar @warnings, 2, 'received two warnings' );
+    is( scalar @warnings, 2, 'received two warnings' ) or diag explain @warnings;
 
     like(
         $warnings[0],
@@ -983,7 +983,7 @@ subtest 'Test merging into aliased nodes' => sub {
     for my $network (@networks) {
         like(
             exception { _insert_network( $tree, $network ) },
-            qr/Did you try inserting into an aliased network/,
+            qr/Attempted to insert into an aliased network/,
             "Exception when inserting into aliased network $network",
         );
     }
@@ -996,7 +996,7 @@ subtest 'Test merging into aliased nodes' => sub {
     for my $network (@aliased_networks) {
         like(
             exception { _insert_network( $tree, $network ) },
-            qr/Attempted to overwrite an alised network./,
+            qr/Attempted to overwrite an aliased network./,
             "Exception when trying to overwrite alias at $network"
         );
     }
