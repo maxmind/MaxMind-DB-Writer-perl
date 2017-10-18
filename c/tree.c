@@ -749,14 +749,6 @@ LOCAL MMDBW_status insert_record_for_network(
     MMDBW_merge_strategy merge_strategy,
     bool is_internal_insert)
 {
-
-    bool is_ipv6 = tree->ip_version == 6;
-    char address_string[ is_ipv6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN];
-    inet_ntop(is_ipv6 ? AF_INET6 : AF_INET,
-              network->bytes,
-              address_string,
-              sizeof(address_string));
-
     if (merge_strategy == MMDBW_MERGE_STRATEGY_UNKNOWN) {
         merge_strategy = tree->merge_strategy;
     }
