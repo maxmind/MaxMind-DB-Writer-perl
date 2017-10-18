@@ -72,11 +72,17 @@ typedef enum {
     // there is a fixed empty record for 0.0.0.0/8 then you won't be able to
     // add 0.0.0.1/32. Trying to do so does not currently raise an error, it
     // just won't be stored.
+    //
+    // We can't use EMPTY because they are not immutable. We can't use
+    // FIXED_NODE because they allow children (adding sub-networks). We can't
+    // use ALIAS as it has a special meaning, and we don't permit lookups to
+    // work (although that is only used in test code apparently).
     MMDBW_RECORD_TYPE_FIXED_EMPTY,
     MMDBW_RECORD_TYPE_DATA,
     MMDBW_RECORD_TYPE_NODE,
-    // fixed nodes are used for nodes that other nodes alias; they cannot be
-    // removed without corrupting the tree.
+    // Fixed nodes are used for nodes that other nodes alias; they cannot be
+    // removed without corrupting the tree. Unlike FIXED_EMPTY, they can have
+    // children.
     MMDBW_RECORD_TYPE_FIXED_NODE,
     MMDBW_RECORD_TYPE_ALIAS,
 } MMDBW_record_type;
@@ -91,6 +97,7 @@ typedef enum {
 
 typedef struct MMDBW_record_s {
     union {
+        // Data records have a key into the tree's data table, a hash.
         const char *key;
         struct MMDBW_node_s *node;
     } value;

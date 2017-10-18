@@ -186,10 +186,10 @@ LOCAL const char *record_type_name(MMDBW_record_type type);
 /* --prototypes end - don't remove this comment-- */
 /* *INDENT-ON* */
 
-/* Create a new tree.
- *
- * For a description of `alias_ipv6' and `remove_reserved_networks', refer to
- * the MaxMind::DB::Writer::Tree documentation about these options. */
+// Create a new tree.
+//
+// For a description of `alias_ipv6' and `remove_reserved_networks', refer to
+// the MaxMind::DB::Writer::Tree documentation about these options.
 MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
                        MMDBW_merge_strategy merge_strategy,
                        const bool alias_ipv6,
@@ -213,6 +213,8 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     tree->merge_strategy = merge_strategy;
     tree->merge_cache = NULL;
     tree->data_table = NULL;
+    // TODO(wstorey@maxmind.com): What is the purpose of this? It appears
+    // unused.
     tree->is_aliased = false;
     tree->root_record = (MMDBW_record_s) {
         .type = MMDBW_RECORD_TYPE_EMPTY,
@@ -224,8 +226,8 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     }
 
     if (remove_reserved_networks) {
-        /* We don't want these networks in the tree. Insert fixed empty records
-         * for them. This means we ignore any subsequent insertions to them. */
+        // We don't want these networks in the tree. Insert fixed empty records
+        // for them. This means we ignore any subsequent insertions to them.
         insert_reserved_networks_as_fixed_empty(tree);
     }
 
@@ -676,7 +678,7 @@ static struct network reserved_networks_ipv4[] = {
 //   which is globally routable. TODO(wstorey@maxmind.com): This seems
 //   broader than it should be.
 // - ::ffff:0:0/96 - IPv4 mapped addresses. We treat it specially with the
-//   `alias_ipv6_to_ipv4` option.
+//   `alias_ipv6_to_ipv4' option.
 // - 64:ff9b::/96 - well known prefix mapping
 // - 2002::/16" - 6to4
 static struct network reserved_networks_ipv6[] = {
@@ -696,10 +698,10 @@ static struct network reserved_networks_ipv6[] = {
     { .ipstr = "ff00::",     .prefix_length = 8  },
 };
 
-/* Insert a FIXED_EMPTY record for all private and reserved networks.
- *
- * This is to avoid the case where we might otherwise accidentally add
- * information about such networks. */
+// Insert a FIXED_EMPTY record for all private and reserved networks.
+//
+// This is to avoid the case where we might otherwise accidentally add
+// information about such networks.
 LOCAL void insert_reserved_networks_as_fixed_empty(MMDBW_tree_s *tree)
 {
     insert_networks_as_fixed_empty(tree, reserved_networks_ipv4,
@@ -711,7 +713,7 @@ LOCAL void insert_reserved_networks_as_fixed_empty(MMDBW_tree_s *tree)
     }
 }
 
-/* Insert a FIXED_EMPTY record for each network. */
+// Insert a FIXED_EMPTY record for each network.
 LOCAL void insert_networks_as_fixed_empty(MMDBW_tree_s *tree,
     struct network const *const networks, const size_t num_networks)
 {
@@ -773,6 +775,8 @@ LOCAL MMDBW_status insert_record_into_next_node(
     MMDBW_merge_strategy merge_strategy,
     bool is_internal_insert)
 {
+    // We've reached the record where the network belongs. Depending on the
+    // type of record it is, we insert right here.
     if (current_bit >= network->prefix_length
         && (current_record->type == MMDBW_RECORD_TYPE_EMPTY
             || current_record->type == MMDBW_RECORD_TYPE_DATA
@@ -793,6 +797,8 @@ LOCAL MMDBW_status insert_record_into_next_node(
     switch (current_record->type) {
     case MMDBW_RECORD_TYPE_EMPTY:
     case MMDBW_RECORD_TYPE_DATA: {
+            // In this case we create a new node to point to. We make the new
+            // nodes left and right identical to us.
             next_node = new_node_from_record(tree, current_record);
             current_record->value.node = next_node;
             current_record->type = MMDBW_RECORD_TYPE_NODE;
@@ -817,13 +823,16 @@ LOCAL MMDBW_status insert_record_into_next_node(
                 // can be safely skipped.
                 return MMDBW_SUCCESS;
             }
-            // current_bit < network->prefix_length.
+            // current_bit < network->prefix_length. This means we contain the
+            // new network already as FIXED_EMPTY/ALIAS. Inserting the network
+            // is not valid because of that.
             return current_record->type == MMDBW_RECORD_TYPE_FIXED_EMPTY ?
                 MMDBW_INSERT_INTO_FIXED_EMPTY_ERROR :
                 MMDBW_INSERT_INTO_ALIAS_NODE_ERROR;
         }
     case MMDBW_RECORD_TYPE_FIXED_NODE:
     case MMDBW_RECORD_TYPE_NODE: {
+            // We're pointing at a node already.
             next_node = current_record->value.node;
             break;
         }
@@ -876,6 +885,10 @@ LOCAL MMDBW_status insert_record_into_next_node(
 
     // We inserted the new record into the right and/or left record of the next
     // node. We now need to trim the tree upwards by merging identical records.
+    // Basically what we do here is take care of the case where the record
+    // we're at points at another node, and the records in that node are both
+    // the same. In that case, we delete the node we point at and take its
+    // value on ourselves.
 
     if (next_node->left_record.type == next_node->right_record.type &&
         // We don't allow merging into aliases or fixed nodes
@@ -963,6 +976,7 @@ LOCAL MMDBW_status insert_record_into_current_record(
                                                  merge_strategy
                                                  );
 
+    // TODO(wstorey@maxmind.com): Should we check success?
     MMDBW_status status = free_record_value(tree, current_record, false);
 
     current_record->type = new_record->type;
@@ -979,6 +993,8 @@ LOCAL MMDBW_status insert_record_into_current_record(
         // We're inserting these. Overwrite if it was there.
         current_record->value.node = new_record->value.node;
     }
+    // TODO(wstorey@maxmind.com): Should we have an else? What about other
+    // record types?
 
     if (merged_key) {
         decrement_data_reference_count(tree, merged_key);
