@@ -1241,12 +1241,14 @@ SV *lookup_ip_address(MMDBW_tree_s *tree, const char *const ipstr)
             PRIu8,
             ipstr);
         return &PL_sv_undef;
-    } else if (record_for_address->type == MMDBW_RECORD_TYPE_EMPTY ||
-            record_for_address->type == MMDBW_RECORD_TYPE_FIXED_EMPTY) {
-        return &PL_sv_undef;
-    } else {
-        return newSVsv(data_for_key(tree, record_for_address->value.key));
     }
+
+    if (record_for_address->type == MMDBW_RECORD_TYPE_EMPTY ||
+        record_for_address->type == MMDBW_RECORD_TYPE_FIXED_EMPTY) {
+        return &PL_sv_undef;
+    }
+
+    return newSVsv(data_for_key(tree, record_for_address->value.key));
 }
 
 LOCAL MMDBW_status find_record_for_network(MMDBW_tree_s *tree,
