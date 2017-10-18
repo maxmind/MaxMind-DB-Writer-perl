@@ -3,7 +3,7 @@ use warnings;
 
 use lib 't/lib';
 
-use Test::Fatal;
+use Test::Fatal qw( exception );
 use Test::MaxMind::DB::Writer qw( test_tree test_freeze_thaw );
 use Test::More;
 use Test::Warnings qw( :all );

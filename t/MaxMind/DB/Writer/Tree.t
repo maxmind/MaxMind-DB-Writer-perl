@@ -159,7 +159,8 @@ use Net::Works::Network;
     test_tree(
         \@pairs,
         \@pairs,
-        '0.0.0.0/32 network'
+        '0.0.0.0/32 network',
+        { remove_reserved_networks => 0 },
     );
 }
 
@@ -174,14 +175,17 @@ use Net::Works::Network;
     test_tree(
         \@pairs,
         \@pairs,
-        '::0.0.0.0/128 network'
+        '::0.0.0.0/128 network',
+        { remove_reserved_networks => 0 },
     );
 }
 
 subtest '::/0 insertion' => sub {
     my $data = { ip => '::' };
 
-    my $tree = make_tree_from_pairs( 'network', [ [ '::/0' => $data ] ] );
+    my $tree = make_tree_from_pairs( 'network', [ [ '::/0' => $data ] ],
+        { remove_reserved_networks => 0 },
+    );
 
     is_deeply( $tree->lookup_ip_address('::'), $data, ':: is in tree' );
     is_deeply(
@@ -395,7 +399,8 @@ sub _create_and_insert_duplicates {
 
     my $tree = make_tree_from_pairs(
         $type,
-        [ map { [ $_, $_->as_string() ] } @{$distinct_subnets} ]
+        [ map { [ $_, $_->as_string() ] } @{$distinct_subnets} ],
+        { remove_reserved_networks => 0 },
     );
 
     my @duplicate_data_subnets

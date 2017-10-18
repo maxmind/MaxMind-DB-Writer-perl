@@ -175,6 +175,7 @@ sub _build_tree {
         $self->record_size,
         $self->merge_strategy,
         $self->alias_ipv6_to_ipv4,
+        $self->remove_reserved_networks,
     );
 }
 
@@ -287,8 +288,6 @@ sub write_tree {
     my $self   = shift;
     my $output = shift;
 
-    $self->_maybe_remove_reserved_networks;
-
     $self->_write_search_tree(
         $output,
         $self->_root_data_type(),
@@ -301,61 +300,6 @@ sub write_tree {
         METADATA_MARKER,
         $self->_encoded_metadata(),
     );
-}
-
-{
-    my @reserved_4 = qw(
-        0.0.0.0/8
-        10.0.0.0/8
-        100.64.0.0/10
-        127.0.0.0/8
-        169.254.0.0/16
-        172.16.0.0/12
-        192.0.0.0/29
-        192.0.2.0/24
-        192.88.99.0/24
-        192.168.0.0/16
-        198.18.0.0/15
-        198.51.100.0/24
-        203.0.113.0/24
-        224.0.0.0/4
-        240.0.0.0/4
-    );
-
-    # ::/128 and ::1/128 are reserved under IPv6 but these are already covered
-    # under 0.0.0.0/8. We include all of 2001::/23 except 2001::/32 as the
-    # latter is Teredo, which is globally routable.
-    my @reserved_6 = (
-        @reserved_4, qw(
-            100::/64
-            2001:1::/32
-            2001:2::/31
-            2001:4::/30
-            2001:8::/29
-            2001:10::/28
-            2001:20::/27
-            2001:40::/26
-            2001:80::/25
-            2001:100::/24
-            2001:db8::/32
-            fc00::/7
-            fe80::/10
-            ff00::/8
-            )
-    );
-
-    sub _maybe_remove_reserved_networks {
-        my $self = shift;
-
-        return unless $self->remove_reserved_networks;
-
-        my @reserved = @reserved_4;
-        push @reserved, @reserved_6 if $self->ip_version == 6;
-
-        for my $network (@reserved) {
-            $self->remove_network($network);
-        }
-    }
 }
 
 {
@@ -745,10 +689,13 @@ This parameter is optional. It defaults to false.
 
 =item * remove_reserved_networks
 
-If this is true, reserved networks will be removed from the database by
-C<write_tree()> before the tree is written to the file handle. Reserved
-networks that are globally routable to an individual device, such as Teredo,
-are I<not> removed. The default is true.
+If this is true, reserved networks may not be inserted. Attempting to insert
+such networks will be silently ignored.
+
+Reserved networks that are globally routable to an individual device, such as
+Teredo, may still be added.
+
+This parameter is optional. It defaults to true.
 
 =back
 

@@ -157,14 +157,15 @@ BOOT:
     PERL_MATH_INT128_LOAD_OR_CROAK;
 
 MMDBW_tree_s *
-_create_tree(ip_version, record_size, merge_strategy, alias_ipv6)
+_create_tree(ip_version, record_size, merge_strategy, alias_ipv6, remove_reserved_networks)
     uint8_t ip_version;
     uint8_t record_size;
     MMDBW_merge_strategy merge_strategy;
     bool alias_ipv6;
+    bool remove_reserved_networks;
 
     CODE:
-        RETVAL = new_tree(ip_version, record_size, merge_strategy, alias_ipv6);
+        RETVAL = new_tree(ip_version, record_size, merge_strategy, alias_ipv6, remove_reserved_networks);
 
     OUTPUT:
         RETVAL
