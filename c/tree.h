@@ -180,7 +180,5 @@ typedef void (MMDBW_iterator_callback)(MMDBW_tree_s *tree,
     extern SV *data_for_key(MMDBW_tree_s *tree, const char *const key);
     extern void free_tree(MMDBW_tree_s *tree);
     extern void free_merge_cache(MMDBW_tree_s *tree);
-    extern void warn_hex(uint8_t digest[16], char *where);
-    extern char *md5_as_hex(uint8_t digest[16]);
     /* --prototypes end - don't remove this comment-- */
     /* *INDENT-ON* */

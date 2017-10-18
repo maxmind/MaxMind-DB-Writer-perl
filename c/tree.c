@@ -143,7 +143,6 @@ LOCAL void freeze_to_fd(freeze_args_s *args, void *data, size_t size);
 LOCAL void freeze_data_to_fd(int fd, MMDBW_tree_s *tree);
 LOCAL SV *freeze_hash(HV *hash);
 LOCAL uint8_t thaw_uint8(uint8_t **buffer);
-LOCAL uint32_t thaw_uint32(uint8_t **buffer);
 LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer);
 LOCAL uint8_t *thaw_bytes(uint8_t **buffer, size_t size);
 LOCAL uint128_t thaw_uint128(uint8_t **buffer);
@@ -173,12 +172,9 @@ LOCAL void store_in_merge_cache(MMDBW_tree_s *tree,
                                 char *merge_cache_key,
                                 const char *const new_key
                                 );
-LOCAL void dwarn(SV *thing);
 LOCAL void *checked_malloc(size_t size);
 LOCAL void checked_write(int fd, char *filename, void *buffer,
                          ssize_t count);
-LOCAL void checked_perlio_read(PerlIO * io, void *buffer,
-                               SSize_t size);
 LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
                                char *op);
 LOCAL char *status_error_message(MMDBW_status status);
@@ -1622,14 +1618,6 @@ LOCAL uint8_t thaw_uint8(uint8_t **buffer)
     return value;
 }
 
-LOCAL uint32_t thaw_uint32(uint8_t **buffer)
-{
-    uint32_t value;
-    memcpy(&value, *buffer, 4);
-    *buffer += 4;
-    return value;
-}
-
 LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer)
 {
     uint128_t start_ip = thaw_uint128(buffer);
@@ -2124,49 +2112,6 @@ void free_merge_cache(MMDBW_tree_s *tree)
     }
 }
 
-static SV *module;
-LOCAL void dwarn(SV *thing)
-{
-    if (!module) {
-        module = newSVpv("Devel::Dwarn", 0);
-        load_module(PERL_LOADMOD_NOIMPORT, module, NULL);
-    }
-
-    dSP;
-    ENTER;
-    SAVETMPS;
-
-    PUSHMARK(SP);
-    EXTEND(SP, 1);
-    PUSHs(thing);
-    PUTBACK;
-
-    (void)call_pv("Devel::Dwarn::Dwarn", G_VOID);
-
-    SPAGAIN;
-
-    PUTBACK;
-    FREETMPS;
-    LEAVE;
-}
-
-void warn_hex(uint8_t digest[16], char *where)
-{
-    char *hex = md5_as_hex(digest);
-    fprintf(stderr, "MD5 = %s (%s)\n", hex, where);
-    free(hex);
-}
-
-char *md5_as_hex(uint8_t digest[16])
-{
-    char *hex = checked_malloc(33);
-    for (int i = 0; i < 16; ++i) {
-        sprintf(&hex[i * 2], "%02x", digest[i]);
-    }
-
-    return hex;
-}
-
 LOCAL void *checked_malloc(size_t size)
 {
     void *ptr = malloc(size);
@@ -2194,13 +2139,6 @@ LOCAL void checked_write(int fd, char *filename, void *buffer,
     }
 }
 
-LOCAL void checked_perlio_read(PerlIO * io, void *buffer,
-                               SSize_t size)
-{
-    SSize_t read = PerlIO_read(io, buffer, size);
-    check_perlio_result(read, size, "PerlIO_read");
-}
-
 LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
                                char *op)
 {
@@ -2212,7 +2150,6 @@ LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
             op, result, expected);
     }
 }
-
 
 LOCAL char *status_error_message(MMDBW_status status)
 {
