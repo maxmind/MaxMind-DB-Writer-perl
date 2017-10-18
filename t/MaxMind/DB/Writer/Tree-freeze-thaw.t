@@ -18,11 +18,11 @@ use Test::MaxMind::DB::Writer qw(
 use Test::More;
 
 use File::Temp qw( tempdir );
-use JSON;
+use JSON ();
 use Math::Int128 qw( uint128 );
-use MaxMind::DB::Reader;
-use MaxMind::DB::Writer::Tree;
-use Net::Works::Network;
+use MaxMind::DB::Reader ();
+use MaxMind::DB::Writer::Tree ();
+use Net::Works::Network ();
 
 # The record size really has nothing to do with the freeze/thaw code, but it
 # doesn't really hurt to test this either.
@@ -115,8 +115,9 @@ for my $record_size ( 24, 28, 32 ) {
         'network',
         $records,
         {
-            root_data_type     => 'utf8_string',
-            alias_ipv6_to_ipv4 => 1,
+            root_data_type           => 'utf8_string',
+            alias_ipv6_to_ipv4       => 1,
+            remove_reserved_networks => 0,
         },
     );
 

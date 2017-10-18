@@ -9,11 +9,10 @@ use Test::Requires {
 };
 
 use Test::MaxMind::DB::Writer qw( make_tree_from_pairs test_iterator_sanity );
-use Test::MaxMind::DB::Writer::Iterator;
+use Test::MaxMind::DB::Writer::Iterator ();
 use Test::More;
 
-use JSON;
-use MaxMind::DB::Writer::Tree;
+use JSON ();
 
 {
     open my $fh, '<', 't/test-data/geolite2-sample.json' or die $!;
@@ -23,7 +22,11 @@ use MaxMind::DB::Writer::Tree;
 
     my $tree = make_tree_from_pairs(
         'network',
-        $records, { alias_ipv6_to_ipv4 => 1 }
+        $records,
+        {
+            alias_ipv6_to_ipv4       => 1,
+            remove_reserved_networks => 0,
+        },
     );
 
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);

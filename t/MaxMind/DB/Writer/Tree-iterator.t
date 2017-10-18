@@ -6,7 +6,7 @@ use lib 't/lib';
 use Test::Fatal;
 use Test::MaxMind::DB::Writer
     qw( make_tree_from_pairs ranges_to_data test_iterator_sanity );
-use Test::MaxMind::DB::Writer::Iterator;
+use Test::MaxMind::DB::Writer::Iterator ();
 use Test::More;
 
 my ( $insert, $expect ) = ranges_to_data(
@@ -18,7 +18,13 @@ my ( $insert, $expect ) = ranges_to_data(
     ],
 );
 
-my $basic_tree = make_tree_from_pairs( 'network', $insert );
+my $basic_tree = make_tree_from_pairs(
+    'network',
+    $insert,
+    {
+        remove_reserved_networks => 0,
+    },
+);
 
 ## no critic (Modules::ProhibitMultiplePackages)
 {
@@ -99,7 +105,10 @@ my $basic_tree = make_tree_from_pairs( 'network', $insert );
                         { foo => 42 } ]
             } qw( ::1.0.0.0/120 2003::/96 abcd::1000/116 )
         ],
-        { alias_ipv6_to_ipv4 => 1 },
+        {
+            alias_ipv6_to_ipv4       => 1,
+            remove_reserved_networks => 0,
+        },
     );
 
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);
