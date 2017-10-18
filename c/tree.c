@@ -2217,8 +2217,6 @@ LOCAL char *status_error_message(MMDBW_status status)
     switch (status) {
     case MMDBW_SUCCESS:
         return "Success";
-    case MMDBW_FINDING_NODE_ERROR:
-        return "Error finding node.";
     case MMDBW_INSERT_INTO_ALIAS_NODE_ERROR:
         return "Attempted to insert into an aliased network.";
     case MMDBW_INSERT_INTO_FIXED_EMPTY_ERROR:
