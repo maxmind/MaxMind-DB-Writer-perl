@@ -238,7 +238,7 @@ subtest 'test merging nodes' => sub {
     }
 };
 
-subtest 'Inserting invalid neworks and ranges' => sub {
+subtest 'Inserting invalid networks and ranges' => sub {
     my $tree = MaxMind::DB::Writer::Tree->new(
         ip_version            => 6,
         record_size           => 24,
