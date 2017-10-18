@@ -941,32 +941,19 @@ LOCAL MMDBW_status insert_record_into_current_record(
     MMDBW_merge_strategy merge_strategy,
     bool is_internal_insert)
 {
-    // Note we currently never get called with fixed node or fixed empty
-    // records, but we guard just in case.
-    if (current_record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
-        return MMDBW_FIXED_NODE_OVERWRITE_ATTEMPT_ERROR;
-    }
-    if (current_record->type == MMDBW_RECORD_TYPE_FIXED_EMPTY) {
-        return MMDBW_FIXED_EMPTY_OVERWRITE_ATTEMPT_ERROR;
+    // We only get called when we have a current_record with these record
+    // types. There was previously logic for other types, but that was
+    // confusing.
+    if (current_record->type != MMDBW_RECORD_TYPE_EMPTY &&
+        current_record->type != MMDBW_RECORD_TYPE_DATA &&
+        current_record->type != MMDBW_RECORD_TYPE_NODE) {
+        croak("insert_record_into_current_node() called with an unexpected record type");
     }
 
     if (current_record->type == MMDBW_RECORD_TYPE_EMPTY &&
         merge_strategy == MMDBW_MERGE_STRATEGY_ADD_ONLY_IF_PARENT_EXISTS) {
         // We do not create a new record when using "only if parent exists"
         return MMDBW_SUCCESS;
-    }
-
-    if (current_record->type == MMDBW_RECORD_TYPE_ALIAS) {
-        MMDBW_record_type type = new_record->type;
-        MMDBW_status status = free_record_value(tree, new_record, true);
-        if (status != MMDBW_SUCCESS) {
-            return status;
-        }
-        if (type == MMDBW_RECORD_TYPE_DATA && is_internal_insert) {
-            // Possibly change return value in future
-            return MMDBW_SUCCESS;
-        }
-        return MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR;
     }
 
     const char *merged_key = maybe_merge_records(tree,
@@ -2247,8 +2234,6 @@ LOCAL char *status_error_message(MMDBW_status status)
         return "Attempted to overwrite an aliased network.";
     case MMDBW_FIXED_EMPTY_OVERWRITE_ATTEMPT_ERROR:
         return "Attempted to overwrite a fixed empty network.";
-    case MMDBW_FIXED_NODE_OVERWRITE_ATTEMPT_ERROR:
-        return "Attempted to overwrite a fixed node.";
     case MMDBW_RESOLVING_IP_ERROR:
         return "Failed to resolve IP address.";
     }
