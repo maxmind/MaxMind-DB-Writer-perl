@@ -64,12 +64,10 @@ typedef enum {
 
 typedef enum {
     MMDBW_RECORD_TYPE_EMPTY,
-    // Fixed empty records are like empty records in that they contain no
+    // Fixed empty records are like empty records in that they say there is no
     // information. They are also immutable. And similar to alias records, you
-    // can't insert networks belonging to them once they are present. e.g., if
-    // there is a fixed empty record for 0.0.0.0/8 then you won't be able to
-    // add 0.0.0.1/32. Trying to do so does not currently raise an error, it
-    // just won't be stored.
+    // can't insert networks belonging to them once they are present, or
+    // replace them, or insert networks containing them.
     //
     // We can't use EMPTY because they are not immutable. We can't use
     // FIXED_NODE because they allow children (adding sub-networks). We can't

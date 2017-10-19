@@ -742,12 +742,10 @@ LOCAL void insert_networks_as_fixed_empty(MMDBW_tree_s *tree,
                                           const size_t num_networks)
 {
     for (size_t i = 0; i < num_networks; i++) {
-        // TODO(wstorey@maxmind.com): Could this be const?
         MMDBW_network_s resolved_network = resolve_network(tree,
                                                            networks[i].ipstr,
                                                            networks[i].prefix_length);
 
-        // TODO(wstorey@maxmind.com): Could this be const?
         MMDBW_record_s record = {
             .type = MMDBW_RECORD_TYPE_FIXED_EMPTY,
         };
