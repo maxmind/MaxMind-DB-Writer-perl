@@ -41,7 +41,8 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     SAVETMPS;
 
     int stack_size =
-        MMDBW_RECORD_TYPE_EMPTY == record->type
+        MMDBW_RECORD_TYPE_EMPTY == record->type ||
+        MMDBW_RECORD_TYPE_FIXED_EMPTY == record->type
         ? 7
         : 8;
 
