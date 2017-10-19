@@ -1001,7 +1001,7 @@ LOCAL MMDBW_status insert_record_into_current_record(
         current_record->value.node = new_record->value.node;
     }
     // TODO(wstorey@maxmind.com): Should we have an else? What about other
-    // record types?
+    // record types? EMPTY isn't dealt with here.
 
     if (merged_key) {
         decrement_data_reference_count(tree, merged_key);
