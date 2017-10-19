@@ -78,15 +78,25 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     return;
 }
 
-SV *method_for_record_type(perl_iterator_args_s *args, const int record_type)
+SV *method_for_record_type(perl_iterator_args_s *args, const MMDBW_record_type record_type)
 {
-    return MMDBW_RECORD_TYPE_EMPTY == record_type
-           ? args->empty_method
-           : MMDBW_RECORD_TYPE_NODE == record_type ||
-           MMDBW_RECORD_TYPE_FIXED_NODE == record_type ||
-           MMDBW_RECORD_TYPE_ALIAS == record_type
-           ? args->node_method
-           : args->data_method;
+    switch (record_type) {
+    case MMDBW_RECORD_TYPE_EMPTY:
+    case MMDBW_RECORD_TYPE_FIXED_EMPTY:
+        return args->empty_method;
+        break;
+    case MMDBW_RECORD_TYPE_DATA:
+        return args->data_method;
+        break;
+    case MMDBW_RECORD_TYPE_NODE:
+    case MMDBW_RECORD_TYPE_FIXED_NODE:
+    case MMDBW_RECORD_TYPE_ALIAS:
+        return args->node_method;
+        break;
+    }
+
+    croak("unexpected record type");
+    return NULL;
 }
 
 void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
