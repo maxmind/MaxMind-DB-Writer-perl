@@ -747,12 +747,9 @@ LOCAL void insert_networks_as_fixed_empty(MMDBW_tree_s *tree,
                                                            networks[i].ipstr,
                                                            networks[i].prefix_length);
 
-        MMDBW_node_s * const empty_node = new_node();
-
         // TODO(wstorey@maxmind.com): Could this be const?
         MMDBW_record_s record = {
-            .type       = MMDBW_RECORD_TYPE_FIXED_EMPTY,
-            .value.node = empty_node,
+            .type = MMDBW_RECORD_TYPE_FIXED_EMPTY,
         };
 
         MMDBW_status const status = insert_record_for_network(tree,
