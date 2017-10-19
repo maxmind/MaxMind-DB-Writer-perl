@@ -190,7 +190,8 @@ use Net::Works::Network ();
 subtest '::/0 insertion' => sub {
     my $data = { ip => '::' };
 
-    my $tree = make_tree_from_pairs( 'network', [ [ '::/0' => $data ] ],
+    my $tree = make_tree_from_pairs(
+        'network', [ [ '::/0' => $data ] ],
 
         # ::/0 contains networks we add as FIXED_EMPTY when this option is on.
         # As a result, we hit the branch where we silently ignore the insert
@@ -326,7 +327,7 @@ subtest 'Recording merging at /0' => sub {
         map_key_type_callback => sub { 'utf8_string' },
 
         # These are 0 to as enabling them will create more than one network
-        alias_ipv6_to_ipv4       => 0,
+        alias_ipv6_to_ipv4 => 0,
 
         # We can't insert ::/1 since it is reserved if we have this option to
         # remove the reserved networks on.
@@ -356,7 +357,7 @@ subtest 'Setting data on a fixed node' => sub {
         map_key_type_callback => sub { 'utf8_string' },
 
         # ::/96 gets added as a fixed node when we use `alias_ipv6_to_ipv4'
-        alias_ipv6_to_ipv4    => 1,
+        alias_ipv6_to_ipv4 => 1,
 
         # This is irrelevant to this test.
         remove_reserved_networks => 0,
@@ -364,7 +365,7 @@ subtest 'Setting data on a fixed node' => sub {
 
     my $ip = '::/96';
     my $data = { hi => 'there' };
-    $tree->insert_network($ip, $data);
+    $tree->insert_network( $ip, $data );
 
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);
     $tree->iterate($iterator);
@@ -372,14 +373,14 @@ subtest 'Setting data on a fixed node' => sub {
     is_deeply(
         [
             map { [ $_->[0]->as_string, $_->[1] ] }
-            @{ $iterator->{data_records} }
+                @{ $iterator->{data_records} }
         ],
         [
 
             # This is a little odd but I think makes sense because we refuse to
             # touch the fixed node. Its left record (::/97) and right record
             # (::128.0.0.0/97 AKA ::8000:0/97) point to the data.
-            [ '::0/97', $data ],
+            [ '::0/97',         $data ],
             [ '::128.0.0.0/97', $data ],
         ],
         'saw expected data records',
@@ -414,7 +415,7 @@ subtest 'Setting data on non-fixed node' => sub {
         map_key_type_callback => sub { 'utf8_string' },
 
         # Not relevant.
-        alias_ipv6_to_ipv4    => 0,
+        alias_ipv6_to_ipv4 => 0,
 
         # This is irrelevant to this test.
         remove_reserved_networks => 0,
@@ -426,11 +427,11 @@ subtest 'Setting data on non-fixed node' => sub {
         '8000::1 is not in tree',
     );
 
-    my $data0 = { hi => 'there' };
+    my $data0 = { hi    => 'there' };
     my $data1 = { hello => 'there' };
 
-    $tree->insert_network('8000::/2', $data0);
-    $tree->insert_network('C000::/2', $data1);
+    $tree->insert_network( '8000::/2', $data0 );
+    $tree->insert_network( 'C000::/2', $data1 );
 
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);
     $tree->iterate($iterator);
@@ -438,7 +439,7 @@ subtest 'Setting data on non-fixed node' => sub {
     is_deeply(
         [
             map { [ $_->[0]->as_string, $_->[1] ] }
-            @{ $iterator->{data_records} }
+                @{ $iterator->{data_records} }
         ],
         [
             [ '8000::/2', $data0 ],
@@ -465,19 +466,19 @@ subtest 'Removing regular networks' => sub {
         map_key_type_callback => sub { 'utf8_string' },
 
         # Having these off starts us with a very empty tree
-        alias_ipv6_to_ipv4    => 0,
+        alias_ipv6_to_ipv4       => 0,
         remove_reserved_networks => 0,
     );
 
     like(
-        exception { _node_is_in_tree($tree, '8000::/1') },
+        exception { _node_is_in_tree( $tree, '8000::/1' ) },
         qr/Iteration is not currently allowed in trees with no nodes/,
         'no nodes in the tree',
     );
 
     my $data = { hi => 'there' };
 
-    $tree->insert_network('aaaa::/64', $data);
+    $tree->insert_network( 'aaaa::/64', $data );
 
     is_deeply(
         $tree->lookup_ip_address('aaaa::1'),
@@ -485,7 +486,7 @@ subtest 'Removing regular networks' => sub {
         'record is in tree',
     );
 
-    ok( _node_is_in_tree($tree, '8000::/1'), '8000::/1 is in the tree' );
+    ok( _node_is_in_tree( $tree, '8000::/1' ), '8000::/1 is in the tree' );
 
     $tree->remove_network('::/0');
 
@@ -498,7 +499,7 @@ subtest 'Removing regular networks' => sub {
     # After removing it, trimming removes all the way up.
 
     like(
-        exception { _node_is_in_tree($tree, '8000::/1') },
+        exception { _node_is_in_tree( $tree, '8000::/1' ) },
         qr/Iteration is not currently allowed in trees with no nodes/,
         'no nodes in the tree',
     );
@@ -519,11 +520,11 @@ subtest 'Removing fixed node' => sub {
     # We have lots of fixed nodes because of both alias_ipv6_to_ipv4 and
     # because of the fixed emptys from remove_reserved_networks.
 
-    ok( _node_is_in_tree($tree, '8000::/1'), '8000::/1 is in the tree' );
+    ok( _node_is_in_tree( $tree, '8000::/1' ), '8000::/1 is in the tree' );
 
     $tree->remove_network('::/0');
 
-    ok( _node_is_in_tree($tree, '8000::/1'), '8000::/1 is in the tree' );
+    ok( _node_is_in_tree( $tree, '8000::/1' ), '8000::/1 is in the tree' );
 };
 
 subtest 'Inserting beside fixed empty record' => sub {
@@ -549,7 +550,7 @@ subtest 'Inserting beside fixed empty record' => sub {
         'fe00::1 is not in tree',
     );
 
-    $tree->insert_network('fe00::/8', $data);
+    $tree->insert_network( 'fe00::/8', $data );
 
     is_deeply(
         $tree->lookup_ip_address('fe00::1'),
@@ -567,7 +568,7 @@ subtest 'Inserting beside fixed empty record' => sub {
         '100:0:0:1::1 is not in tree',
     );
 
-    $tree->insert_network('100:0:0:1::/64', $data);
+    $tree->insert_network( '100:0:0:1::/64', $data );
 
     is_deeply(
         $tree->lookup_ip_address('100:0:0:1::1'),
@@ -583,7 +584,7 @@ subtest 'Inserting beside fixed empty record' => sub {
         '100:0:0:2::1 is not in tree',
     );
 
-    $tree->insert_network('100:0:0:2::/63', $data);
+    $tree->insert_network( '100:0:0:2::/63', $data );
 
     is_deeply(
         $tree->lookup_ip_address('100:0:0:2::1'),
@@ -601,7 +602,7 @@ subtest 'Inserting beside fixed empty record' => sub {
         '2001:db7::1 is not in tree',
     );
 
-    $tree->insert_network('2001:db7::/31', $data);
+    $tree->insert_network( '2001:db7::/31', $data );
 
     is_deeply(
         $tree->lookup_ip_address('2001:db7::1'),
@@ -613,16 +614,16 @@ subtest 'Inserting beside fixed empty record' => sub {
 done_testing();
 
 sub _node_is_in_tree {
-    my $tree = shift;
+    my $tree    = shift;
     my $network = shift;
 
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);
     $tree->iterate($iterator);
 
-    my @recs = grep { $_->as_string eq $network }
-        @{ $iterator->{node_records} };
+    my @recs
+        = grep { $_->as_string eq $network } @{ $iterator->{node_records} };
 
-    return @recs > 0
+    return @recs > 0;
 }
 
 sub _test_subnet_permutations {
