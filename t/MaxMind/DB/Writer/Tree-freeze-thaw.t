@@ -176,6 +176,10 @@ for my $record_size ( 24, 28, 32 ) {
         description              => { en => 'Test tree' },
         merge_strategy           => 'toplevel',
         map_key_type_callback    => sub { 'uint32' },
+
+        # Like the ::/0 insertion case in Tree.t, if we don't turn this off,
+        # then our insert below of ::/1 silently gets ignored, since that would
+        # contain FIXED_EMPTY records.
         remove_reserved_networks => 0,
     );
 

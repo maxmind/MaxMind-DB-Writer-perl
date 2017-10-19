@@ -9,14 +9,15 @@ use Test::MaxMind::DB::Writer qw(
     ranges_to_data
     test_tree
 );
+use Test::MaxMind::DB::Writer::Iterator ();
 use Test::Fatal;
 use Test::More;
 use Test::Warnings qw( :all );
 
-use MaxMind::DB::Writer::Tree;
+use MaxMind::DB::Writer::Tree ();
 
-use Net::Works::Address;
-use Net::Works::Network;
+use Net::Works::Address ();
+use Net::Works::Network ();
 
 {
     my @ipv4_subnets
@@ -191,8 +192,12 @@ subtest '::/0 insertion' => sub {
 
     my $tree = make_tree_from_pairs( 'network', [ [ '::/0' => $data ] ],
 
-        # We're trying to insert into reserved space, which fails unless we
-        # turn off this option since it is reserved!
+        # ::/0 contains networks we add as FIXED_EMPTY when this option is on.
+        # As a result, we hit the branch where we silently ignore the insert
+        # (current_bit > network->prefix_length in
+        # insert_record_into_next_node(). This means we create the tree but the
+        # insert was ignored, causing the lookup we're trying to test to fail.
+        # So we turn off adding the FIXED_EMPTY networks to let this test pass.
         { remove_reserved_networks => 0 },
     );
 
@@ -319,6 +324,103 @@ subtest 'Recording merging at /0' => sub {
             "expected data for $ip"
         );
     }
+};
+
+subtest 'Setting data on a fixed node' => sub {
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version            => 6,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        merge_strategy        => 'none',
+        map_key_type_callback => sub { 'utf8_string' },
+
+        # ::/96 gets added as a fixed node when we use `alias_ipv6_to_ipv4'
+        alias_ipv6_to_ipv4    => 1,
+
+        # This is irrelevant to this test.
+        remove_reserved_networks => 0,
+    );
+
+    my $ip = '::/96';
+    my $data = { hi => 'there' };
+    $tree->insert_network($ip, $data);
+
+    my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);
+    $tree->iterate($iterator);
+
+    is_deeply(
+        [
+            map { [ $_->[0]->as_string, $_->[1] ] }
+            @{ $iterator->{data_records} }
+        ],
+        [
+
+            # This is a little odd but I think makes sense because we refuse to
+            # touch the fixed node. Its left record (::/97) and right record
+            # (::128.0.0.0/97 AKA ::8000:0/97) point to the data.
+            [ '::0/97', $data ],
+            [ '::128.0.0.0/97', $data ],
+        ],
+        'saw expected data records',
+    );
+
+    my @ips_in_tree = (
+        '::0.0.0.0',
+        '::0.0.0.1',
+        '::128.0.0.0',
+        '::128.0.0.1',
+    );
+    for my $i (@ips_in_tree) {
+        is_deeply( $tree->lookup_ip_address($i), $data, "$i is in tree" );
+    }
+
+    my @ips_not_in_tree = (
+        '8000::1',
+    );
+    for my $i (@ips_not_in_tree) {
+        is_deeply( $tree->lookup_ip_address($i), undef, "$i is not in tree" );
+    }
+};
+
+subtest 'Setting data on non-fixed node' => sub {
+    my $tree = MaxMind::DB::Writer::Tree->new(
+        ip_version            => 6,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        merge_strategy        => 'none',
+        map_key_type_callback => sub { 'utf8_string' },
+
+        # Not relevant.
+        alias_ipv6_to_ipv4    => 0,
+
+        # This is irrelevant to this test.
+        remove_reserved_networks => 0,
+    );
+
+    my $data0 = { hi => 'there' };
+    my $data1 = { hello => 'there' };
+
+    $tree->insert_network('8000::/2', $data0);
+    $tree->insert_network('C000::/2', $data1);
+
+    my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);
+    $tree->iterate($iterator);
+
+    is_deeply(
+        [
+            map { [ $_->[0]->as_string, $_->[1] ] }
+            @{ $iterator->{data_records} }
+        ],
+        [
+            [ '8000::/2', $data0 ],
+            [ 'c000::/2', $data1 ],
+        ],
+        'saw expected data records',
+    );
 };
 
 done_testing();

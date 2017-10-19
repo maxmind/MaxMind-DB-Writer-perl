@@ -76,7 +76,7 @@ sub _write_tree {
         map_key_type_callback => sub { 'utf8_string' },
 
         # Below we try to insert into reserved networks, which fails if we flag
-        # them as fixed empty.
+        # them as fixed empty (255.255.255.0/8 falls under 240.0.0.0/4).
         remove_reserved_networks => 0,
     );
 
