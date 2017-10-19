@@ -74,6 +74,9 @@ sub _write_tree {
         },
         alias_ipv6_to_ipv4    => 1,
         map_key_type_callback => sub { 'utf8_string' },
+
+        # Below we try to insert into reserved networks, which fails if we flag
+        # them as fixed empty.
         remove_reserved_networks => 0,
     );
 

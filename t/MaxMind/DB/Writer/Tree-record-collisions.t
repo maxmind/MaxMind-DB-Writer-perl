@@ -971,7 +971,6 @@ subtest 'Test merging into aliased nodes' => sub {
         merge_strategy        => 'toplevel',
         map_key_type_callback => sub { 'utf8_string' },
         alias_ipv6_to_ipv4    => 1,
-        remove_reserved_networks => 0,
     );
 
     _insert_network( $tree, $_ ) for qw( 1.0.0.0/24 ::/1 2001::/31 );
@@ -1015,7 +1014,6 @@ subtest 'Test merging away IPv4 root' => sub {
         merge_strategy        => 'toplevel',
         map_key_type_callback => sub { 'utf8_string' },
         alias_ipv6_to_ipv4    => 1,
-        remove_reserved_networks => 0,
     );
 
     $tree->insert_network( $_, { data => 1 } ) for qw( 1.0.0.0/24 ::/1 );

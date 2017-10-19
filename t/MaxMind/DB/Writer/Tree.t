@@ -160,6 +160,9 @@ use Net::Works::Network;
         \@pairs,
         \@pairs,
         '0.0.0.0/32 network',
+
+        # We're trying to insert into reserved space, which fails unless we
+        # turn off this option since it is reserved!
         { remove_reserved_networks => 0 },
     );
 }
@@ -176,6 +179,9 @@ use Net::Works::Network;
         \@pairs,
         \@pairs,
         '::0.0.0.0/128 network',
+
+        # We're trying to insert into reserved space, which fails unless we
+        # turn off this option since it is reserved!
         { remove_reserved_networks => 0 },
     );
 }
@@ -184,6 +190,9 @@ subtest '::/0 insertion' => sub {
     my $data = { ip => '::' };
 
     my $tree = make_tree_from_pairs( 'network', [ [ '::/0' => $data ] ],
+
+        # We're trying to insert into reserved space, which fails unless we
+        # turn off this option since it is reserved!
         { remove_reserved_networks => 0 },
     );
 
@@ -294,6 +303,9 @@ subtest 'Recording merging at /0' => sub {
 
         # These are 0 to as enabling them will create more than one network
         alias_ipv6_to_ipv4       => 0,
+
+        # We can't insert ::/1 since it is reserved if we have this option to
+        # remove the reserved networks on.
         remove_reserved_networks => 0,
     );
 
@@ -400,6 +412,9 @@ sub _create_and_insert_duplicates {
     my $tree = make_tree_from_pairs(
         $type,
         [ map { [ $_, $_->as_string() ] } @{$distinct_subnets} ],
+
+        # We happen to insert into reserved networks here and in the tests that
+        # call us, so don't prevent that.
         { remove_reserved_networks => 0 },
     );
 

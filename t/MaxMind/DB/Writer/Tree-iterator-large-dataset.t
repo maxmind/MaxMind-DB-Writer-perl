@@ -22,11 +22,7 @@ use JSON ();
 
     my $tree = make_tree_from_pairs(
         'network',
-        $records,
-        {
-            alias_ipv6_to_ipv4       => 1,
-            remove_reserved_networks => 0,
-        },
+        $records, { alias_ipv6_to_ipv4 => 1 }
     );
 
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);

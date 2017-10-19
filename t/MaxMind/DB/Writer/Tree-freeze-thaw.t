@@ -36,6 +36,9 @@ for my $record_size ( 24, 28, 32 ) {
             description              => { en => 'Test tree' },
             merge_strategy           => 'toplevel',
             map_key_type_callback    => sub { 'uint32' },
+
+            # Below we try to insert into reserved space, which fails if we
+            # flag them as fixed empty.
             remove_reserved_networks => 0,
         );
 
@@ -74,6 +77,9 @@ for my $record_size ( 24, 28, 32 ) {
             description              => { en => 'Test tree' },
             merge_strategy           => 'toplevel',
             map_key_type_callback    => $cb,
+
+            # Below we try to insert into reserved space, which fails if we
+            # flag them as fixed empty.
             remove_reserved_networks => 0,
         );
 
@@ -115,9 +121,8 @@ for my $record_size ( 24, 28, 32 ) {
         'network',
         $records,
         {
-            root_data_type           => 'utf8_string',
-            alias_ipv6_to_ipv4       => 1,
-            remove_reserved_networks => 0,
+            root_data_type     => 'utf8_string',
+            alias_ipv6_to_ipv4 => 1,
         },
     );
 

@@ -18,13 +18,7 @@ my ( $insert, $expect ) = ranges_to_data(
     ],
 );
 
-my $basic_tree = make_tree_from_pairs(
-    'network',
-    $insert,
-    {
-        remove_reserved_networks => 0,
-    },
-);
+my $basic_tree = make_tree_from_pairs( 'network', $insert );
 
 ## no critic (Modules::ProhibitMultiplePackages)
 {
@@ -105,10 +99,7 @@ my $basic_tree = make_tree_from_pairs(
                         { foo => 42 } ]
             } qw( ::1.0.0.0/120 2003::/96 abcd::1000/116 )
         ],
-        {
-            alias_ipv6_to_ipv4       => 1,
-            remove_reserved_networks => 0,
-        },
+        { alias_ipv6_to_ipv4 => 1 },
     );
 
     my $iterator = Test::MaxMind::DB::Writer::Iterator->new(6);
