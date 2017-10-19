@@ -168,7 +168,8 @@ typedef void (MMDBW_iterator_callback)(MMDBW_tree_s *tree,
     extern MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
                                    uint8_t ip_version, uint8_t record_size,
                                    MMDBW_merge_strategy merge_strategy,
-                                   const bool alias_ipv6);
+                                   const bool alias_ipv6,
+                                   const bool remove_reserved_networks);
     extern void write_search_tree(MMDBW_tree_s *tree, SV *output,
                                   SV *root_data_type, SV *serializer);
     extern uint32_t max_record_value(MMDBW_tree_s *tree);

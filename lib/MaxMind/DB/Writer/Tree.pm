@@ -425,6 +425,7 @@ sub new_from_frozen_tree {
                 record_size
                 merge_strategy
                 alias_ipv6_to_ipv4
+                remove_reserved_networks
                 )
         },
     );

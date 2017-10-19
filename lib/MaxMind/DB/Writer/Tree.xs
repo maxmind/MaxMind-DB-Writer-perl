@@ -288,16 +288,17 @@ _freeze_tree(self, filename, frozen_params, frozen_params_size)
         freeze_tree(tree_from_self(self), filename, frozen_params, frozen_params_size);
 
 MMDBW_tree_s *
-_thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6)
+_thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6, remove_reserved_networks)
     char *filename;
     int initial_offset;
     int ip_version;
     int record_size;
     MMDBW_merge_strategy merge_strategy;
     bool alias_ipv6;
+    bool remove_reserved_networks;
 
     CODE:
-        RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6);
+        RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6, remove_reserved_networks);
 
     OUTPUT:
         RETVAL

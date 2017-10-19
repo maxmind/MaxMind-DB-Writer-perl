@@ -1548,7 +1548,8 @@ LOCAL SV *freeze_hash(HV *hash)
 MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
                         uint8_t ip_version, uint8_t record_size,
                         MMDBW_merge_strategy merge_strategy,
-                        const bool alias_ipv6)
+                        const bool alias_ipv6,
+                        const bool remove_reserved_networks)
 {
     int fd = open(filename, O_RDONLY, 0);
     if (fd == -1) {
@@ -1569,7 +1570,7 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
     buffer += initial_offset;
 
     MMDBW_tree_s *tree = new_tree(ip_version, record_size, merge_strategy,
-                                  alias_ipv6, false);
+                                  alias_ipv6, remove_reserved_networks);
 
     thawed_network_s *thawed;
     while (NULL != (thawed = thaw_network(tree, &buffer))) {
