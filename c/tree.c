@@ -81,7 +81,8 @@ LOCAL void free_network(MMDBW_network_s *network);
 LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree);
 LOCAL void insert_reserved_networks_as_fixed_empty(MMDBW_tree_s *tree);
 LOCAL void insert_networks_as_fixed_empty(MMDBW_tree_s *tree,
-    struct network const *const networks, const size_t num_networks);
+                                          struct network const *const networks,
+                                          const size_t num_networks);
 LOCAL MMDBW_status insert_record_for_network(
     MMDBW_tree_s *tree,
     MMDBW_network_s *network,
@@ -725,22 +726,26 @@ static struct network reserved_networks_ipv6[] = {
 LOCAL void insert_reserved_networks_as_fixed_empty(MMDBW_tree_s *tree)
 {
     insert_networks_as_fixed_empty(tree, reserved_networks_ipv4,
-        sizeof(reserved_networks_ipv4) / sizeof(struct network));
+                                   sizeof(reserved_networks_ipv4) /
+                                   sizeof(struct network));
 
     if (tree->ip_version == 6) {
         insert_networks_as_fixed_empty(tree, reserved_networks_ipv6,
-            sizeof(reserved_networks_ipv6) / sizeof(struct network));
+                                       sizeof(reserved_networks_ipv6) /
+                                       sizeof(struct network));
     }
 }
 
 // Insert a FIXED_EMPTY record for each network.
 LOCAL void insert_networks_as_fixed_empty(MMDBW_tree_s *tree,
-    struct network const *const networks, const size_t num_networks)
+                                          struct network const *const networks,
+                                          const size_t num_networks)
 {
     for (size_t i = 0; i < num_networks; i++) {
         // TODO(wstorey@maxmind.com): Could this be const?
         MMDBW_network_s resolved_network = resolve_network(tree,
-            networks[i].ipstr, networks[i].prefix_length);
+                                                           networks[i].ipstr,
+                                                           networks[i].prefix_length);
 
         MMDBW_node_s * const empty_node = new_node();
 
@@ -751,7 +756,10 @@ LOCAL void insert_networks_as_fixed_empty(MMDBW_tree_s *tree,
         };
 
         MMDBW_status const status = insert_record_for_network(tree,
-            &resolved_network, &record, MMDBW_MERGE_STRATEGY_NONE, true);
+                                                              &resolved_network,
+                                                              &record,
+                                                              MMDBW_MERGE_STRATEGY_NONE,
+                                                              true);
 
         free_network(&resolved_network);
 
@@ -776,14 +784,14 @@ LOCAL MMDBW_status insert_record_for_network(
     }
 
     return insert_record_into_next_node(
-               tree,
-               &(tree->root_record),
-               network,
-               0,
-               new_record,
-               merge_strategy,
-               is_internal_insert
-               );
+        tree,
+        &(tree->root_record),
+        network,
+        0,
+        new_record,
+        merge_strategy,
+        is_internal_insert
+        );
 }
 
 LOCAL MMDBW_status insert_record_into_next_node(
@@ -803,13 +811,13 @@ LOCAL MMDBW_status insert_record_into_next_node(
             || ( current_record->type == MMDBW_RECORD_TYPE_NODE
                  && merge_strategy == MMDBW_MERGE_STRATEGY_NONE))) {
         return insert_record_into_current_record(
-                   tree,
-                   current_record,
-                   network,
-                   new_record,
-                   merge_strategy,
-                   is_internal_insert
-                   );
+            tree,
+            current_record,
+            network,
+            new_record,
+            merge_strategy,
+            is_internal_insert
+            );
     }
 
     // Figure out the next node.
@@ -830,8 +838,8 @@ LOCAL MMDBW_status insert_record_into_next_node(
             // fixed empty. We do not allow this.
             if (current_bit == network->prefix_length) {
                 return current_record->type == MMDBW_RECORD_TYPE_FIXED_EMPTY ?
-                    MMDBW_FIXED_EMPTY_OVERWRITE_ATTEMPT_ERROR :
-                    MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR;
+                       MMDBW_FIXED_EMPTY_OVERWRITE_ATTEMPT_ERROR :
+                       MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR;
             }
             // We don't follow aliases when inserting a network that contains
             // an aliased network within it. Nor do we accept networks
@@ -847,8 +855,8 @@ LOCAL MMDBW_status insert_record_into_next_node(
             // new network already as FIXED_EMPTY/ALIAS. Inserting the network
             // is not valid because of that.
             return current_record->type == MMDBW_RECORD_TYPE_FIXED_EMPTY ?
-                MMDBW_INSERT_INTO_FIXED_EMPTY_ERROR :
-                MMDBW_INSERT_INTO_ALIAS_NODE_ERROR;
+                   MMDBW_INSERT_INTO_FIXED_EMPTY_ERROR :
+                   MMDBW_INSERT_INTO_ALIAS_NODE_ERROR;
         }
     case MMDBW_RECORD_TYPE_FIXED_NODE:
     case MMDBW_RECORD_TYPE_NODE: {
@@ -967,7 +975,8 @@ LOCAL MMDBW_status insert_record_into_current_record(
     if (current_record->type != MMDBW_RECORD_TYPE_EMPTY &&
         current_record->type != MMDBW_RECORD_TYPE_DATA &&
         current_record->type != MMDBW_RECORD_TYPE_NODE) {
-        croak("insert_record_into_current_node() called with an unexpected record type");
+        croak(
+            "insert_record_into_current_node() called with an unexpected record type");
     }
 
     if (current_record->type == MMDBW_RECORD_TYPE_EMPTY &&
@@ -1102,7 +1111,8 @@ SV *merge_hashes_for_keys(MMDBW_tree_s *tree, const char *const key_from,
         croak(
             "Cannot merge data records unless both records are hashes - inserting %s/%"
             PRIu8,
-            address_string, network->prefix_length);
+            address_string,
+            network->prefix_length);
     }
 
     return merge_hashes(tree, data_from, data_into, merge_strategy);

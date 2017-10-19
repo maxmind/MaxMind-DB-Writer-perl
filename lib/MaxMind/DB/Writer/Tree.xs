@@ -79,7 +79,8 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     return;
 }
 
-SV *method_for_record_type(perl_iterator_args_s *args, const MMDBW_record_type record_type)
+SV *method_for_record_type(perl_iterator_args_s *args,
+                           const MMDBW_record_type record_type)
 {
     switch (record_type) {
     case MMDBW_RECORD_TYPE_EMPTY:
