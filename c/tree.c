@@ -645,10 +645,7 @@ LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
     }
 }
 
-// Note that 255.255.255.255/32 is part of 240.0.0.0/4.
-//
-// TODO(wstorey@maxmind.com): Why do we have 192.0.0.0/29? Should it be
-// 192.0.0.0/24?
+// https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry.xhtml
 static struct network reserved_networks_ipv4[] = {
     { .ipstr = "0.0.0.0",      .prefix_length = 8  },
     { .ipstr = "10.0.0.0",     .prefix_length = 8  },
@@ -656,29 +653,52 @@ static struct network reserved_networks_ipv4[] = {
     { .ipstr = "127.0.0.0",    .prefix_length = 8  },
     { .ipstr = "169.254.0.0",  .prefix_length = 16 },
     { .ipstr = "172.16.0.0",   .prefix_length = 12 },
+    // This is an odd case. 192.0.0.0/24 is reserved, but there is a note that
+    // says "Not useable unless by virtue of a more specific reservation". As
+    // such, since 192.0.0.0/29 was more recently reserved, it's possible the
+    // intention is that the rest is not reserved any longer. I'm not too clear
+    // on this, but I believe that is the rationale, so I choose to leave it.
     { .ipstr = "192.0.0.0",    .prefix_length = 29 },
+    // TODO(wstorey@maxmind.com): 192.168.0.8/32
+    // TODO(wstorey@maxmind.com): 192.168.0.9/32
+    // TODO(wstorey@maxmind.com): 192.168.0.10/32
+    // TODO(wstorey@maxmind.com): 192.168.0.170/32
+    // TODO(wstorey@maxmind.com): 192.168.0.171/32
     { .ipstr = "192.0.2.0",    .prefix_length = 24 },
+    // 192.31.196.0/24 is routable I believe
+    // TODO(wstorey@maxmnd.com): 192.52.193.0/24
+    // TODO(wstorey@maxmind.com): Looks like 192.88.99.0/24 may no longer be
+    // reserved?
     { .ipstr = "192.88.99.0",  .prefix_length = 24 },
     { .ipstr = "192.168.0.0",  .prefix_length = 16 },
+    // 192.175.48.0/24 is routable I believe
     { .ipstr = "198.18.0.0",   .prefix_length = 15 },
     { .ipstr = "198.51.100.0", .prefix_length = 24 },
     { .ipstr = "203.0.113.0",  .prefix_length = 24 },
+    // The above IANA page doesn't list 224.0.0.0/4, but at least some parts
+    // are listed in https://tools.ietf.org/html/rfc5771
     { .ipstr = "224.0.0.0",    .prefix_length = 4  },
     { .ipstr = "240.0.0.0",    .prefix_length = 4  },
+    // 255.255.255.255/32 gets brought in by 240.0.0.0/4.
 };
 
-// All IPv6 reserved networks with the following exceptions:
-// - ::/128 and ::1/128 are reserved under IPv6 but these are already
-//   covered under 0.0.0.0/8.
-// - We include all of 2001::/23 except 2001::/32 as the latter is Teredo,
-//   which is globally routable. TODO(wstorey@maxmind.com): This seems
-//   broader than it should be.
-// - ::ffff:0:0/96 - IPv4 mapped addresses. We treat it specially with the
-//   `alias_ipv6_to_ipv4' option.
-// - 64:ff9b::/96 - well known prefix mapping
-// - 2002::/16" - 6to4
+// https://www.iana.org/assignments/iana-ipv6-special-registry/iana-ipv6-special-registry.xhtml
 static struct network reserved_networks_ipv6[] = {
+    // ::/128 and ::1/128 are reserved under IPv6 but these are already
+    // covered under 0.0.0.0/8.
+    //
+    // ::ffff:0:0/96 - IPv4 mapped addresses. We treat it specially with the
+    // `alias_ipv6_to_ipv4' option.
+    //
+    // 64:ff9b::/96 - well known prefix mapping, covered by alias_ipv6_to_ipv4
+    //
+    // TODO(wstorey@maxmind.com): 64:ff9b:1::/48 should be in
+    // alias_ipv6_to_ipv4?
+
     { .ipstr = "100::",      .prefix_length = 64 },
+
+    // 2001::/23 is reserved. We include all of it here other than 2001::/32
+    // as it is Teredo which is globally routable.
     { .ipstr = "2001:1::",   .prefix_length = 32 },
     { .ipstr = "2001:2::",   .prefix_length = 31 },
     { .ipstr = "2001:4::",   .prefix_length = 30 },
@@ -688,9 +708,13 @@ static struct network reserved_networks_ipv6[] = {
     { .ipstr = "2001:40::",  .prefix_length = 26 },
     { .ipstr = "2001:80::",  .prefix_length = 25 },
     { .ipstr = "2001:100::", .prefix_length = 24 },
+
     { .ipstr = "2001:db8::", .prefix_length = 32 },
+    // 2002::/16 - 6to4, part of alias_ipv6_to_ipv4
+    // 2620:4f:8000::/48 is routable I believe
     { .ipstr = "fc00::",     .prefix_length = 7  },
     { .ipstr = "fe80::",     .prefix_length = 10 },
+    // Multicast
     { .ipstr = "ff00::",     .prefix_length = 8  },
 };
 
