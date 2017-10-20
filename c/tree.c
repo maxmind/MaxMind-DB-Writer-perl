@@ -102,8 +102,7 @@ LOCAL MMDBW_status insert_record_into_current_record(
     MMDBW_record_s *current_record,
     MMDBW_network_s *network,
     MMDBW_record_s *new_record,
-    MMDBW_merge_strategy merge_strategy,
-    bool is_internal_insert);
+    MMDBW_merge_strategy merge_strategy);
 LOCAL const char * maybe_merge_records(MMDBW_tree_s *tree,
                                        MMDBW_network_s *network,
                                        MMDBW_record_s *new_record,
@@ -810,8 +809,7 @@ LOCAL MMDBW_status insert_record_into_next_node(
             current_record,
             network,
             new_record,
-            merge_strategy,
-            is_internal_insert
+            merge_strategy
             );
     }
 
@@ -961,8 +959,7 @@ LOCAL MMDBW_status insert_record_into_current_record(
     MMDBW_record_s *current_record,
     MMDBW_network_s *network,
     MMDBW_record_s *new_record,
-    MMDBW_merge_strategy merge_strategy,
-    bool is_internal_insert)
+    MMDBW_merge_strategy merge_strategy)
 {
     // We only get called when we have a current_record with these record
     // types. There was previously logic for other types, but that was
