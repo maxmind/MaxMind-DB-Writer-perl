@@ -800,10 +800,10 @@ LOCAL MMDBW_status insert_record_into_next_node(
     // We've reached the record where the network belongs. Depending on the
     // type of record it is, we insert right here.
     if (current_bit >= network->prefix_length
-        && (current_record->type == MMDBW_RECORD_TYPE_EMPTY
-            || current_record->type == MMDBW_RECORD_TYPE_DATA
-            || ( current_record->type == MMDBW_RECORD_TYPE_NODE
-                 && merge_strategy == MMDBW_MERGE_STRATEGY_NONE))) {
+        && (current_record->type == MMDBW_RECORD_TYPE_EMPTY ||
+            current_record->type == MMDBW_RECORD_TYPE_DATA ||
+            ( current_record->type == MMDBW_RECORD_TYPE_NODE &&
+              merge_strategy == MMDBW_MERGE_STRATEGY_NONE))) {
         return insert_record_into_current_record(
             tree,
             current_record,
@@ -811,6 +811,32 @@ LOCAL MMDBW_status insert_record_into_next_node(
             new_record,
             merge_strategy
             );
+    }
+
+    if (current_bit == network->prefix_length &&
+        current_record->type == MMDBW_RECORD_TYPE_FIXED_NODE &&
+        new_record->type == MMDBW_RECORD_TYPE_FIXED_NODE) {
+        // We could potentially make this work, but it's tricky. One of the
+        // purposes of fixed nodes is for alias nodes to point at them.
+        // Returning success here without doing anything is not what we want to
+        // do: We should be setting the node value to what is in the new record
+        // since it may be setting up alias nodes pointing at it. Changing the
+        // current node value is not an option either: Aliases may already be
+        // pointing to it.
+        //
+        // If we don't have this case, we'll continue to descend the tree,
+        // inserting the new record's fixed node in potentially multiple
+        // locations. If that happens, we end up freeing the node multiple
+        // times when destroying the tree.
+        //
+        // Consider the case where we previously inserted fixed nodes to a
+        // greater depth than we are right now. Because we'd continue to
+        // descend the tree, we'd insert this new fixed node record at
+        // potentially multiple spots in the tree, at each point we encounter
+        // an EMPTY, DATA, or NODE record (the conditions where we can enter
+        // insert_record_into_current_record()). The stopping condition would
+        // not be correct.
+        return MMDBW_FIXED_NODE_OVERWRITE_ATTEMPT_ERROR;
     }
 
     // Figure out the next node.
@@ -853,7 +879,7 @@ LOCAL MMDBW_status insert_record_into_next_node(
         }
     case MMDBW_RECORD_TYPE_FIXED_NODE:
     case MMDBW_RECORD_TYPE_NODE: {
-            // We're pointing at a node already.
+            // We're a node already.
             next_node = current_record->value.node;
             break;
         }
@@ -2198,6 +2224,8 @@ LOCAL char *status_error_message(MMDBW_status status)
         return "Attempted to overwrite an aliased network.";
     case MMDBW_FIXED_EMPTY_OVERWRITE_ATTEMPT_ERROR:
         return "Attempted to overwrite a fixed empty network.";
+    case MMDBW_FIXED_NODE_OVERWRITE_ATTEMPT_ERROR:
+        return "Attempted to overwrite a fixed node.";
     case MMDBW_RESOLVING_IP_ERROR:
         return "Failed to resolve IP address.";
     }
