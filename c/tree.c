@@ -219,8 +219,6 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     }
 
     if (remove_reserved_networks) {
-        // We don't want these networks in the tree. Insert fixed empty records
-        // for them. This means we ignore any subsequent insertions to them.
         insert_reserved_networks_as_fixed_empty(tree);
     }
 
