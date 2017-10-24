@@ -97,6 +97,8 @@ SV *method_for_record_type(perl_iterator_args_s *args,
         break;
     }
 
+    // This croak is probably okay. It should not happen unless we're adding a
+    // new record type and missed this spot.
     croak("unexpected record type");
     return NULL;
 }

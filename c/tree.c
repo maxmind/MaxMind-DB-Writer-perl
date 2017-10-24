@@ -1004,8 +1004,7 @@ LOCAL MMDBW_status insert_record_into_current_record(
     if (current_record->type != MMDBW_RECORD_TYPE_EMPTY &&
         current_record->type != MMDBW_RECORD_TYPE_DATA &&
         current_record->type != MMDBW_RECORD_TYPE_NODE) {
-        croak(
-            "insert_record_into_current_node() called with an unexpected record type");
+        return MMDBW_INSERT_INVALID_RECORD_TYPE_ERROR;
     }
 
     if (current_record->type == MMDBW_RECORD_TYPE_EMPTY &&
@@ -2224,6 +2223,8 @@ LOCAL char *status_error_message(MMDBW_status status)
         return "Attempted to insert into an aliased network.";
     case MMDBW_INSERT_INTO_FIXED_EMPTY_ERROR:
         return "Attempted to insert into a fixed empty network.";
+    case MMDBW_INSERT_INVALID_RECORD_TYPE_ERROR:
+        return "Invalid record type given to insert.";
     case MMDBW_FREED_ALIAS_NODE_ERROR:
         return
             "Attempted to free an IPv4 alias node. Did you try to overwrite an alias network?";
