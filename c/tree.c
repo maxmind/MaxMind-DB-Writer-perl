@@ -1025,6 +1025,7 @@ LOCAL MMDBW_status insert_record_into_current_record(
         return status;
     }
 
+    // Update the record to match the new one. Replace what's there.
     current_record->type = new_record->type;
     if (new_record->type == MMDBW_RECORD_TYPE_DATA) {
         const char *const key = increment_data_reference_count(
@@ -1033,14 +1034,16 @@ LOCAL MMDBW_status insert_record_into_current_record(
             );
         current_record->value.key = key;
     } else if (new_record->type == MMDBW_RECORD_TYPE_FIXED_NODE ||
-               new_record->type == MMDBW_RECORD_TYPE_FIXED_EMPTY ||
                new_record->type == MMDBW_RECORD_TYPE_NODE ||
                new_record->type == MMDBW_RECORD_TYPE_ALIAS) {
-        // We're inserting these. Overwrite if it was there.
         current_record->value.node = new_record->value.node;
+    } else if (new_record->type == MMDBW_RECORD_TYPE_EMPTY ||
+               new_record->type == MMDBW_RECORD_TYPE_FIXED_EMPTY) {
+        current_record->value.key = NULL;
+        current_record->value.node = NULL;
+    } else {
+        return MMDBW_INSERT_INVALID_RECORD_TYPE_ERROR;
     }
-    // TODO(wstorey@maxmind.com): Should we have an else? What about other
-    // record types? EMPTY isn't dealt with here.
 
     if (merged_key) {
         decrement_data_reference_count(tree, merged_key);
