@@ -863,17 +863,25 @@ LOCAL MMDBW_status insert_record_into_next_node(
             break;
         }
     case MMDBW_RECORD_TYPE_FIXED_EMPTY:
+        // We're a) trying to overwrite a fixed empty network, b) trying to
+        // insert a network containing a fixed empty network, or c) trying to
+        // insert inside a fixed empty network. (You can see these 3 cases
+        // handled separately in the ALIAS case.) We ignore the insert with the
+        // assumption that it was not intended. e.g., you probably didn't mean
+        // to insert data about a reserved network. Doing so makes working with
+        // dirty data easier. Note this may change to be more strict and return
+        // an error in the future.
+        return MMDBW_SUCCESS;
+        break;
     case MMDBW_RECORD_TYPE_ALIAS: {
-            // The insert is trying to overwrite an aliased network or one set
-            // fixed empty. We do not allow this.
+            // The insert is trying to overwrite an aliased network. We do not
+            // allow this.
             if (current_bit == network->prefix_length) {
-                return current_record->type == MMDBW_RECORD_TYPE_FIXED_EMPTY ?
-                       MMDBW_FIXED_EMPTY_OVERWRITE_ATTEMPT_ERROR :
-                       MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR;
+                return MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR;
             }
+
             // We don't follow aliases when inserting a network that contains
-            // an aliased network within it. Nor do we accept networks
-            // containing networks present as fixed empty records.
+            // an aliased network within it.
             if (current_bit > network->prefix_length) {
                 // We return success to silently ignore when we try to insert
                 // here. If we raise an error, it makes working with dirty data
@@ -882,11 +890,10 @@ LOCAL MMDBW_status insert_record_into_next_node(
                 return MMDBW_SUCCESS;
             }
             // current_bit < network->prefix_length. This means we contain the
-            // new network already as FIXED_EMPTY/ALIAS. Inserting the network
-            // is not valid because of that.
-            return current_record->type == MMDBW_RECORD_TYPE_FIXED_EMPTY ?
-                   MMDBW_INSERT_INTO_FIXED_EMPTY_ERROR :
-                   MMDBW_INSERT_INTO_ALIAS_NODE_ERROR;
+            // new network already as ALIAS. Inserting the network is not valid
+            // because of that.
+            return MMDBW_INSERT_INTO_ALIAS_NODE_ERROR;
+            break;
         }
     case MMDBW_RECORD_TYPE_FIXED_NODE:
     case MMDBW_RECORD_TYPE_NODE: {
@@ -2226,8 +2233,6 @@ LOCAL char *status_error_message(MMDBW_status status)
         return "Success";
     case MMDBW_INSERT_INTO_ALIAS_NODE_ERROR:
         return "Attempted to insert into an aliased network.";
-    case MMDBW_INSERT_INTO_FIXED_EMPTY_ERROR:
-        return "Attempted to insert into a fixed empty network.";
     case MMDBW_INSERT_INVALID_RECORD_TYPE_ERROR:
         return "Invalid record type given to insert.";
     case MMDBW_FREED_ALIAS_NODE_ERROR:
@@ -2239,8 +2244,6 @@ LOCAL char *status_error_message(MMDBW_status status)
         return "Attempted to free a fixed node. This should never happen.";
     case MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR:
         return "Attempted to overwrite an aliased network.";
-    case MMDBW_FIXED_EMPTY_OVERWRITE_ATTEMPT_ERROR:
-        return "Attempted to overwrite a fixed empty network.";
     case MMDBW_FIXED_NODE_OVERWRITE_ATTEMPT_ERROR:
         return "Attempted to overwrite a fixed node.";
     case MMDBW_RESOLVING_IP_ERROR:

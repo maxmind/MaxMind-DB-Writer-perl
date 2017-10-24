@@ -292,28 +292,53 @@ subtest 'Inserting invalid networks and ranges' => sub {
     );
 
     like(
+        exception { $tree->insert_network( '2002::/16', {} ) },
+        qr/Attempted to overwrite an aliased network/,
+        'Received exception when inserting an aliased network'
+    );
+
+    $tree->insert_network( '2002::/12', {} );
+    is_deeply(
+        $tree->lookup_ip_address('2002::1'),
+        undef,
+        'Insert containing aliased network is silently ignored in the aliased part',
+    );
+    is_deeply(
+        $tree->lookup_ip_address('2000::1'),
+        {},
+        'Insert containing aliased network succeeds outside the aliased part',
+    );
+
+    like(
         exception { $tree->insert_network( '2002:0101:0101:0101::/64', {} ) },
         qr/Attempted to insert into an aliased network/,
         'Received exception when inserting into alias'
     );
 
-    like(
-        exception { $tree->insert_network( '192.168.10.0/24', {} ) },
-        qr/Attempted to insert into a fixed empty network/,
-        'Received exception when inserting into reserved network set fixed empty',
-    );
-
-    like(
-        exception { $tree->insert_network( '192.168.0.0/16', {} ) },
-        qr/Attempted to overwrite a fixed empty network/,
-        'Received exception when trying to overwrite a reserved network set fixed empty',
+    $tree->insert_network( '192.168.0.0/16', { a => 'b' } );
+    is_deeply(
+        $tree->lookup_ip_address('192.168.0.1'),
+        undef,
+        'Insert trying to overwrite reserved network set fixed empty is silently ignored',
     );
 
     $tree->insert_network( '192.0.0.0/8', { a => 'b' } );
     is_deeply(
         $tree->lookup_ip_address('192.168.10.1'),
         undef,
-        'Insert containing reserved network set fixed empty silently gets ignored',
+        'Insert containing reserved network set fixed empty is silently ignored in the reserved part',
+    );
+    is_deeply(
+        $tree->lookup_ip_address('192.1.10.1'),
+        { a => 'b' },
+        'Insert containing reserved network set fixed empty succeeds outside the reserved part',
+    );
+
+    $tree->insert_network( '192.168.10.0/24', { a => 'b' } );
+    is_deeply(
+        $tree->lookup_ip_address('192.168.10.1'),
+        undef,
+        'Insert into reserved network set fixed empty is silently ignored',
     );
 };
 

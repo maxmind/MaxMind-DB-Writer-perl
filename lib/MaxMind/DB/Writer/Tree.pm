@@ -680,8 +680,8 @@ This is the 6to4 range
 =back
 
 When aliasing is enabled, insertions into the aliased locations will throw an
-exception. Attempting to insert a network containing them will be silently
-ignored.
+exception. Inserting a network containing them does not throw an exception, but
+no information will be stored for the aliased locations.
 
 To insert an IPv4 address, insert it using IPv4 notation or insert
 directly into ::/96.
@@ -695,8 +695,9 @@ This parameter is optional. It defaults to false.
 
 If this is true, reserved networks may not be inserted.
 
-Attempting to insert these networks or any inside them will throw an exception.
-Attempting to insert a network containing them will be silently ignored.
+Attempts to insert these networks or any inside them will be silently ignored.
+Inserting a network containing them does not throw an exception, but no
+information will be stored for the reserved sections.
 
 Reserved networks that are globally routable to an individual device, such as
 Teredo, may still be added.

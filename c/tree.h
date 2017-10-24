@@ -53,13 +53,11 @@ typedef uint128_t uint128_t_a8 __attribute__ ((aligned(8)));
 typedef enum {
     MMDBW_SUCCESS,
     MMDBW_INSERT_INTO_ALIAS_NODE_ERROR,
-    MMDBW_INSERT_INTO_FIXED_EMPTY_ERROR,
     MMDBW_INSERT_INVALID_RECORD_TYPE_ERROR,
     MMDBW_FREED_ALIAS_NODE_ERROR,
     MMDBW_FREED_FIXED_EMPTY_ERROR,
     MMDBW_FREED_FIXED_NODE_ERROR,
     MMDBW_ALIAS_OVERWRITE_ATTEMPT_ERROR,
-    MMDBW_FIXED_EMPTY_OVERWRITE_ATTEMPT_ERROR,
     MMDBW_FIXED_NODE_OVERWRITE_ATTEMPT_ERROR,
     MMDBW_RESOLVING_IP_ERROR,
 } MMDBW_status;
@@ -68,13 +66,14 @@ typedef enum {
     MMDBW_RECORD_TYPE_EMPTY,
     // Fixed empty records are like empty records in that they say there is no
     // information. They are also immutable. And similar to alias records, you
-    // can't insert networks belonging to them once they are present, or
-    // replace them, or insert networks containing them.
+    // can't replace them, insert networks containing them, or insert networks
+    // belonging to them.
     //
     // We can't use EMPTY because they are not immutable. We can't use
     // FIXED_NODE because they allow children (adding sub-networks). We can't
     // use ALIAS as it has a special meaning, and we don't permit lookups to
-    // work (although that is only used in test code apparently).
+    // work (although that is only used in test code apparently). They also
+    // raise errors in some cases where FIXED_EMPTY currently does not.
     MMDBW_RECORD_TYPE_FIXED_EMPTY,
     MMDBW_RECORD_TYPE_DATA,
     MMDBW_RECORD_TYPE_NODE,
