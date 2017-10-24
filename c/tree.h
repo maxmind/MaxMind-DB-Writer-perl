@@ -128,7 +128,6 @@ typedef struct MMDBW_tree_s {
     MMDBW_merge_cache_s *merge_cache;
     MMDBW_record_s root_record;
     uint32_t node_count;
-    bool is_aliased;
 } MMDBW_tree_s;
 
 typedef struct MMDBW_network_s {

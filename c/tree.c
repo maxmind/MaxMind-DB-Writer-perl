@@ -209,9 +209,6 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     tree->merge_strategy = merge_strategy;
     tree->merge_cache = NULL;
     tree->data_table = NULL;
-    // TODO(wstorey@maxmind.com): What is the purpose of this? It appears
-    // unused.
-    tree->is_aliased = false;
     tree->root_record = (MMDBW_record_s) {
         .type = MMDBW_RECORD_TYPE_EMPTY,
     };
@@ -590,9 +587,6 @@ static struct network ipv4_aliases[] = {
 LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree)
 {
     if (tree->ip_version == 4) {
-        return;
-    }
-    if (tree->is_aliased) {
         return;
     }
 
