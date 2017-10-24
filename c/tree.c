@@ -1020,8 +1020,10 @@ LOCAL MMDBW_status insert_record_into_current_record(
                                                  merge_strategy
                                                  );
 
-    // TODO(wstorey@maxmind.com): Should we check success?
     MMDBW_status status = free_record_value(tree, current_record, false);
+    if (status != MMDBW_SUCCESS) {
+        return status;
+    }
 
     current_record->type = new_record->type;
     if (new_record->type == MMDBW_RECORD_TYPE_DATA) {
