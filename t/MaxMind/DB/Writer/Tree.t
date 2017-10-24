@@ -196,9 +196,10 @@ subtest '::/0 insertion' => sub {
         # ::/0 contains networks we add as FIXED_EMPTY when this option is on.
         # As a result, we hit the branch where we silently ignore the insert
         # (current_bit > network->prefix_length in
-        # insert_record_into_next_node(). This means we create the tree but the
-        # insert was ignored, causing the lookup we're trying to test to fail.
-        # So we turn off adding the FIXED_EMPTY networks to let this test pass.
+        # insert_record_into_next_node()). This means we create the tree but
+        # the insert was ignored, causing the lookup we're trying to test to
+        # fail. So we turn off adding the FIXED_EMPTY networks to let this test
+        # pass.
         { remove_reserved_networks => 0 },
     );
 
