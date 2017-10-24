@@ -79,10 +79,10 @@ LOCAL MMDBW_status resolve_ip(int tree_ip_version, const char *const ipstr,
                               uint8_t *bytes);
 LOCAL void free_network(MMDBW_network_s *network);
 LOCAL void alias_ipv4_networks(MMDBW_tree_s *tree);
-LOCAL void insert_reserved_networks_as_fixed_empty(MMDBW_tree_s *tree);
-LOCAL void insert_networks_as_fixed_empty(MMDBW_tree_s *tree,
-                                          struct network const *const networks,
-                                          const size_t num_networks);
+LOCAL MMDBW_status insert_reserved_networks_as_fixed_empty(MMDBW_tree_s *tree);
+LOCAL MMDBW_status insert_networks_as_fixed_empty(MMDBW_tree_s *tree,
+                                                  struct network const *const networks,
+                                                  const size_t num_networks);
 LOCAL MMDBW_status insert_record_for_network(
     MMDBW_tree_s *tree,
     MMDBW_network_s *network,
@@ -219,7 +219,13 @@ MMDBW_tree_s *new_tree(const uint8_t ip_version, uint8_t record_size,
     }
 
     if (remove_reserved_networks) {
-        insert_reserved_networks_as_fixed_empty(tree);
+        MMDBW_status const status = insert_reserved_networks_as_fixed_empty(
+            tree);
+        if (status != MMDBW_SUCCESS) {
+            free_tree(tree);
+            croak("Error inserting reserved networks: %s", status_error_message(
+                      status));
+        }
     }
 
     return tree;
@@ -714,23 +720,37 @@ static struct network reserved_networks_ipv6[] = {
 //
 // This is to avoid the case where we might otherwise accidentally add
 // information about such networks.
-LOCAL void insert_reserved_networks_as_fixed_empty(MMDBW_tree_s *tree)
+LOCAL MMDBW_status insert_reserved_networks_as_fixed_empty(MMDBW_tree_s *tree)
 {
-    insert_networks_as_fixed_empty(tree, reserved_networks_ipv4,
-                                   sizeof(reserved_networks_ipv4) /
-                                   sizeof(struct network));
+    MMDBW_status const status = insert_networks_as_fixed_empty(tree,
+                                                               reserved_networks_ipv4,
+                                                               sizeof(
+                                                                   reserved_networks_ipv4) /
+                                                               sizeof(struct
+                                                                      network));
+    if (status != MMDBW_SUCCESS) {
+        return status;
+    }
 
     if (tree->ip_version == 6) {
-        insert_networks_as_fixed_empty(tree, reserved_networks_ipv6,
-                                       sizeof(reserved_networks_ipv6) /
-                                       sizeof(struct network));
+        MMDBW_status const status = insert_networks_as_fixed_empty(tree,
+                                                                   reserved_networks_ipv6,
+                                                                   sizeof(
+                                                                       reserved_networks_ipv6) /
+                                                                   sizeof(struct
+                                                                          network));
+        if (status != MMDBW_SUCCESS) {
+            return status;
+        }
     }
+
+    return MMDBW_SUCCESS;
 }
 
 // Insert a FIXED_EMPTY record for each network.
-LOCAL void insert_networks_as_fixed_empty(MMDBW_tree_s *tree,
-                                          struct network const *const networks,
-                                          const size_t num_networks)
+LOCAL MMDBW_status insert_networks_as_fixed_empty(MMDBW_tree_s *tree,
+                                                  struct network const *const networks,
+                                                  const size_t num_networks)
 {
     for (size_t i = 0; i < num_networks; i++) {
         MMDBW_network_s resolved_network = resolve_network(tree,
@@ -749,13 +769,12 @@ LOCAL void insert_networks_as_fixed_empty(MMDBW_tree_s *tree,
 
         free_network(&resolved_network);
 
-        if (MMDBW_SUCCESS != status) {
-            croak(
-                "Unexpected error inserting fixed empty record for network: %s/%u: %s",
-                networks[i].ipstr, networks[i].prefix_length,
-                status_error_message(status));
+        if (status != MMDBW_SUCCESS) {
+            return status;
         }
     }
+
+    return MMDBW_SUCCESS;
 }
 
 LOCAL MMDBW_status insert_record_for_network(
