@@ -6,7 +6,7 @@ use lib 't/lib';
 use Test::Fatal;
 use Test::MaxMind::DB::Writer
     qw( make_tree_from_pairs ranges_to_data test_iterator_sanity );
-use Test::MaxMind::DB::Writer::Iterator;
+use Test::MaxMind::DB::Writer::Iterator ();
 use Test::More;
 
 my ( $insert, $expect ) = ranges_to_data(

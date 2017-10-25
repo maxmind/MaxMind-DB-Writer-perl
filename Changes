@@ -1,5 +1,12 @@
 {{$NEXT}}
 
+- The remove_reserved_networks option now sets up the tree in such a way that
+  these networks may not be added. Previously these networks could be added and
+  were removed when writing out the tree. This change means these networks are
+  excluded when working with the tree prior to writing it out, such as when
+  iterating the in-memory tree.
+
+
 0.202000 2016-12-19
 
 - The data insertion code was significantly refactored in order to improve

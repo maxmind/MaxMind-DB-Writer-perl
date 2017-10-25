@@ -3,14 +3,14 @@ use warnings;
 
 use lib 't/lib';
 
-use Test::Fatal;
+use Test::Fatal qw( exception );
 use Test::MaxMind::DB::Writer qw( test_tree test_freeze_thaw );
 use Test::More;
 use Test::Warnings qw( :all );
 
-use MaxMind::DB::Writer::Tree;
+use MaxMind::DB::Writer::Tree ();
 
-use Net::Works::Network;
+use Net::Works::Network ();
 
 subtest 'simple IPv6 merge' => sub {
     my %asn = (
@@ -59,7 +59,8 @@ subtest 'simple IPv6 merge' => sub {
             { merge_record_collisions => 1 },
             )
     };
-    is( scalar @warnings, 2, 'received two warnings' ) or diag explain @warnings;
+    is( scalar @warnings, 2, 'received two warnings' )
+        or diag explain @warnings;
 
     like(
         $warnings[0],

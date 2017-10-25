@@ -3,11 +3,11 @@ use warnings;
 
 use Test::More;
 
-use MaxMind::DB::Writer::Tree;
+use MaxMind::DB::Writer::Tree ();
 
 use File::Temp qw( tempdir );
-use Net::Works::Address;
-use Net::Works::Network;
+use Net::Works::Address ();
+use Net::Works::Network ();
 use Test::Fatal qw( exception );
 
 my $tempdir = tempdir( CLEANUP => 1 );
@@ -58,7 +58,6 @@ my $tempdir = tempdir( CLEANUP => 1 );
         qr/Attempted to overwrite an aliased network./,
         'received expected error when trying to overwrite an alias node'
     );
-
 }
 
 done_testing();
@@ -75,6 +74,10 @@ sub _write_tree {
         },
         alias_ipv6_to_ipv4    => 1,
         map_key_type_callback => sub { 'utf8_string' },
+
+        # Below we try to insert into reserved networks, which fails if we flag
+        # them as fixed empty (255.255.255.0/8 falls under 240.0.0.0/4).
+        remove_reserved_networks => 0,
     );
 
     # Note: we don't want all of the alias nodes (::ffff:0.0.0.0 and 2002::)

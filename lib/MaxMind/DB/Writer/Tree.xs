@@ -41,7 +41,8 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     SAVETMPS;
 
     int stack_size =
-        MMDBW_RECORD_TYPE_EMPTY == record->type
+        MMDBW_RECORD_TYPE_EMPTY == record->type ||
+        MMDBW_RECORD_TYPE_FIXED_EMPTY == record->type
         ? 7
         : 8;
 
@@ -78,15 +79,28 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
     return;
 }
 
-SV *method_for_record_type(perl_iterator_args_s *args, const int record_type)
+SV *method_for_record_type(perl_iterator_args_s *args,
+                           const MMDBW_record_type record_type)
 {
-    return MMDBW_RECORD_TYPE_EMPTY == record_type
-           ? args->empty_method
-           : MMDBW_RECORD_TYPE_NODE == record_type ||
-           MMDBW_RECORD_TYPE_FIXED_NODE == record_type ||
-           MMDBW_RECORD_TYPE_ALIAS == record_type
-           ? args->node_method
-           : args->data_method;
+    switch (record_type) {
+    case MMDBW_RECORD_TYPE_EMPTY:
+    case MMDBW_RECORD_TYPE_FIXED_EMPTY:
+        return args->empty_method;
+        break;
+    case MMDBW_RECORD_TYPE_DATA:
+        return args->data_method;
+        break;
+    case MMDBW_RECORD_TYPE_NODE:
+    case MMDBW_RECORD_TYPE_FIXED_NODE:
+    case MMDBW_RECORD_TYPE_ALIAS:
+        return args->node_method;
+        break;
+    }
+
+    // This croak is probably okay. It should not happen unless we're adding a
+    // new record type and missed this spot.
+    croak("unexpected record type");
+    return NULL;
 }
 
 void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
@@ -157,14 +171,15 @@ BOOT:
     PERL_MATH_INT128_LOAD_OR_CROAK;
 
 MMDBW_tree_s *
-_create_tree(ip_version, record_size, merge_strategy, alias_ipv6)
+_create_tree(ip_version, record_size, merge_strategy, alias_ipv6, remove_reserved_networks)
     uint8_t ip_version;
     uint8_t record_size;
     MMDBW_merge_strategy merge_strategy;
     bool alias_ipv6;
+    bool remove_reserved_networks;
 
     CODE:
-        RETVAL = new_tree(ip_version, record_size, merge_strategy, alias_ipv6);
+        RETVAL = new_tree(ip_version, record_size, merge_strategy, alias_ipv6, remove_reserved_networks);
 
     OUTPUT:
         RETVAL
@@ -287,16 +302,17 @@ _freeze_tree(self, filename, frozen_params, frozen_params_size)
         freeze_tree(tree_from_self(self), filename, frozen_params, frozen_params_size);
 
 MMDBW_tree_s *
-_thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6)
+_thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6, remove_reserved_networks)
     char *filename;
     int initial_offset;
     int ip_version;
     int record_size;
     MMDBW_merge_strategy merge_strategy;
     bool alias_ipv6;
+    bool remove_reserved_networks;
 
     CODE:
-        RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6);
+        RETVAL = thaw_tree(filename, initial_offset, ip_version, record_size, merge_strategy, alias_ipv6, remove_reserved_networks);
 
     OUTPUT:
         RETVAL

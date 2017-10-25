@@ -18,24 +18,27 @@ use Test::MaxMind::DB::Writer qw(
 use Test::More;
 
 use File::Temp qw( tempdir );
-use JSON;
+use JSON ();
 use Math::Int128 qw( uint128 );
-use MaxMind::DB::Reader;
-use MaxMind::DB::Writer::Tree;
-use Net::Works::Network;
+use MaxMind::DB::Reader       ();
+use MaxMind::DB::Writer::Tree ();
+use Net::Works::Network       ();
 
 # The record size really has nothing to do with the freeze/thaw code, but it
 # doesn't really hurt to test this either.
 for my $record_size ( 24, 28, 32 ) {
     {
         my $tree = MaxMind::DB::Writer::Tree->new(
-            ip_version               => 4,
-            record_size              => $record_size,
-            database_type            => 'Test',
-            languages                => [ 'en', 'fr' ],
-            description              => { en => 'Test tree' },
-            merge_strategy           => 'toplevel',
-            map_key_type_callback    => sub { 'uint32' },
+            ip_version            => 4,
+            record_size           => $record_size,
+            database_type         => 'Test',
+            languages             => [ 'en', 'fr' ],
+            description           => { en => 'Test tree' },
+            merge_strategy        => 'toplevel',
+            map_key_type_callback => sub { 'uint32' },
+
+            # Below we try to insert into reserved space, which fails if we
+            # flag them as fixed empty.
             remove_reserved_networks => 0,
         );
 
@@ -67,13 +70,16 @@ for my $record_size ( 24, 28, 32 ) {
         };
 
         my $tree = MaxMind::DB::Writer::Tree->new(
-            ip_version               => 6,
-            record_size              => 24,
-            database_type            => 'Test',
-            languages                => ['en'],
-            description              => { en => 'Test tree' },
-            merge_strategy           => 'toplevel',
-            map_key_type_callback    => $cb,
+            ip_version            => 6,
+            record_size           => 24,
+            database_type         => 'Test',
+            languages             => ['en'],
+            description           => { en => 'Test tree' },
+            merge_strategy        => 'toplevel',
+            map_key_type_callback => $cb,
+
+            # Below we try to insert into reserved space, which fails if we
+            # flag them as fixed empty.
             remove_reserved_networks => 0,
         );
 
@@ -163,13 +169,17 @@ for my $record_size ( 24, 28, 32 ) {
 
 {
     my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version               => 6,
-        record_size              => 24,
-        database_type            => 'Test',
-        languages                => ['en'],
-        description              => { en => 'Test tree' },
-        merge_strategy           => 'toplevel',
-        map_key_type_callback    => sub { 'uint32' },
+        ip_version            => 6,
+        record_size           => 24,
+        database_type         => 'Test',
+        languages             => ['en'],
+        description           => { en => 'Test tree' },
+        merge_strategy        => 'toplevel',
+        map_key_type_callback => sub { 'uint32' },
+
+        # Like the ::/0 insertion case in Tree.t, if we don't turn this off,
+        # then our insert below of ::/1 silently gets ignored, since that would
+        # contain FIXED_EMPTY records.
         remove_reserved_networks => 0,
     );
 

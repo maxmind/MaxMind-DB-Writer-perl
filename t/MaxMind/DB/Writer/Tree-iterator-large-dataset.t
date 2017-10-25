@@ -9,11 +9,10 @@ use Test::Requires {
 };
 
 use Test::MaxMind::DB::Writer qw( make_tree_from_pairs test_iterator_sanity );
-use Test::MaxMind::DB::Writer::Iterator;
+use Test::MaxMind::DB::Writer::Iterator ();
 use Test::More;
 
-use JSON;
-use MaxMind::DB::Writer::Tree;
+use JSON ();
 
 {
     open my $fh, '<', 't/test-data/geolite2-sample.json' or die $!;

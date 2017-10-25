@@ -3,7 +3,7 @@ use warnings;
 
 use lib 't/lib';
 
-use MaxMind::DB::Writer::Tree;
+use MaxMind::DB::Writer::Tree ();
 use Test::More;
 
 subtest 'IPv6 test start_ip == end_ip insert' => sub {
@@ -238,8 +238,6 @@ sub _test_ranges {
         );
         @expected{ $start_ip, $end_ip } = ($data) x 2 if $test_endpoints;
     }
-
-    $tree->_maybe_remove_reserved_networks;
 
     for my $ip ( sort keys %expected ) {
         is_deeply(

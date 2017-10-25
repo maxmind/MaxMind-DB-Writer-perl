@@ -3,7 +3,7 @@ package Test::MaxMind::DB::Writer::Iterator;
 use strict;
 use warnings;
 
-use Net::Works::Network;
+use Net::Works::Network ();
 
 sub new {
     my $class      = shift;
@@ -23,6 +23,9 @@ sub process_node_record {
     $self->_saw_network( $node_ip_num, $node_prefix_length, 'node' );
 
     $self->_saw_record( $node_num, $dir );
+
+    push @{ $self->{node_records} },
+        $self->_nw_network( $node_ip_num, $node_prefix_length );
 
     return;
 }
