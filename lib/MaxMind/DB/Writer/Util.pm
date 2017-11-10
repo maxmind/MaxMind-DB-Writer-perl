@@ -3,7 +3,7 @@ package MaxMind::DB::Writer::Util;
 use strict;
 use warnings;
 
-our $VERSION = '0.300000';
+our $VERSION = '0.300001';
 
 use Digest::SHA1 qw( sha1_base64 );
 use Encode qw( encode );
