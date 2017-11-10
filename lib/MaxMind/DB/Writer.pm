@@ -34,7 +34,7 @@ __END__
     );
 
     $tree->insert_network(
-        '2001:db8::/48',
+        '8.8.8.0/24',
         {
             color => 'blue',
             dogs  => [ 'Fido', 'Ms. Pretty Paws' ],
