@@ -7,8 +7,7 @@ Please note that if you have any questions or difficulties, you can reach the
 maintainer(s) through the bug queue described later in this document
 (preferred), or by emailing the releaser directly. You are not required to
 follow any of the steps in this document to submit a patch or bug report;
-these are just recommendations, intended to help you (and help us help you
-faster).
+these are recommendations, intended to help you (and help us help you faster).
 
 
 The distribution is managed with
@@ -22,6 +21,7 @@ However, you can still compile and test the code with the `Makefile.PL` or
     make test
 
 or
+
     perl Build.PL
     ./Build
     ./Build test
@@ -53,7 +53,7 @@ or
 
     $ dzil authordeps --missing | cpanm
 
-They may also be additional requirements not needed by the dzil build which
+There may also be additional requirements not needed by the dzil build which
 are needed for tests or other development:
 
     $ cpan `dzil listdeps --author --missing`
@@ -97,7 +97,7 @@ https://help.github.com/articles/creating-a-pull-request
 
 If you have found a bug, but do not have an accompanying patch to fix it, you
 can submit an issue report [via the web](https://github.com/maxmind/MaxMind-DB-Writer-perl/issues)
-).
+.
 This is a good place to send your questions about the usage of this distribution.
 
 ## Travis
@@ -126,6 +126,8 @@ included in the documentation as a contributor (using the attribution on the
 commit or patch), unless you specifically request for it not to be. If you
 wish to be listed under a different name or address, you should submit a pull
 request to the .mailmap file to contain the correct mapping.
+[Check here](https://github.com/git/git/blob/master/Documentation/mailmap.txt)
+for more information on git's .mailmap files.
 
-This file was generated via Dist::Zilla::Plugin::GenerateFile::FromShareDir 0.012 from a
-template file originating in Dist-Zilla-PluginBundle-DROLSKY-0.78.
+This file was generated via Dist::Zilla::Plugin::GenerateFile::FromShareDir 0.013 from a
+template file originating in Dist-Zilla-PluginBundle-MAXMIND-0.83.

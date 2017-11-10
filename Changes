@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.300000 2017-11-10
+
 - The remove_reserved_networks option now sets up the tree in such a way that
   these networks may not be added. Previously these networks could be added and
   were removed when writing out the tree. This change means these networks are

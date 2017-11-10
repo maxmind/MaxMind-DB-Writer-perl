@@ -4,7 +4,7 @@ MaxMind::DB::Writer - Create MaxMind DB database files
 
 # VERSION
 
-version 0.202000
+version 0.300000
 
 # SYNOPSIS
 
@@ -26,7 +26,7 @@ version 0.202000
     );
 
     $tree->insert_network(
-        '2001:db8::/48',
+        '8.8.8.0/24',
         {
             color => 'blue',
             dogs  => [ 'Fido', 'Ms. Pretty Paws' ],
@@ -79,10 +79,11 @@ Bugs may be submitted through [https://github.com/maxmind/MaxMind-DB-Writer-perl
 - Florian Ragwitz <rafl@debian.org>
 - Jan Bieron &lt;jbieron+github@gmail.com>
 - tjmather <tjmather@maxmind.com>
+- William Storey <wstorey@maxmind.com>
 
 # COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2016 by MaxMind, Inc.
+This software is copyright (c) 2017 by MaxMind, Inc.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
