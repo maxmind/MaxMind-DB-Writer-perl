@@ -10,9 +10,6 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 
-#ifdef WIN32
-#endif
-
 #include <fcntl.h>
 #include <errno.h>
 #include <inttypes.h>

@@ -29,6 +29,8 @@
 #ifndef __WINDOWS_MMAN_H__
 #define __WINDOWS_MMAN_H__
 
+#ifdef WIN32
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <_mingw.h>
@@ -62,5 +64,7 @@ int     mprotect(void *addr, size_t len, int prot);
 int     msync(void *addr, size_t len, int flags);
 int     mlock(const void *addr, size_t len);
 int     munlock(const void *addr, size_t len);
+
+#endif /* WIN32 */
 
 #endif /* __WINDOWS_MMAN_H__ */

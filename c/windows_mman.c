@@ -28,6 +28,8 @@
 
 #include "windows_mman.h"
 
+#ifdef WIN32
+
 #ifndef FILE_MAP_EXECUTE
 #define FILE_MAP_EXECUTE    0x0020
 #endif /* FILE_MAP_EXECUTE */
@@ -201,3 +203,5 @@ int munlock(const void *addr, size_t len)
 
     return -1;
 }
+
+#endif /* WIN32 */
