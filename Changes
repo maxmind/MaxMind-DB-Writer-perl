@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+- This package now builds on Windows. Pull request by Ilya Melamed. GitHub
+  #91.
+
+
 0.300000 2017-11-10
 
 - The remove_reserved_networks option now sets up the tree in such a way that
