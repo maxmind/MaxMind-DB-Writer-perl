@@ -1,9 +1,15 @@
 #include "tree.h"
 
+#ifndef WIN32
 #include <sys/mman.h>
+#else
+#include "windows_mman.h"
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+
 #include <fcntl.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -1461,7 +1467,11 @@ LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
 void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
                  size_t frozen_params_size)
 {
+#ifdef WIN32
+    int fd = open(filename, O_CREAT | O_TRUNC | O_RDWR);
+#else
     int fd = open(filename, O_CREAT | O_TRUNC | O_RDWR, (mode_t)0644);
+#endif
     if (fd == -1) {
         croak("Could not open file %s: %s", filename, strerror(errno));
     }
@@ -1625,7 +1635,11 @@ MMDBW_tree_s *thaw_tree(char *filename, uint32_t initial_offset,
                         const bool alias_ipv6,
                         const bool remove_reserved_networks)
 {
+#ifdef WIN32
+    int fd = open(filename, O_RDONLY);
+#else
     int fd = open(filename, O_RDONLY, 0);
+#endif
     if (fd == -1) {
         croak("Could not open file %s: %s", filename, strerror(errno));
     }
