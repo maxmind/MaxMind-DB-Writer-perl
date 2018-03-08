@@ -7,6 +7,11 @@ use Config qw( %Config );
 use Config::AutoConf;
 use Module::Build;
 
+if ( $^O =~ /Win32/ ) {
+    die 'This distribution does not work on Windows platforms.'
+        . " See the documentation for details.\n";
+}
+
 my %module_build_args = (
   "build_requires" => {
     "Module::Build" => "0.28"

@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.300001 2018-03-08
+
 - This package now builds on Windows. Pull request by Ilya Melamed. GitHub
   #91.
 

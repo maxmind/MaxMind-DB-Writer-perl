@@ -130,4 +130,4 @@ request to the .mailmap file to contain the correct mapping.
 for more information on git's .mailmap files.
 
 This file was generated via Dist::Zilla::Plugin::GenerateFile::FromShareDir 0.013 from a
-template file originating in Dist-Zilla-PluginBundle-MAXMIND-0.83.
+template file originating in Dist-Zilla-PluginBundle-MAXMIND-0.84.
