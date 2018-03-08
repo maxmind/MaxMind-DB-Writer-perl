@@ -77,9 +77,9 @@ Bugs may be submitted through [https://github.com/maxmind/MaxMind-DB-Writer-perl
 # CONTRIBUTORS
 
 - Florian Ragwitz <rafl@debian.org>
-- Ilya M <ilya77@gmail.com>
+- Ilya Melamed <ilya77@gmail.com>
 - Jan Bieron &lt;jbieron+github@gmail.com>
-- tjmather <tjmather@maxmind.com>
+- Thomas J Mather <tjmather@maxmind.com>
 - William Storey <wstorey@maxmind.com>
 
 # COPYRIGHT AND LICENSE
