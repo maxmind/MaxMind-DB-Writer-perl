@@ -194,7 +194,7 @@ LOCAL void store_in_merge_cache(MMDBW_tree_s *tree,
                                 const char *const new_key);
 LOCAL void *checked_malloc(size_t size);
 LOCAL void
-checked_fwrite(FILE *file, char *filename, void *buffer, ssize_t count);
+checked_fwrite(FILE *file, char *filename, void *buffer, size_t count);
 LOCAL void check_perlio_result(SSize_t result, SSize_t expected, char *op);
 LOCAL char *status_error_message(MMDBW_status status);
 LOCAL const char *record_type_name(MMDBW_record_type type);
@@ -2149,12 +2149,12 @@ LOCAL void *checked_malloc(size_t size) {
 }
 
 LOCAL void
-checked_fwrite(FILE *file, char *filename, void *buffer, ssize_t count) {
-    ssize_t result = fwrite(buffer, 1, count, file);
+checked_fwrite(FILE *file, char *filename, void *buffer, size_t count) {
+    size_t result = fwrite(buffer, 1, count, file);
     if (result != count) {
         fclose(file);
         croak("Write to %s did not write the expected amount of data (wrote "
-              "%zd instead of %zu): %s",
+              "%zu instead of %zu): %s",
               filename,
               result,
               count,
