@@ -16,16 +16,16 @@ typedef struct perl_iterator_args_s {
     SV *receiver;
 } perl_iterator_args_s;
 
-MMDBW_tree_s *tree_from_self(SV *self)
-{
+MMDBW_tree_s *tree_from_self(SV *self) {
     /* This is a bit wrong since we're looking in the $self hash
        rather than calling a method. I couldn't get method calling
        to work. */
-    return *(MMDBW_tree_s **)
-           SvPV_nolen(*( hv_fetchs((HV *)SvRV(self), "_tree", 0)));
+    return *(MMDBW_tree_s **)SvPV_nolen(
+        *(hv_fetchs((HV *)SvRV(self), "_tree", 0)));
 }
 
-void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
+void call_iteration_method(MMDBW_tree_s *tree,
+                           perl_iterator_args_s *args,
                            SV *method,
                            const uint64_t node_number,
                            MMDBW_record_s *record,
@@ -33,18 +33,16 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
                            const uint8_t node_prefix_length,
                            const uint128_t record_ip_num,
                            const uint8_t record_prefix_length,
-                           const bool is_right)
-{
+                           const bool is_right) {
     dSP;
 
     ENTER;
     SAVETMPS;
 
-    int stack_size =
-        MMDBW_RECORD_TYPE_EMPTY == record->type ||
-        MMDBW_RECORD_TYPE_FIXED_EMPTY == record->type
-        ? 7
-        : 8;
+    int stack_size = MMDBW_RECORD_TYPE_EMPTY == record->type ||
+                             MMDBW_RECORD_TYPE_FIXED_EMPTY == record->type
+                         ? 7
+                         : 8;
 
     PUSHMARK(SP);
     EXTEND(SP, stack_size);
@@ -80,21 +78,20 @@ void call_iteration_method(MMDBW_tree_s *tree, perl_iterator_args_s *args,
 }
 
 SV *method_for_record_type(perl_iterator_args_s *args,
-                           const MMDBW_record_type record_type)
-{
+                           const MMDBW_record_type record_type) {
     switch (record_type) {
-    case MMDBW_RECORD_TYPE_EMPTY:
-    case MMDBW_RECORD_TYPE_FIXED_EMPTY:
-        return args->empty_method;
-        break;
-    case MMDBW_RECORD_TYPE_DATA:
-        return args->data_method;
-        break;
-    case MMDBW_RECORD_TYPE_NODE:
-    case MMDBW_RECORD_TYPE_FIXED_NODE:
-    case MMDBW_RECORD_TYPE_ALIAS:
-        return args->node_method;
-        break;
+        case MMDBW_RECORD_TYPE_EMPTY:
+        case MMDBW_RECORD_TYPE_FIXED_EMPTY:
+            return args->empty_method;
+            break;
+        case MMDBW_RECORD_TYPE_DATA:
+            return args->data_method;
+            break;
+        case MMDBW_RECORD_TYPE_NODE:
+        case MMDBW_RECORD_TYPE_FIXED_NODE:
+        case MMDBW_RECORD_TYPE_ALIAS:
+            return args->node_method;
+            break;
     }
 
     // This croak is probably okay. It should not happen unless we're adding a
@@ -103,11 +100,11 @@ SV *method_for_record_type(perl_iterator_args_s *args,
     return NULL;
 }
 
-void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
+void call_perl_object(MMDBW_tree_s *tree,
+                      MMDBW_node_s *node,
                       const uint128_t node_ip_num,
                       const uint8_t node_prefix_length,
-                      void *void_args)
-{
+                      void *void_args) {
     perl_iterator_args_s *args = (perl_iterator_args_s *)void_args;
 
     SV *left_method = method_for_record_type(args, node->left_record.type);
@@ -127,25 +124,24 @@ void call_perl_object(MMDBW_tree_s *tree, MMDBW_node_s *node,
 
     SV *right_method = method_for_record_type(args, node->right_record.type);
     if (NULL != right_method) {
-        call_iteration_method(tree,
-                              args,
-                              right_method,
-                              node->number,
-                              &(node->right_record),
-                              node_ip_num,
-                              node_prefix_length,
-                              flip_network_bit(tree, node_ip_num,
-                                               node_prefix_length),
-                              node_prefix_length + 1,
-                              true);
+        call_iteration_method(
+            tree,
+            args,
+            right_method,
+            node->number,
+            &(node->right_record),
+            node_ip_num,
+            node_prefix_length,
+            flip_network_bit(tree, node_ip_num, node_prefix_length),
+            node_prefix_length + 1,
+            true);
     }
     return;
 }
 
 /* It'd be nice to return the CV instead but there's no exposed API for
  * calling a CV directly. */
-SV *maybe_method(HV *package, const char *const method)
-{
+SV *maybe_method(HV *package, const char *const method) {
     GV *gv = gv_fetchmethod_autoload(package, method, 1);
     if (NULL != gv) {
         CV *cv = GvCV(gv);
