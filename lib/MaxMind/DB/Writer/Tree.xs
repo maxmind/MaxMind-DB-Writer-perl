@@ -157,8 +157,7 @@ SV *maybe_method(HV *package, const char *const method)
     return NULL;
 }
 
-/* *INDENT-OFF* */
-
+// clang-format off
 /* XXX - it'd be nice to find a way to get the tree from the XS code so we
  * don't have to pass it in all over place - it'd also let us remove at least
  * a few shim methods on the Perl code. */
