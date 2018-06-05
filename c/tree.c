@@ -34,7 +34,7 @@
 #define MERGE_KEY_SIZE (57)
 
 typedef struct freeze_args_s {
-    int fd;
+    FILE *file;
     char *filename;
     HV *data_hash;
 } freeze_args_s;
@@ -145,8 +145,8 @@ LOCAL void freeze_data_record(MMDBW_tree_s *UNUSED(tree),
                               uint128_t network, uint8_t depth,
                               const char *key,
                               freeze_args_s *args);
-LOCAL void freeze_to_fd(freeze_args_s *args, void *data, size_t size);
-LOCAL void freeze_data_to_fd(int fd, MMDBW_tree_s *tree);
+LOCAL void freeze_to_file(freeze_args_s *args, void *data, size_t size);
+LOCAL void freeze_data_to_file(freeze_args_s *args, MMDBW_tree_s *tree);
 LOCAL SV *freeze_hash(HV *hash);
 LOCAL uint8_t thaw_uint8(uint8_t **buffer);
 LOCAL thawed_network_s *thaw_network(MMDBW_tree_s *tree, uint8_t **buffer);
@@ -179,7 +179,7 @@ LOCAL void store_in_merge_cache(MMDBW_tree_s *tree,
                                 const char *const new_key
                                 );
 LOCAL void *checked_malloc(size_t size);
-LOCAL void checked_write(int fd, char *filename, void *buffer,
+LOCAL void checked_fwrite(FILE *file, char *filename, void *buffer,
                          ssize_t count);
 LOCAL void check_perlio_result(SSize_t result, SSize_t expected,
                                char *op);
@@ -1467,31 +1467,27 @@ LOCAL void assign_node_number(MMDBW_tree_s *tree, MMDBW_node_s *node,
 void freeze_tree(MMDBW_tree_s *tree, char *filename, char *frozen_params,
                  size_t frozen_params_size)
 {
-#ifdef WIN32
-    int fd = open(filename, O_CREAT | O_TRUNC | O_RDWR);
-#else
-    int fd = open(filename, O_CREAT | O_TRUNC | O_RDWR, (mode_t)0644);
-#endif
-    if (fd == -1) {
+    FILE *file = fopen(filename, "wb");
+    if (!file) {
         croak("Could not open file %s: %s", filename, strerror(errno));
     }
 
     freeze_args_s args = {
-        .fd       = fd,
+        .file     = file,
         .filename = filename,
     };
 
-    freeze_to_fd(&args, &frozen_params_size, 4);
-    freeze_to_fd(&args, frozen_params, frozen_params_size);
+    freeze_to_file(&args, &frozen_params_size, 4);
+    freeze_to_file(&args, frozen_params, frozen_params_size);
 
     freeze_search_tree(tree, &args);
 
-    freeze_to_fd(&args, SEVENTEEN_NULLS, 17);
-    freeze_to_fd(&args, FREEZE_SEPARATOR, FREEZE_SEPARATOR_LENGTH);
+    freeze_to_file(&args, SEVENTEEN_NULLS, 17);
+    freeze_to_file(&args, FREEZE_SEPARATOR, FREEZE_SEPARATOR_LENGTH);
 
-    freeze_data_to_fd(fd, tree);
+    freeze_data_to_file(&args, tree);
 
-    if (close(fd) == -1) {
+    if (fclose(file) == -1) {
         croak("Could not close file %s: %s", filename, strerror(errno));
     }
 
@@ -1545,17 +1541,17 @@ LOCAL void freeze_data_record(MMDBW_tree_s *UNUSED(tree),
 {
     /* It'd save some space to shrink this to 4 bytes for IPv4-only trees, but
      * that would also complicated thawing quite a bit. */
-    freeze_to_fd(args, &network, 16);
-    freeze_to_fd(args, &(depth), 1);
-    freeze_to_fd(args, (char *)key, SHA1_KEY_LENGTH);
+    freeze_to_file(args, &network, 16);
+    freeze_to_file(args, &(depth), 1);
+    freeze_to_file(args, (char *)key, SHA1_KEY_LENGTH);
 }
 
-LOCAL void freeze_to_fd(freeze_args_s *args, void *data, size_t size)
+LOCAL void freeze_to_file(freeze_args_s *args, void *data, size_t size)
 {
-    checked_write(args->fd, args->filename, data, size);
+    checked_fwrite(args->file, args->filename, data, size);
 }
 
-LOCAL void freeze_data_to_fd(int fd, MMDBW_tree_s *tree)
+LOCAL void freeze_data_to_file(freeze_args_s *args, MMDBW_tree_s *tree)
 {
     HV *data_hash = newHV();
 
@@ -1569,23 +1565,10 @@ LOCAL void freeze_data_to_fd(int fd, MMDBW_tree_s *tree)
     STRLEN frozen_data_size;
     char *frozen_data_chars = SvPV(frozen_data, frozen_data_size);
 
-    ssize_t written = write(fd, &frozen_data_size, sizeof(STRLEN));
-    if (written == -1) {
-        croak("Could not write frozen data size to file: %s", strerror(errno));
-    }
-    if (written != sizeof(STRLEN)) {
-        croak("Could not write frozen data size to file: %zd != %zu", written,
-              sizeof(STRLEN));
-    }
-
-    written = write(fd, frozen_data_chars, frozen_data_size);
-    if (written == -1) {
-        croak("Could not write frozen data size to file: %s", strerror(errno));
-    }
-    if (written != (ssize_t)frozen_data_size) {
-        croak("Could not write frozen data to file: %zd != %zu", written,
-              frozen_data_size);
-    }
+    checked_fwrite(args->file, args->filename, &frozen_data_size,
+                   sizeof(STRLEN));
+    checked_fwrite(args->file, args->filename, frozen_data_chars,
+                   frozen_data_size);
 
     SvREFCNT_dec(frozen_data);
     SvREFCNT_dec((SV *)data_hash);
@@ -2211,17 +2194,17 @@ LOCAL void *checked_malloc(size_t size)
     return ptr;
 }
 
-LOCAL void checked_write(int fd, char *filename, void *buffer,
-                         ssize_t count)
+LOCAL void checked_fwrite(FILE *file, char *filename, void *buffer,
+                          ssize_t count)
 {
-    ssize_t result = write(fd, buffer, count);
+    ssize_t result = fwrite(buffer, 1, count, file);
     if (result == -1) {
-        close(fd);
+        fclose(file);
         croak("Could not write to the file %s: %s", filename,
               strerror(errno));
     }
     if (result != count) {
-        close(fd);
+        fclose(file);
         croak(
             "Write to %s did not write the expected amount of data (wrote %zd instead of %zu)",
             filename, result, count);
