@@ -1439,7 +1439,7 @@ void freeze_tree(MMDBW_tree_s *tree,
 
     freeze_data_to_file(&args, tree);
 
-    if (fclose(file) == -1) {
+    if (fclose(file) != 0) {
         croak("Could not close file %s: %s", filename, strerror(errno));
     }
 
@@ -2151,17 +2151,14 @@ LOCAL void *checked_malloc(size_t size) {
 LOCAL void
 checked_fwrite(FILE *file, char *filename, void *buffer, ssize_t count) {
     ssize_t result = fwrite(buffer, 1, count, file);
-    if (result == -1) {
-        fclose(file);
-        croak("Could not write to the file %s: %s", filename, strerror(errno));
-    }
     if (result != count) {
         fclose(file);
         croak("Write to %s did not write the expected amount of data (wrote "
-              "%zd instead of %zu)",
+              "%zd instead of %zu): %s",
               filename,
               result,
-              count);
+              count,
+              strerror(errno));
     }
 }
 
