@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+[ BUG FIXES ]
+
+- You can now freeze a tree where the data section size in memory is more than
+  2,147,479,552 bytes. GitHub #94.
+
+
 0.300001 2018-03-08
 
 - This package now builds on Windows. Pull request by Ilya Melamed. GitHub
