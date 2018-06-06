@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+0.300002 2018-06-06
+
 [ BUG FIXES ]
 
 - You can now freeze a tree where the data section size in memory is more than
