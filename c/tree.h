@@ -1,6 +1,10 @@
 #include "EXTERN.h"
-#include "XSUB.h"
+// clang-format wants to change the order of these headers. However order is
+// important.
+// clang-format off
 #include "perl.h"
+#include "XSUB.h"
+// clang-format on
 #include <stdbool.h>
 #include <stdint.h>
 #include <uthash.h>
