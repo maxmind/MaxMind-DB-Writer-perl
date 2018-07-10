@@ -1,6 +1,7 @@
 #include "EXTERN.h"
-#include "XSUB.h"
 #include "perl.h"
+// It is crucial that XSUB.h comes after perl.h.
+#include "XSUB.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <uthash.h>
