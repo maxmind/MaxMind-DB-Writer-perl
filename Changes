@@ -1,6 +1,8 @@
 {{$NEXT}}
 
-- Fixed compilation errors.
+[ BUG FIXES ]
+
+- Fixed compilation errors. GitHub #96.
 
 
 0.300002 2018-06-06
