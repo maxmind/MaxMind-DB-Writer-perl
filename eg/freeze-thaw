@@ -17,13 +17,13 @@ my $cb = sub {
 };
 
 my $tree = MaxMind::DB::Writer::Tree->new(
-    ip_version              => 6,
-    record_size             => 24,
-    database_type           => 'Test',
-    languages               => ['en'],
-    description             => { en => 'Test tree' },
-    merge_record_collisions => 1,
-    map_key_type_callback   => $cb,
+    ip_version            => 6,
+    record_size           => 24,
+    database_type         => 'Test',
+    languages             => ['en'],
+    description           => { en => 'Test tree' },
+    merge_strategy        => 'toplevel',
+    map_key_type_callback => $cb,
 );
 
 my $s = Timer::Simple->new( start => 1 );
@@ -59,7 +59,10 @@ $s->stop();
 print "Frozen tree to disk in ", $s->elapsed, " seconds\n";
 $s->start();
 
-my $tree2 = MaxMind::DB::Writer::Tree->from_frozen_tree( $file, $cb );
+my $tree2 = MaxMind::DB::Writer::Tree->new_from_frozen_tree(
+    filename              => $file,
+    map_key_type_callback => $cb,
+);
 
 $s->stop();
 print "Thawed tree in ", $s->elapsed, " seconds\n";
