@@ -439,7 +439,7 @@ void remove_network(MMDBW_tree_s *tree,
 
     free_network(&network);
     if (status != MMDBW_SUCCESS) {
-        croak(status_error_message(status));
+        croak("Unable to remove network: %s", status_error_message(status));
     }
 }
 
@@ -1612,7 +1612,7 @@ MMDBW_tree_s *thaw_tree(char *filename,
         free(thawed->record);
         free(thawed);
         if (status != MMDBW_SUCCESS) {
-            croak(status_error_message(status));
+            croak("Could not thaw tree: %s", status_error_message(status));
         }
     }
 
