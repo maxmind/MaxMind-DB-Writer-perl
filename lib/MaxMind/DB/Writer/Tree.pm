@@ -149,7 +149,7 @@ around BUILDARGS => sub {
 
     if ( $args->{merge_strategy}
         && !( $args->{merge_strategy} eq 'none' xor $merge_record_collisions )
-        ) {
+    ) {
         die sprintf(
             'merge_strategy cannot be "%s" if merge_record_collisions is "%s"',
             $args->{merge_strategy}, $args->{merge_record_collisions}

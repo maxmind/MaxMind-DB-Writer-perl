@@ -63,7 +63,7 @@ sub make_tree_from_pairs {
     my $args  = shift;
 
     my $tree = MaxMind::DB::Writer::Tree->new(
-        ip_version => ( $pairs->[0][0] =~ /::/ ? 6 : 4 ),
+        ip_version            => ( $pairs->[0][0] =~ /::/ ? 6 : 4 ),
         record_size           => 24,
         database_type         => 'Test',
         languages             => ['en'],
@@ -210,7 +210,7 @@ sub test_iterator_sanity {
 sub test_freeze_thaw {
     my $tree1 = shift;
 
-    my $dir = tempdir( CLEANUP => 1 );
+    my $dir  = tempdir( CLEANUP => 1 );
     my $file = "$dir/frozen-tree";
     $tree1->freeze_tree($file);
 
@@ -262,7 +262,7 @@ sub test_freeze_thaw {
 sub test_freeze_thaw_optional_params {
     my $tree1 = shift;
 
-    my $dir = tempdir( CLEANUP => 1 );
+    my $dir  = tempdir( CLEANUP => 1 );
     my $file = "$dir/frozen-tree-params";
     $tree1->freeze_tree($file);
 
