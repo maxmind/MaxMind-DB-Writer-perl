@@ -24,7 +24,7 @@ use Test::Warnings qw( :all );
 ########################################################################
 
 # this is the IP range we'll be testing and an IP within it
-my $NETWORK = Net::Works::Network->new_from_string( string => '::0/1' );
+my $NETWORK    = Net::Works::Network->new_from_string( string => '::0/1' );
 my $IP_ADDRESS = '::123.123.123.123';
 
 sub check_tree {
@@ -51,7 +51,7 @@ sub check_tree {
 
                 $tree1->insert_network( $NETWORK, { value => 42 } );
 
-                my $dir = tempdir( CLEANUP => 1 );
+                my $dir  = tempdir( CLEANUP => 1 );
                 my $file = "$dir/frozen-tree";
                 $tree1->freeze_tree($file);
 
@@ -105,7 +105,7 @@ check_tree(
                 ok(
                     !$args{thawed_tree}->merge_record_collisions,
                     'thawed merge_record_collisons'
-                    )
+                )
             },
             qr/merge_record_collisions is deprecated/,
             'received deprecation message'
@@ -204,7 +204,7 @@ check_tree(
                 ok(
                     $args{thawed_tree}->merge_record_collisions,
                     'thawed merge_record_collisons'
-                    )
+                )
             },
             qr/merge_record_collisions is deprecated/,
             'received deprecation message'

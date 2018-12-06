@@ -25,17 +25,17 @@ subtest 'simple IPv6 merge' => sub {
         [
             Net::Works::Network->new_from_string(
                 string => '::172.56.0.0/112'
-                ) => \%asn,
+            ) => \%asn,
         ],
         [
             Net::Works::Network->new_from_string(
                 string => '::172.56.0.0/112'
-                ) => { isp => $isp },
+            ) => { isp => $isp },
         ],
         [
             Net::Works::Network->new_from_string(
                 string => '::172.32.0.0/107'
-                ) => { organization => $org },
+            ) => { organization => $org },
         ],
     );
 
@@ -43,11 +43,11 @@ subtest 'simple IPv6 merge' => sub {
         [
             Net::Works::Network->new_from_string(
                 string => '::172.56.9.251/128'
-                ) => {
+            ) => {
                 %asn,
                 isp          => $isp,
                 organization => $org,
-                }
+            }
         ],
     );
 
@@ -57,7 +57,7 @@ subtest 'simple IPv6 merge' => sub {
             \@expect,
             'data hashes for records are merged on collision - ipv6',
             { merge_record_collisions => 1 },
-            )
+        )
     };
     is( scalar @warnings, 2, 'received two warnings' )
         or diag explain @warnings;
@@ -336,9 +336,9 @@ subtest 'merge - smaller net first' => sub {
                         fifth_in  => 5,
                     }
                 ]
-                } Net::Works::Network->range_as_subnets(
+            } Net::Works::Network->range_as_subnets(
                 '1.0.0.1' => '1.0.0.2'
-                )
+            )
         ),
         (
             map {
@@ -350,9 +350,9 @@ subtest 'merge - smaller net first' => sub {
                         fifth_in  => 5,
                     }
                 ]
-                } Net::Works::Network->range_as_subnets(
+            } Net::Works::Network->range_as_subnets(
                 '1.0.0.3' => '1.0.0.4'
-                )
+            )
         ),
         (
             map { [ $_ => { fourth_in => 4, fifth_in => 5, } ] }
@@ -562,7 +562,7 @@ subtest 'force_overwrite with merge_record_collisions' => sub {
             \@expect,
             'force_overwrite overwrites record even when merge_record_collisions is enabled',
             { merge_strategy => 'toplevel' },
-            )
+        )
     };
 
     is( scalar @warnings, 2, 'received 2 warnings' );
@@ -615,7 +615,7 @@ subtest 'merge subrecord only if parent exists - hashes' => sub {
             \@expect,
             'merge hashes insert_only_if_parent_exists inserts correctly',
             { merge_strategy => 'recurse' },
-            )
+        )
     };
     is( scalar @warnings, 2, 'received two warnings' );
     like(
@@ -630,8 +630,8 @@ subtest 'merge subrecord only if parent exists - arrays' => sub {
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
                 {
-                grandparent => [        { sibling => 1 } ],
-                scalars     => [ 1,     2 ],
+                grandparent => [ { sibling => 1 } ],
+                scalars     => [ 1, 2 ],
                 already     => { exists => 2 },
                 },
         ],
@@ -644,8 +644,8 @@ subtest 'merge subrecord only if parent exists - arrays' => sub {
                 {
                 grandparent => [ { self => 0 } ],
                 scalars     => [3],
-                new_array   => [ { new  => 0 } ],
-                already => { exists => 1 },
+                new_array   => [ { new => 0 } ],
+                already     => { exists => 1 },
                 },
             { merge_strategy => 'add-only-if-parent-exists' },
         ],
@@ -655,8 +655,8 @@ subtest 'merge subrecord only if parent exists - arrays' => sub {
         [
             Net::Works::Network->new_from_string( string => '2.0.0.0/32' ) =>
                 {
-                grandparent => [        { sibling => 1, self => 0 } ],
-                scalars     => [ 3,     2 ],
+                grandparent => [ { sibling => 1, self => 0 } ],
+                scalars     => [ 3, 2 ],
                 already     => { exists => 1 },
                 },
         ],
@@ -684,7 +684,7 @@ subtest 'merge subrecord only if parent exists - overwriting' => sub {
         ],
         [
             Net::Works::Network->new_from_string( string => '::/0' ) =>
-                { location => { accuracy_radius => 1000 } },
+                { location   => { accuracy_radius => 1000 } },
             { merge_strategy => 'add-only-if-parent-exists' },
 
         ],
@@ -1062,7 +1062,7 @@ subtest 'Test overwriting IPv4 root' => sub {
         [
             Net::Works::Network->new_from_string(
                 string => '::1:ffff:ffff/128'
-                ) => { insert => 3 },
+            ) => { insert => 3 },
         ],
     );
 

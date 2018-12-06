@@ -389,7 +389,7 @@ subtest 'Setting data on a fixed node' => sub {
         remove_reserved_networks => 0,
     );
 
-    my $ip = '::/96';
+    my $ip   = '::/96';
     my $data = { hi => 'there' };
     $tree->insert_network( $ip, $data );
 
@@ -656,7 +656,7 @@ sub _test_subnet_permutations {
     my $subnets = shift;
     my $desc    = shift;
 
-    my $id = 0;
+    my $id     = 0;
     my @expect = map { [ $_, { foo => 42, id => $id++ } ] } @{$subnets};
 
     {
