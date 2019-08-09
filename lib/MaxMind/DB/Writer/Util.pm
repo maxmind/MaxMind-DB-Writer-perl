@@ -5,7 +5,7 @@ use warnings;
 
 our $VERSION = '0.300004';
 
-use Digest::SHA1 qw( sha1_base64 );
+use Digest::SHA qw( sha1_base64 );
 use Encode qw( encode );
 use Sereal::Encoder 3.002 qw( sereal_encode_with_object );
 
