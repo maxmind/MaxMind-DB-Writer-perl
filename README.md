@@ -48,7 +48,7 @@ for API docs.
 If you're running into install errors under Mac OS X, you may need to force a
 build of the 64 bit binary. For example, if you're installing via `cpanm`:
 
-    ARCHFLAGS="-arch x86_64" cpanm MaxMind::DB::Writer
+    ARCHFLAGS="-arch x86_64" cpan MaxMind::DB::Writer
 
 # WINDOWS SUPPORT
 
