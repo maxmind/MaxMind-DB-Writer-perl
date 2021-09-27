@@ -1,0 +1,39 @@
+name: Unit Tests
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '5 10 * * SUN'
+
+jobs:
+
+  build:
+    strategy:
+      matrix:
+        perl-version:
+          - '5.14'
+          - '5.16'
+          - '5.18'
+          - '5.20'
+          - '5.22'
+          - '5.24'
+          - '5.26'
+          - '5.28'
+          - '5.30'
+          - '5.32'
+          - '5.34'
+        platform: ['ubuntu-latest']
+    runs-on: ${{ matrix.platform }}
+    name: "Build ${{ matrix.perl-version }} test on ${{ matrix.platform }}"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl-version }}
+          install-modules-with: cpm
+      - run: perl Build.PL
+      # -Wno-strict-aliasing as the check causes issues on Perl 5.14 builds
+      # -Werror fails currently. Probably not worth fixing at this point.
+      - run: CFLAGS="-Wall -Wextra -Wno-strict-aliasing" ./Build
+      - run: prove -blr t
