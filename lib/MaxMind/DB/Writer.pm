@@ -4,15 +4,21 @@ use strict;
 use warnings;
 use 5.013002;
 
-our $VERSION = '0.300004';
+our $VERSION = '0.300005';
 
 1;
 
-# ABSTRACT: Create MaxMind DB database files
+# ABSTRACT: DEPRECATED Create MaxMind DB database files
 
 __END__
 
 =pod
+
+=head1 DEPRECATED
+
+This code is no longer maintained. We recommend using the Go
+L<mmdbwriter package|https://github.com/maxmind/mmdbwriter> to write
+MMDB files.
 
 =head1 SYNOPSIS
 

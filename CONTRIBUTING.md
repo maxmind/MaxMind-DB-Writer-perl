@@ -100,11 +100,6 @@ can submit an issue report [via the web](https://github.com/maxmind/MaxMind-DB-W
 .
 This is a good place to send your questions about the usage of this distribution.
 
-## Travis
-
-All pull requests for this distribution will be automatically tested by
-[Travis](https://travis-ci.org/) and the build status will be reported on the
-pull request page. If your build fails, please take a look at the output.
 
 ## Tidyall
 
@@ -129,5 +124,5 @@ request to the .mailmap file to contain the correct mapping.
 [Check here](https://github.com/git/git/blob/master/Documentation/mailmap.txt)
 for more information on git's .mailmap files.
 
-This file was generated via Dist::Zilla::Plugin::GenerateFile::FromShareDir 0.014 from a
-template file originating in Dist-Zilla-PluginBundle-MAXMIND-0.83.
+This file was generated via Dist::Zilla::Plugin::GenerateFile::FromShareDir 0.015 from a
+template file originating in Dist-Zilla-PluginBundle-MAXMIND-0.84.
