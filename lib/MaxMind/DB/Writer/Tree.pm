@@ -31,6 +31,11 @@ use XSLoader;
 XSLoader::load( __PACKAGE__, $VERSION );
 ## use critic
 
+warnings::warnif(
+    'deprecated',
+    'MaxMind::DB::Writer::Tree is deprecated and should no longer be used',
+);
+
 has ip_version => (
     is       => 'ro',
     isa      => 'Int',
@@ -450,7 +455,7 @@ __PACKAGE__->meta()->make_immutable();
 
 1;
 
-# ABSTRACT: Tree representing a MaxMind DB database in memory - then write it to a file
+# ABSTRACT: DEPRECATED Tree representing a MaxMind DB database in memory - then write it to a file
 
 __END__
 

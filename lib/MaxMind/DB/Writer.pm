@@ -8,7 +8,7 @@ our $VERSION = '0.300004';
 
 1;
 
-# ABSTRACT: Create MaxMind DB database files
+# ABSTRACT: DEPRECATED Create MaxMind DB database files
 
 __END__
 
