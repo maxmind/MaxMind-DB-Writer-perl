@@ -14,6 +14,12 @@ __END__
 
 =pod
 
+=head1 DEPRECATED
+
+This code is no longer maintained. We recommend using the Go
+L<mmdbwriter package|https://github.com/maxmind/mmdbwriter> to write
+MMDB files.
+
 =head1 SYNOPSIS
 
     use MaxMind::DB::Writer::Tree;
