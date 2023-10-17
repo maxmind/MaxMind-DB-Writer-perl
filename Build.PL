@@ -19,7 +19,7 @@ my %module_build_args = (
   "configure_requires" => {
     "Module::Build" => "0.28"
   },
-  "dist_abstract" => "Create MaxMind DB database files",
+  "dist_abstract" => "DEPRECATED Create MaxMind DB database files",
   "dist_author" => [
     "Olaf Alders <oalders\@maxmind.com>",
     "Greg Oschwald <goschwald\@maxmind.com>",

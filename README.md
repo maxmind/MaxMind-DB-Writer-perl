@@ -1,6 +1,6 @@
 # NAME
 
-MaxMind::DB::Writer - Create MaxMind DB database files
+MaxMind::DB::Writer - DEPRECATED Create MaxMind DB database files
 
 # VERSION
 
